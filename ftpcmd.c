@@ -330,11 +330,18 @@ void handle_USER(struct FtpClient *client, char *name)
 {
 	if (client->_name[0]) {
 		client->_name[0] = 0;
+		client->_pass[0] = 0;
 	}
-	if (name != NULL) {
+
+	if (name) {
 		strcpy(client->_name, name);
-		send_msg(client->_client_socket,
-			 "331 Guest login ok, send your complete e-mail address as password.\r\n");
+		if (check_user_pass(client) == 1) {
+			send_msg(client->_client_socket,
+				 "230 Guest login OK, access restrictions apply.\r\n");
+		} else {
+			send_msg(client->_client_socket,
+				 "331 Login OK, please enter password.\r\n");
+		}
 	} else {
 		send_msg(client->_client_socket,
 			 "530 You must input your name.\r\n");
@@ -348,27 +355,27 @@ void handle_PASS(struct FtpClient *client, char *pass)
 	if (client->_name[0] == 0) {
 		send_msg(client->_client_socket,
 			 "503 Your haven't input your username\r\n");
-	} else {
-		strcpy(client->_pass, pass);
-		if (check_user_pass(client) < 0) {
-			send_msg(client->_client_socket,
-				 "530 username or pass is unacceptalbe\r\n");
-			return;
-		}
-		int client_socket = client->_client_socket;
-
-		/*send_msg(client_socket, "230-\r\n");
-		   send_msg(client_socket, "230-Welcome to\r\n");
-		   send_msg(client_socket, "230- School of Software\r\n");
-		   send_msg(client_socket, "230-\r\n");
-		   send_msg(client_socket, "230-This site is provided as a public service by School of\r\n");
-		   send_msg(client_socket, "230-Software. Use in violation of any applicable laws is strictly\r\n");
-		   send_msg(client_socket, "230-prohibited. We make no guarantees, explicit or implicit, about the\r\n");
-		   send_msg(client_socket, "230-contents of this site. Use at your own risk.\r\n");
-		   send_msg(client_socket, "230-\r\n"); */
-		send_msg(client_socket,
-			 "230 Guest login ok, access restrictions apply.\r\n");
+		return;
 	}
+
+	strcpy(client->_pass, pass);
+	if (check_user_pass(client) < 0) {
+		send_msg(client->_client_socket,
+			 "530 username or password is unacceptable\r\n");
+		return;
+	}
+
+	/*send_msg(client_socket, "230-\r\n");
+	  send_msg(client_socket, "230-Welcome to\r\n");
+	  send_msg(client_socket, "230- School of Software\r\n");
+	  send_msg(client_socket, "230-\r\n");
+	  send_msg(client_socket, "230-This site is provided as a public service by School of\r\n");
+	  send_msg(client_socket, "230-Software. Use in violation of any applicable laws is strictly\r\n");
+	  send_msg(client_socket, "230-prohibited. We make no guarantees, explicit or implicit, about the\r\n");
+	  send_msg(client_socket, "230-contents of this site. Use at your own risk.\r\n");
+	  send_msg(client_socket, "230-\r\n"); */
+	send_msg(client->_client_socket,
+		 "230 Guest login OK, access restrictions apply.\r\n");
 }
 
 //
@@ -512,60 +519,54 @@ void handle_LIST(struct FtpClient *client)
 //
 void handle_PASV(struct FtpClient *client)
 {
+	int port;
+	char *msg, buf[200];
+	struct sockaddr_in server;
+	struct sockaddr_in file_addr;
+	socklen_t file_sock_len = sizeof(struct sockaddr);
 
 	if (client->_data_socket > 0) {
 		close(client->_data_socket);
 		client->_data_socket = -1;
 	}
-	if (client->_data_server_socket > 0) {
+
+	if (client->_data_server_socket > 0)
 		close(client->_data_server_socket);
-	}
+
 	client->_data_server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (client->_data_server_socket < 0) {
 		perror("opening socket error");
 		send_msg(client->_client_socket, "426 pasv failure\r\n");
 		return;
 	}
-	struct sockaddr_in server;
 
-	server.sin_family = AF_INET;
+	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = inet_addr(client->_ip);
-	server.sin_port = htons(0);
-	if (bind(client->_data_server_socket, (struct sockaddr *)&server,
-		 sizeof(struct sockaddr)) < 0) {
-		perror("binding error");
-		send_msg(client->_client_socket, "426 pasv failure\r\n");
+	server.sin_port        = htons(0);
+	if (bind(client->_data_server_socket, (struct sockaddr *)&server, sizeof(struct sockaddr)) < 0) {
+		perror("Failed binding to client socket");
+		send_msg(client->_client_socket, "426 PASV failure\r\n");
 		return;
 	}
+
 	show_log("server is estabished. Waiting for connnect...");
 	if (listen(client->_data_server_socket, 1) < 0) {
 		perror("listen error");
-		send_msg(client->_client_socket, "426 pasv failure\r\n");
+		send_msg(client->_client_socket, "426 PASV failure\r\n");
 	}
-	struct sockaddr_in file_addr;
-	socklen_t file_sock_len = sizeof(struct sockaddr);
 
-	getsockname(client->_data_server_socket, (struct sockaddr *)&file_addr,
-		    &file_sock_len);
+	getsockname(client->_data_server_socket, (struct sockaddr *)&file_addr, &file_sock_len);
 	show_log(client->_ip);
-	int port = ntohs(file_addr.sin_port);
 
+	port = ntohs(file_addr.sin_port);
+	msg = _transfer_ip_port_str(client->_ip, port);
 	show_log(parseInt2String(port));
-
-	char *msg = _transfer_ip_port_str(client->_ip, port);
-
-	if (!msg) {
-		send_msg(client->_client_socket,
-			 "501 Invalid IP address format!\r\n");
-		return;
-	}
-
-	char buf[200];
 
 	strcpy(buf, "227 Entering Passive Mode (");
 	strcat(buf, msg);
 	strcat(buf, ")\r\n");
 	send_msg(client->_client_socket, buf);
+
 	free(msg);
 }
 
@@ -583,9 +584,8 @@ void *handle_RETR(void *retr)
 
 	strcpy(_path, client->_root);
 	strcat(_path, client->_cur_path);
-	if (_path[strlen(_path) - 1] != '/') {
+	if (_path[strlen(_path) - 1] != '/')
 		strcat(_path, "/");
-	}
 	strcat(_path, path);
 	show_log(_path);
 	file = fopen(_path, "rb");
@@ -737,11 +737,12 @@ void handle_OPTS(struct FtpClient *client)
 //
 int check_user_pass(struct FtpClient *client)
 {
-	if (client->_name == NULL) {
+	if (!client->_name)
 		return -1;
-	} else if (strcmp("anonymous", client->_name) == 0) {
+
+	if (strcmp("anonymous", client->_name) == 0)
 		return 1;
-	}
+
 	return 0;
 }
 

@@ -240,3 +240,11 @@ void my_strcat(char *array, const char *array2)
 	}
 	array[i] = 0;
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */

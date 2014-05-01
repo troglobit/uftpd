@@ -1,18 +1,19 @@
-#ifndef _FTP_SERVER_H
-#define _FTP_SERVER_H
+#ifndef FTPCMD_H_
+#define FTPCMD_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
-//define FtpServer
+
 #define BUFFER_SIZE 1000
 #define FTP_PORT 8000
+
 struct FtpServer {
-	int _socket;		//sock
+	int _socket;
 	struct sockaddr_in _server;
 	int _port;
-	//int                   _accept;
 	char _relative_path[100];	//ftp server root path
 	char _ip[20];
 };
@@ -32,6 +33,7 @@ struct FtpClient {
 
 	int status;
 };
+
 struct FtpRetr {
 	struct FtpClient *client;
 	char path[200];
@@ -143,5 +145,12 @@ void handle_CLNT(struct FtpClient *client);
 //
 void handle_OPTS(struct FtpClient *client);
 
-//define ftpserver over
-#endif
+#endif  /* FTPCMD_H_ */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */

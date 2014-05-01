@@ -20,7 +20,7 @@ void init_ftp_server(struct FtpServer *ftp)
 	err = setsockopt(ftp->_socket, SOL_SOCKET, SO_REUSEADDR,
 			 (char *)&sock_reuse, sizeof(sock_reuse));
 	if (err != 0) {
-		printf("套接字可重用设置失败!/n");
+		perror("Failed setting SO_REUSEADDR");
 		exit(1);
 	}
 	if (ftp->_socket < 0) {
@@ -56,7 +56,6 @@ void start_ftp_server(struct FtpServer *ftp)
 			   &size);
 		if (client < 0) {
 			perror("accept error");
-			//exit(1);
 		} else {
 			socklen_t sock_length = sizeof(struct sockaddr);
 			char host_ip[100];
@@ -103,8 +102,6 @@ void init_ftp_client(struct FtpClient *client, struct FtpServer *server,
 	strcpy(client->_root, server->_relative_path);
 	strcpy(client->_cur_path, "/");
 	client->_type = 1;
-	client->_name[0] = 0;
-	client->_pass[0] = 0;
 	client->status = 0;
 	client->_data_server_socket = -1;
 	client->_data_socket = -1;
@@ -202,7 +199,7 @@ void send_msg(int socket, char *msg)
 		n += send(socket, msg + n, l, 0);
 	}
 	if (n < 0) {
-		perror("send msg error...");
+		perror("send msg error");
 	} else {
 		show_log(msg);
 	}
@@ -233,7 +230,7 @@ void recv_msg(int socket, char **buf, char **cmd, char **argument)
 
 	}
 	if (n < 0) {
-		perror("recv msg error...");
+		perror("recv msg error");
 	} else {
 		show_log(*buf);
 	}
@@ -261,13 +258,11 @@ int establish_tcp_connection(struct FtpClient *client)
 		if (inet_aton(client->_dataip, &(servaddr.sin_addr)) <= 0) {
 			printf("error in port command");
 			return -1;
-			//exit(0);
 		}
 		if (connect(client->_data_socket, (struct sockaddr *)&servaddr,
 			    sizeof(struct sockaddr)) == -1) {
-			perror("connect出错！");
+			perror("connect");
 			return -1;
-			//exit(1);
 		}
 		show_log("port connect success.");
 
@@ -281,7 +276,6 @@ int establish_tcp_connection(struct FtpClient *client)
 
 		if (client->_data_socket < 0) {
 			perror("accept error");
-			//exit(1);
 		} else {
 			socklen_t sock_length = sizeof(struct sockaddr);
 			char client_ip[100];
@@ -543,7 +537,7 @@ void handle_PASV(struct FtpClient *client)
 	}
 	show_log("server is estabished. Waiting for connnect...");
 	if (listen(client->_data_server_socket, 1) < 0) {
-		perror("listen error...\r\n");
+		perror("listen error");
 		send_msg(client->_client_socket, "426 pasv failure\r\n");
 	}
 	struct sockaddr_in file_addr;
@@ -752,9 +746,8 @@ int check_user_pass(struct FtpClient *client)
 //
 void free_ftp_client(struct FtpClient *client)
 {
-	if (client->_client_socket > 0) {
+	if (client->_client_socket > 0)
 		close(client->_client_socket);
-	}
 
 	if (client->_data_server_socket > 0)
 		close(client->_data_server_socket);
@@ -762,4 +755,10 @@ void free_ftp_client(struct FtpClient *client)
 		close(client->_data_socket);
 }
 
-//FtpServer define end
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */

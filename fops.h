@@ -44,4 +44,12 @@ int is_exist_dir(char *_dir)
 	return 1;
 }
 
-#endif				/* FOPS_H_ */
+#endif  /* FOPS_H_ */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */

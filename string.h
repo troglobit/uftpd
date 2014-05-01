@@ -13,4 +13,12 @@ int findStr(char *buf, char *str, int start);
 void my_strcpy(char *array, const char *array2);
 void my_strcat(char *array, const char *array2);
 
-#endif				/* STRING_H_ */
+#endif  /* STRING_H_ */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */

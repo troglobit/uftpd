@@ -87,7 +87,7 @@ int send_file(struct FtpClient *client, FILE * file);
 void send_msg(int socket, char *msg);
 
 //receive message
-void recv_msg(int socket, char **buf, char **cmd, char **arguments);
+void recv_msg(int socket, char *buf, size_t len, char **cmd, char **arguments);
 
 //
 int check_user_pass(struct FtpClient *client);

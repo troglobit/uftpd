@@ -16,6 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -145,15 +146,20 @@ void *communication(void *c)
 void handle_client_command(struct FtpClient *client)
 {
 	int client_socket = client->_client_socket;
+	size_t len = BUFFER_SIZE * sizeof(char);
+	char *buffer;
+	char *cmd;
+	char *argument;
 
-	//char curpath[] = "/";
-	//struct FtpServer file_transfer;
-	char *buffer = (char *)malloc(sizeof(char) * 1000);
-	char *cmd = NULL;
-	char *argument = NULL;
+	buffer = malloc(len);
+	if (!buffer) {
+                perror("Out of memory");
+                exit(1);
+	}
 
 	while (TRUE) {
-		recv_msg(client_socket, &buffer, &cmd, &argument);
+		recv_msg(client_socket, buffer, len, &cmd, &argument);
+		show_log(cmd);
 		show_log(argument);
 		if (strcmp("USER", cmd) == 0) {
 			handle_USER(client, argument);
@@ -166,8 +172,7 @@ void handle_client_command(struct FtpClient *client)
 		} else if (strcmp("PORT", cmd) == 0) {
 			handle_PORT(client, argument);
 		} else if (strcmp("RETR", cmd) == 0) {
-			struct FtpRetr *retr =
-			    (struct FtpRetr *)malloc(sizeof(struct FtpRetr));
+			struct FtpRetr *retr = malloc(sizeof(struct FtpRetr));
 			retr->client = client;
 			strcpy(retr->path, argument);
 			pthread_t pid;
@@ -198,9 +203,9 @@ void handle_client_command(struct FtpClient *client)
 			strcat(buf, "cannot be recognized by server\r\n");
 			send_msg(client->_client_socket, buf);
 		}
-
 	}
 
+	free(buffer);
 }
 
 //send message
@@ -223,35 +228,43 @@ void send_msg(int socket, char *msg)
 	}
 }
 
-//receive message
-//cmd initial NULL
-//release memory out of the function
-void recv_msg(int socket, char **buf, char **cmd, char **argument)
+/*
+ * Receive message from client, split into command and argument
+ */
+void recv_msg(int sd, char *buf, size_t len, char **cmd, char **argument)
 {
-	memset(*buf, 0, sizeof(char) * BUFFER_SIZE);
-	int n = recv(socket, *buf, BUFFER_SIZE, 0);
+	char *ptr;
+	ssize_t bytes;
 
-	if (n == 0) {
+	/* Clear for every new command. */
+	memset(buf, 0, len);
 
-		show_log("client leave the server.");
+	bytes = recv(sd, buf, len, 0);
+	if (!bytes) {
+		show_log("Client disconnected.");
 		pthread_exit(NULL);
+		return;		/* Dummy */
 	}
-	int index = _find_first_of(*buf, ' ');
 
-	if (index < 0) {
-		*cmd = _substring(*buf, 0, strlen(*buf) - 2);
+	if (bytes < 0) {
+		perror("Failed reading client command");
+		return;
+	}
 
+	*cmd = buf;
+	ptr  = strpbrk(buf, " ");
+	if (ptr) {
+		*ptr = 0;
+		ptr++;
+		*argument = ptr;
 	} else {
-		*cmd = _substring(*buf, 0, index);
-		*argument =
-		    _substring(*buf, index + 1, strlen(*buf) - index - 3);
+		*argument = NULL;
+		ptr = buf;
+	}
 
-	}
-	if (n < 0) {
-		perror("recv msg error");
-	} else {
-		show_log(*buf);
-	}
+	ptr = strpbrk(ptr, "\r\n");
+	if (ptr)
+		*ptr = 0;
 }
 
 void show_log(char *log)
@@ -433,7 +446,7 @@ void handle_CWD(struct FtpClient *client, char *_dir)
 	}
 	char dir[300];
 
-	my_strcpy(dir, client->_root);
+	strlcpy(dir, client->_root, sizeof(dir));
 	if (flag) {
 		strcat(dir, "/");
 	}
@@ -441,16 +454,15 @@ void handle_CWD(struct FtpClient *client, char *_dir)
 	show_log(_dir);
 	show_log("cwd:end");
 	show_log(dir);
-	my_strcat(dir, _dir);
+	strlcat(dir, _dir, sizeof(dir));
 	show_log(dir);
 	if (is_exist_dir(dir)) {
 		show_log(dir);
 		if (flag) {
-			my_strcpy(client->_cur_path, "/");
-			my_strcat(client->_cur_path, _dir);
+			strlcpy(client->_cur_path, "/", sizeof(client->_cur_path));
+			strlcat(client->_cur_path, _dir, sizeof(client->_cur_path));
 		} else {
-			memset(client->_cur_path, 0, 100);
-			my_strcpy(client->_cur_path, _dir);
+			strlcat(client->_cur_path, _dir, sizeof(client->_cur_path));
 			show_log(client->_cur_path);
 		}
 		send_msg(client->_client_socket, "250 Okay.\r\n");
@@ -483,14 +495,14 @@ void handle_PORT(struct FtpClient *client, char *str)
 //
 void handle_LIST(struct FtpClient *client)
 {
+	char path[200];
+	char list_cmd_info[200];
 	FILE *pipe_fp = NULL;
 
 	show_log(client->_cur_path);
-	char list_cmd_info[200];
-	char path[200];
 
-	my_strcpy(path, client->_root);
-	my_strcat(path, client->_cur_path);
+	strlcpy(path, client->_root, sizeof(path));
+	strlcat(path, client->_cur_path, sizeof(path));
 	sprintf(list_cmd_info, "ls -lgA %s", path);
 	show_log(list_cmd_info);
 
@@ -578,11 +590,18 @@ void handle_PASV(struct FtpClient *client)
 
 	port = ntohs(file_addr.sin_port);
 	msg = _transfer_ip_port_str(client->_ip, port);
-	show_log(parseInt2String(port));
+	if (!msg) {
+		send_msg(client->_client_socket, "426 PASV failure\r\n");
+		exit(1);
+	}
+
+	snprintf(buf, sizeof(buf), "Port %d\n", port);
+	show_log(buf);
 
 	strcpy(buf, "227 Entering Passive Mode (");
 	strcat(buf, msg);
 	strcat(buf, ")\r\n");
+	show_log(buf);
 	send_msg(client->_client_socket, buf);
 
 	free(msg);
@@ -591,14 +610,14 @@ void handle_PASV(struct FtpClient *client)
 //
 void *handle_RETR(void *retr)
 {
+	FILE *file = NULL;
+	char path[200];
+	char _path[400];
 	struct FtpRetr *re = (struct FtpRetr *)retr;
 	struct FtpClient *client = re->client;
-	char path[200];
 
 	strcpy(path, re->path);
 	//establish_tcp_connection(client);
-	FILE *file = NULL;
-	char _path[400];
 
 	strcpy(_path, client->_root);
 	strcat(_path, client->_cur_path);
@@ -606,9 +625,10 @@ void *handle_RETR(void *retr)
 		strcat(_path, "/");
 	strcat(_path, path);
 	show_log(_path);
-	file = fopen(_path, "rb");
 
-	if (file == NULL) {
+	file = fopen(_path, "rb");
+	if (!file) {
+		fprintf(stderr, "Failed fopen(%s): %s", _path, strerror(errno));
 		send_msg(client->_client_socket,
 			 "451 trouble to retr file\r\n");
 		return NULL;

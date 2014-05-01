@@ -16,7 +16,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 EXEC   = uftpd
-OBJS   = uftpd.o ftpcmd.o string.o
+OBJS   = uftpd.o ftpcmd.o string.o strlcpy.o strlcat.o
 LDLIBS = -lpthread
 
 all: $(EXEC)

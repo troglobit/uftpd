@@ -239,14 +239,10 @@ void recv_msg(int socket, char **buf, char **cmd, char **argument)
 	}
 }
 
-//show log
 void show_log(char *log)
 {
-
 	if (log) {
-		//printf("%s", log);
-		//printf("\n");
-		FILE *file = fopen("wangxu", "a");
+		FILE *file = fopen("uftpd.log", "a");
 
 		fwrite(log, 1, strlen(log), file);
 		fclose(file);

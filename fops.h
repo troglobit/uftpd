@@ -11,38 +11,37 @@ int _get_file_size(int file)
 {
 	int size;
 
-        size = lseek(file, 0L, SEEK_END);
+	size = lseek(file, 0L, SEEK_END);
 	lseek(file, 0L, SEEK_SET);
 
 	return size;
 }
 
-int _get_file_size2(FILE* file)
+int _get_file_size2(FILE * file)
 {
-        int size;
+	int size;
 
-        fseek(file, 0L, SEEK_END);
-        size = ftell(file);
-        if (size < 0)
-                perror("file error");
-        fseek(file, 0L, SEEK_SET);
+	fseek(file, 0L, SEEK_END);
+	size = ftell(file);
+	if (size < 0)
+		perror("file error");
+	fseek(file, 0L, SEEK_SET);
 
-        return size;
+	return size;
 }
 
-int is_exist_dir(char* _dir)
+int is_exist_dir(char *_dir)
 {
-        DIR *dir;
+	DIR *dir;
 
-        dir = opendir(_dir);
-        if (!dir)
-        {
-                closedir(dir);
-                return 0;
-        }
+	dir = opendir(_dir);
+	if (!dir) {
+		closedir(dir);
+		return 0;
+	}
 
-        closedir(dir);
-        return 1;
- }
+	closedir(dir);
+	return 1;
+}
 
-#endif  /* FOPS_H_ */
+#endif				/* FOPS_H_ */

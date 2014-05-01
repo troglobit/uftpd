@@ -16,40 +16,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef UFTPD_H_
+#define UFTPD_H_
 
-#include "ftpcmd.h"
+#define UFTPD_IDENT   "uftpd"
+#define UFTPD_LOGFILE "uftpd.log"
 
-int main(int argc, char **argv)
-{
-	struct FtpServer *ctx = malloc(sizeof(struct FtpServer));
+#define ERROR(code, fmt, args...)   logit(LOG_ERR, code, fmt, ##args)
+#define WARNING(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
+#define INFO(code, fmt, args...)    logit(LOG_INFO, code, fmt, ##args)
+#define DEBUG(code, fmt, args...)   logit(LOG_DEBUG, code, fmt, ##args)
 
-        if (!ctx) {
-                perror("Out of memory");
-                return 1;
-        }
+void show_log(char *msg);
+void logit(int severity, int code, const char *fmt, ...);
 
-	if (argc >= 2) {
-		show_log(argv[1]);
-		ctx->_port = atoi(argv[2]);
-	} else {
-		ctx->_port = 21;
-	}
-
-	if (argc < 3) {
-		strcpy(ctx->_relative_path, "/srv/ftp");
-	} else {
-		show_log(argv[2]);
-		strcpy(ctx->_relative_path, argv[4]);
-	}
-
-	init_ftp_server(ctx);
-	start_ftp_server(ctx);
-
-	return 0;
-}
+#endif  /* UFTPD_H_ */
 
 /**
  * Local Variables:

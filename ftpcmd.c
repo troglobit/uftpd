@@ -29,12 +29,15 @@
 
 #define TRUE 1
 
-//Init socket
 void init_ftp_server(struct FtpServer *ftp)
 {
-	//strcpy(ftp->_relative_path, "/home/xu");//root path
-	ftp->_socket = socket(AF_INET, SOCK_STREAM, 0);
 	int err, sock_reuse = 1;
+
+	ftp->_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (ftp->_socket < 0) {
+		perror("Failed creating FTP server socket");
+		exit(1);
+	}
 
 	err = setsockopt(ftp->_socket, SOL_SOCKET, SO_REUSEADDR,
 			 (char *)&sock_reuse, sizeof(sock_reuse));
@@ -42,45 +45,38 @@ void init_ftp_server(struct FtpServer *ftp)
 		perror("Failed setting SO_REUSEADDR");
 		exit(1);
 	}
-	if (ftp->_socket < 0) {
-		perror("opening socket error");
-		exit(1);
-	}
-	ftp->_server.sin_family = AF_INET;
+
+	ftp->_server.sin_family      = AF_INET;
 	ftp->_server.sin_addr.s_addr = INADDR_ANY;
-	ftp->_server.sin_port = htons(ftp->_port);
+	ftp->_server.sin_port        = htons(ftp->_port);
 	if (bind(ftp->_socket, (struct sockaddr *)&ftp->_server,
 		 sizeof(struct sockaddr)) < 0) {
 		perror("binding error");
 		exit(1);
 	}
-	show_log("server is estabished. Waiting for connnect...");
+
+	show_log("Server started, waiting for client connnections ...");
 }
 
-//start socket listening
 void start_ftp_server(struct FtpServer *ftp)
 {
-//default watch over 20 sockets
 	char log[100];
-
-	listen(ftp->_socket, 20);
 	socklen_t size = sizeof(struct sockaddr);
+
+	/* Default watch over 20 sockets */
+	listen(ftp->_socket, 20);
 
 	while (1) {
 		int client;
 		struct sockaddr_in client_addr;
 
-		client =
-		    accept(ftp->_socket, (struct sockaddr *)&client_addr,
-			   &size);
+		client = accept(ftp->_socket, (struct sockaddr *)&client_addr, &size);
 		if (client < 0) {
 			perror("accept error");
 		} else {
 			socklen_t sock_length = sizeof(struct sockaddr);
 			char host_ip[100];
 			char client_ip[100];
-
-			//get host ip
 			struct sockaddr_in host_addr;
 
 			getsockname(client, (struct sockaddr *)&host_addr,
@@ -88,22 +84,21 @@ void start_ftp_server(struct FtpServer *ftp)
 			inet_ntop(AF_INET, &(host_addr.sin_addr), host_ip,
 				  INET_ADDRSTRLEN);
 			strcpy(ftp->_ip, host_ip);
-			//printf("%s", ftp->_ip);
+
 			getpeername(client, (struct sockaddr *)&client_addr,
 				    &sock_length);
 			inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip,
 				  INET_ADDRSTRLEN);
 			sprintf(log, "%s connect to the host.", client_ip);
+
 			show_log(log);
-
 		}
-		struct FtpClient *_c =
-		    (struct FtpClient *)malloc(sizeof(struct FtpClient));
-		init_ftp_client(_c, ftp, client);
-		pthread_t pid;
 
+		pthread_t pid;
+		struct FtpClient *_c = malloc(sizeof(struct FtpClient));
+
+		init_ftp_client(_c, ftp, client);
 		pthread_create(&pid, NULL, communication, (void *)(_c));
-		//close(client);
 	}
 }
 
@@ -112,9 +107,7 @@ void set_ftp_server_port(struct FtpServer *ftp, int port)
 	ftp->_port = port;
 }
 
-//initial FtpClient
-void init_ftp_client(struct FtpClient *client, struct FtpServer *server,
-		     int client_socket)
+void init_ftp_client(struct FtpClient *client, struct FtpServer *server, int client_socket)
 {
 	client->_client_socket = client_socket;
 	strcpy(client->_ip, server->_ip);
@@ -130,7 +123,6 @@ void init_ftp_client(struct FtpClient *client, struct FtpServer *server,
 
 }
 
-//Communication 
 void *communication(void *c)
 {
 	struct FtpClient *client = (struct FtpClient *)c;
@@ -139,10 +131,11 @@ void *communication(void *c)
 
 	send_msg(client_socket, str);
 	handle_client_command(client);
+	close(client_socket);
+
 	return NULL;
 }
 
-//handle command
 void handle_client_command(struct FtpClient *client)
 {
 	int client_socket = client->_client_socket;
@@ -200,7 +193,7 @@ void handle_client_command(struct FtpClient *client)
 
 			strcpy(buf, "500 ");
 			strcat(buf, cmd);
-			strcat(buf, "cannot be recognized by server\r\n");
+			strcat(buf, " cannot be recognized by server\r\n");
 			send_msg(client->_client_socket, buf);
 		}
 	}
@@ -267,17 +260,6 @@ void recv_msg(int sd, char *buf, size_t len, char **cmd, char **argument)
 		*ptr = 0;
 }
 
-void show_log(char *log)
-{
-	if (log) {
-		FILE *file = fopen("uftpd.log", "a");
-
-		fwrite(log, 1, strlen(log), file);
-		fclose(file);
-	}
-}
-
-//
 int establish_tcp_connection(struct FtpClient *client)
 {
 	if (client->_dataip[0]) {

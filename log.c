@@ -16,39 +16,41 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
-#include "ftpcmd.h"
+#include "uftpd.h"
 
-int main(int argc, char **argv)
+static int  do_syslog = 0;
+static char log_msg[128];
+
+void logit(int level, int code, const char *fmt, ...)
 {
-	struct FtpServer *ctx = malloc(sizeof(struct FtpServer));
+        int len;
+        va_list args;
 
-        if (!ctx) {
-                perror("Out of memory");
-                return 1;
-        }
+        va_start(args, fmt);
+        len = vsnprintf(log_msg, sizeof(log_msg) - len, fmt, args);
+        va_end(args);
+        if (code)
+                snprintf(log_msg + len, sizeof(log_msg) - len, ". Error %d: %s", code, strerror(code));
 
-	if (argc >= 2) {
-		show_log(argv[1]);
-		ctx->_port = atoi(argv[2]);
+	if (!do_syslog) {
+		FILE *file = fopen(UFTPD_LOGFILE, "a");
+
+		fprintf(file, "%s\n", log_msg);
+
+		fclose(file);
 	} else {
-		ctx->_port = 21;
+		syslog(level | LOG_FTP, "%s", log_msg);
 	}
+}
 
-	if (argc < 3) {
-		strcpy(ctx->_relative_path, "/srv/ftp");
-	} else {
-		show_log(argv[2]);
-		strcpy(ctx->_relative_path, argv[4]);
-	}
-
-	init_ftp_server(ctx);
-	start_ftp_server(ctx);
-
-	return 0;
+void show_log(char *msg)
+{
+	logit(LOG_DEBUG, 0, msg);
 }
 
 /**

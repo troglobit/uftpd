@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "ftpserver.h"
+
+#include "ftpcmd.h"
+
 int main(int argc, char**argv)
 {
     struct FtpServer *s = (struct FtpServer*) malloc(sizeof(struct FtpServer));

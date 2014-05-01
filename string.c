@@ -1,11 +1,10 @@
-/**
- * in this file, 
- */
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include "_string.h"
+
+#include "string.h"
+
 //find the first of ch in str
 int _find_first_of(char* str, char ch)
 {

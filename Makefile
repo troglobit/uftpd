@@ -1,6 +1,5 @@
-
-EXEC   = server
-OBJS   = main.o ftpserver.o _string.o
+EXEC   = uftpd
+OBJS   = uftpd.o ftpcmd.o string.o
 LDLIBS = -lpthread
 
 all: $(EXEC)

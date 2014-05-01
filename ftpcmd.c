@@ -1,12 +1,15 @@
-#include "ftpserver.h"
-#include "_string.h"
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <arpa/inet.h>
-#include "_file.h"
+
+#include "fops.h"
+#include "ftpcmd.h"
+#include "string.h"
+
 #define TRUE 1
+
 //Init socket
 void init_ftp_server(struct FtpServer* ftp) {
 	//strcpy(ftp->_relative_path, "/home/xu");//root path

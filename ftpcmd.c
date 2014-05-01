@@ -466,20 +466,17 @@ void handle_LIST(struct FtpClient *client)
 
 	my_strcpy(path, client->_root);
 	my_strcat(path, client->_cur_path);
-	sprintf(list_cmd_info, "ls -l %s", path);
+	sprintf(list_cmd_info, "ls -lgA %s", path);
 	show_log(list_cmd_info);
 
-	if ((pipe_fp = popen(list_cmd_info, "r")) == NULL) {
+	pipe_fp = popen(list_cmd_info, "r");
+	if (!pipe_fp) {
 		show_log("pipe open error in cmd_list\n");
 		send_msg(client->_client_socket,
 			 "451 the server had trouble reading the directory from disk\r\n");
 		return;
-	} else {
-		show_log("cannot establish connection.");
 	}
-	//int Flag=fcntl(client->_client_socket, F_GETFL, 0);
-	//Flag |= O_NONBLOCK;
-	//fcntl(client->_client_socket, F_SETFL, Flag);
+
 	char log[100];
 
 	sprintf(log, "pipe open successfully!, cmd is %s.", list_cmd_info);
@@ -493,18 +490,23 @@ void handle_LIST(struct FtpClient *client)
 	send_msg(client->_client_socket,
 		 "150 Data connection accepted; transfer starting.\r\n");
 
-	char buf[BUFFER_SIZE * 10];
+	while (!feof(pipe_fp)) {
+		char *ptr;
+		char buf[BUFFER_SIZE];
 
-	fread(buf, BUFFER_SIZE * 10 - 1, 1, pipe_fp);
+		fgets(buf, sizeof(buf) - 2, pipe_fp);
+		ptr = strchr(buf, '\n');
+		if (ptr)
+			strcpy(ptr, "\r\n");
+		else
+			strcat(buf, "\r\n");
 
-	int l = _find_first_of(buf, '\n');
+		send_msg(client->_data_socket, buf);
+	}
 
-	send_msg(client->_data_socket, &(buf[l + 1]));
-	// send_msg(client->_client_socket, "426 TCP connection was established but then broken");
 	pclose(pipe_fp);
+	send_msg(client->_client_socket, "226 Transfer complete.\r\n");
 	cancel_tcp_connection(client);
-	send_msg(client->_client_socket, "226 Transfer ok.\r\n");
-
 }
 
 //

@@ -25,5 +25,5 @@ $(EXEC): $(OBJS)
 	$(CC) -o $(EXEC) $(OBJS) $(LDLIBS)
 
 clean:
-	-$(RM) $(EXEC)#.o
+	-$(RM) $(EXEC) *.o
 

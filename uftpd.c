@@ -20,31 +20,21 @@
 
 int main(int argc, char **argv)
 {
-	struct FtpServer *ctx = malloc(sizeof(struct FtpServer));
+	struct context ctx;
 
-        if (!ctx) {
-                perror("Out of memory");
-                return 1;
-        }
+	init_defaults(&ctx);
 
 	if (argc >= 2) {
 		show_log(argv[1]);
-		ctx->_port = atoi(argv[2]);
-	} else {
-		ctx->_port = 21;
+		ctx.port = atoi(argv[2]);
 	}
 
-	if (argc < 3) {
-		strcpy(ctx->_relative_path, "/srv/ftp");
-	} else {
+	if (argc >= 3) {
 		show_log(argv[2]);
-		strcpy(ctx->_relative_path, argv[4]);
+		strlcpy(ctx.home, argv[4], sizeof(ctx.home));
 	}
 
-	init_ftp_server(ctx);
-	start_ftp_server(ctx);
-
-	return 0;
+	return serve_files(&ctx);
 }
 
 /**

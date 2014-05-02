@@ -25,63 +25,48 @@
 #include <netinet/in.h>
 #include <pthread.h>
 
-#define BUFFER_SIZE 1000
-#define FTP_PORT 8000
+#define BUFFER_SIZE       1000
+#define FTP_DEFAULT_PORT  21
+#define FTP_DEFAULT_HOME  "/srv/ftp"
 
-struct FtpServer {
-	int _socket;
-	struct sockaddr_in _server;
-	int _port;
-	char _relative_path[100];	//ftp server root path
-	char _ip[20];
+struct context {
+	int sd;
+	int port;
+	char home[100];
+	char address[INET_ADDRSTRLEN];
 };
 
-struct FtpClient {
-	int _client_socket;
-	int _data_socket;
-	char _cur_path[100];
-	char _dataip[20];
-	int _dataport;
-	int _type;
-	char _root[100];
-	char _ip[20];
-	char _name[20];
-	char _pass[20];
-	int _data_server_socket;
+struct controller {
+	int sd;
+	int type;
+
+	char name[20];
+	char pass[20];
+
+	/* PASV */
+	int data_sd;
+	int data_listen_sd;
+
+	/* PORT */
+	char data_address[INET_ADDRSTRLEN];
+	int  data_port;
+
+	char home[100];
+	char cwd[100];
+
+	char address[INET_ADDRSTRLEN];
 
 	int status;
 };
 
-struct FtpRetr {
-	struct FtpClient *client;
-	char path[200];
-};
-
-//Init socket
-void init_ftp_server(struct FtpServer *ftp);
-
-//start socket listening
-void start_ftp_server(struct FtpServer *ftp);
-
-//
-//void  close_ftp_server(struct FtpServer* ftp);
-//reset port
-void set_ftp_server_port(struct FtpServer *ftp, int port);
-
-//communication
-void *communication(void *client_socket);
-
-//initial FtpClient
-void init_ftp_client(struct FtpClient *client, struct FtpServer *server,
-		     int client_socket);
-//
-void free_ftp_client(struct FtpClient *client);
+void init_defaults(struct context *ctx);
+int  serve_files(struct context *ctx);
 
 //handle command
-void handle_client_command(struct FtpClient *client);
+void handle_client_command(struct controller *ctrl);
 
 //send file
-int send_file(struct FtpClient *client, FILE * file);
+int send_file(struct controller *ctrl, FILE * file);
 
 //send message
 void send_msg(int socket, char *msg);
@@ -90,78 +75,78 @@ void send_msg(int socket, char *msg);
 void recv_msg(int socket, char *buf, size_t len, char **cmd, char **arguments);
 
 //
-int check_user_pass(struct FtpClient *client);
+int check_user_pass(struct controller *ctrl);
 
 //printf log
 void show_log(char *log);
 
 //
-int establish_tcp_connection(struct FtpClient *client);
+int establish_tcp_connection(struct controller *ctrl);
 
 //
-void cancel_tcp_connection(struct FtpClient *client);
+void cancel_tcp_connection(struct controller *ctrl);
 
 //
-void handle_USER(struct FtpClient *client, char *name);
+void handle_USER(struct controller *ctrl, char *name);
 
 //
-void handle_PASS(struct FtpClient *client, char *pass);
+void handle_PASS(struct controller *ctrl, char *pass);
 
 //
-void handle_SYST(struct FtpClient *client);
+void handle_SYST(struct controller *ctrl);
 
 //
-void handle_TYPE(struct FtpClient *client, char *argument);
+void handle_TYPE(struct controller *ctrl, char *argument);
 
 //void
-void handle_PWD(struct FtpClient *client);
+void handle_PWD(struct controller *ctrl);
 
 //
-void handle_CWD(struct FtpClient *client, char *dir);
+void handle_CWD(struct controller *ctrl, char *dir);
 
 //
-//void handle_XPWD(struct FtpClient* client);
+//void handle_XPWD(struct controller *ctrl);
 //
-void handle_PORT(struct FtpClient *client, char *str);
+void handle_PORT(struct controller *ctrl, char *str);
 
 //
-void handle_LIST(struct FtpClient *client);
+void handle_LIST(struct controller *ctrl);
 
 //
-void handle_PASV(struct FtpClient *client);
+void handle_PASV(struct controller *ctrl);
 
 //
-void *handle_RETR(void *client);
+void *handle_RETR(void *ctrl);
 
 //
-void handle_STOR(struct FtpClient *client, char *path);
+void handle_STOR(struct controller *ctrl, char *path);
 
 //
-void handle_DELE(struct FtpClient *client, char *path);
+void handle_DELE(struct controller *ctrl, char *path);
 
 //
-void handle_MKD(struct FtpClient *client);
+void handle_MKD(struct controller *ctrl);
 
 //
-void handle_RMD(struct FtpClient *client);
+void handle_RMD(struct controller *ctrl);
 
 //
-void handle_SIZE(struct FtpClient *client, char *file);
+void handle_SIZE(struct controller *ctrl, char *file);
 
 //
-void handle_RNFR(struct FtpClient *client);
+void handle_RNFR(struct controller *ctrl);
 
 //
-void handle_RNTO(struct FtpClient *client);
+void handle_RNTO(struct controller *ctrl);
 
 //
-void handle_QUIT(struct FtpClient *client);
+void handle_QUIT(struct controller *ctrl);
 
 //
-void handle_CLNT(struct FtpClient *client);
+void handle_CLNT(struct controller *ctrl);
 
 //
-void handle_OPTS(struct FtpClient *client);
+void handle_OPTS(struct controller *ctrl);
 
 #endif  /* FTPCMD_H_ */
 

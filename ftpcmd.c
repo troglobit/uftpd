@@ -113,7 +113,7 @@ void init_ftp_client(struct FtpClient *client, struct FtpServer *server, int cli
 	strcpy(client->_ip, server->_ip);
 	strcpy(client->_root, server->_relative_path);
 	strcpy(client->_cur_path, "/");
-	client->_type = 1;
+	client->_type = TYPE_A;
 	client->status = 0;
 	client->_data_server_socket = -1;
 	client->_data_socket = -1;
@@ -150,7 +150,7 @@ void handle_client_command(struct FtpClient *client)
                 exit(1);
 	}
 
-	while (TRUE) {
+	while (1) {
 		recv_msg(client_socket, buffer, len, &cmd, &argument);
 		show_log(cmd);
 		show_log(argument);
@@ -161,7 +161,7 @@ void handle_client_command(struct FtpClient *client)
 		} else if (strcmp("SYST", cmd) == 0) {
 			handle_SYST(client);
 		} else if (strcmp("TYPE", cmd) == 0) {
-			handle_TYPE(client);
+			handle_TYPE(client, argument);
 		} else if (strcmp("PORT", cmd) == 0) {
 			handle_PORT(client, argument);
 		} else if (strcmp("RETR", cmd) == 0) {
@@ -415,10 +415,29 @@ void handle_SYST(struct FtpClient *client)
 }
 
 //
-void handle_TYPE(struct FtpClient *client)
+void handle_TYPE(struct FtpClient *client, char *argument)
 {
-	char type[] = "200 Type set to I.\r\n";
+	char type[24]  = "200 Type set to I.\r\n";
+	char unknown[] = "501 Invalid argument to TYPE.\r\n";
 
+	if (!argument)
+		argument = "Z";
+
+	switch (argument[0]) {
+	case 'A':
+		client->_type = TYPE_A; /* ASCII */
+		break;
+
+	case 'I':
+		client->_type = TYPE_I; /* IMAGE/BINARY */
+		break;
+
+	default:
+		send_msg(client->_client_socket, unknown);
+		return;
+	}
+
+	type[16] = argument[0];
 	send_msg(client->_client_socket, type);
 }
 
@@ -528,13 +547,22 @@ void handle_LIST(struct FtpClient *client)
 		char *ptr;
 		char buf[BUFFER_SIZE];
 
-		fgets(buf, sizeof(buf) - 2, pipe_fp);
-		ptr = strchr(buf, '\n');
-		if (ptr)
-			strcpy(ptr, "\r\n");
-		else
-			strcat(buf, "\r\n");
+		char *pos = buf;
+		while (fgets(pos, sizeof(buf) - (pos - buf) - 1, pipe_fp)) {
+			if (!strncmp(pos, "total ", 6))
+				continue;
 
+			if (client->_type == TYPE_A) {
+				ptr = strchr(pos, '\n');
+				if (ptr)
+					strcpy(ptr, "\r\n");
+				else
+					strcat(pos, "\r\n");
+			}
+
+			pos = pos + strlen(pos);
+		}
+		*pos = 0;
 		send_msg(client->_data_socket, buf);
 	}
 

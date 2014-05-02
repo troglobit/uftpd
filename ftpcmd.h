@@ -111,7 +111,7 @@ void handle_PASS(struct FtpClient *client, char *pass);
 void handle_SYST(struct FtpClient *client);
 
 //
-void handle_TYPE(struct FtpClient *client);
+void handle_TYPE(struct FtpClient *client, char *argument);
 
 //void
 void handle_PWD(struct FtpClient *client);

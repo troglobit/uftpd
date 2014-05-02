@@ -16,18 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-
+#include "uftpd.h"
 #include "fops.h"
-#include "ftpcmd.h"
-#include "string.h"
-
-#define TRUE 1
 
 void init_ftp_server(struct FtpServer *ftp)
 {
@@ -206,21 +196,31 @@ void handle_client_command(struct FtpClient *client)
 //send message
 void send_msg(int socket, char *msg)
 {
-	int l = strlen(msg);
-
-	if (l <= 0) {
-		show_log("no message in char* msg");
-	}
 	int n = 0;
+	int l;
+
+	if (!msg) {
+	err:
+		ERR(EINVAL, "Missing argument to send_msg()");
+		return;
+	}
+
+	l = strlen(msg);
+	if (l <= 0)
+		goto err;
 
 	while (n < l) {
-		n += send(socket, msg + n, l, 0);
+		int result = send(socket, msg + n, l, 0);
+
+		if (result < 0) {
+			perror("Failed sending message to client");
+			return;
+		}
+
+		n += result;
 	}
-	if (n < 0) {
-		perror("send msg error");
-	} else {
-		show_log(msg);
-	}
+
+	DBG("%s\n", msg);
 }
 
 /*
@@ -279,6 +279,7 @@ int establish_tcp_connection(struct FtpClient *client)
 			perror("connect");
 			return -1;
 		}
+
 		show_log("port connect success.");
 
 	} else if (client->_data_server_socket > 0) {
@@ -306,8 +307,8 @@ int establish_tcp_connection(struct FtpClient *client)
 		}
 
 	}
-	return 1;
 
+	return 0;
 }
 
 //
@@ -318,10 +319,12 @@ void cancel_tcp_connection(struct FtpClient *client)
 		close(client->_data_server_socket);
 		client->_data_server_socket = -1;
 	}
+
 	if (client->_data_socket > 0) {
 		close(client->_data_socket);
 		client->_data_socket = -1;
 	}
+
 	if (client->_dataip[0]) {
 		client->_dataip[0] = 0;
 		client->_dataport = 0;
@@ -337,6 +340,7 @@ int send_file(struct FtpClient *client, FILE * file)
 		fread(file, 1000, 1, file);
 		send(client->_data_socket, buf, strlen(buf), 0);
 	}
+
 	return 0;
 }
 
@@ -456,11 +460,16 @@ void handle_PWD(struct FtpClient *client)
 void handle_CWD(struct FtpClient *client, char *_dir)
 {
 	int flag = 0;
-
-	if (_dir[0] != '/') {
-		flag = 1;
-	}
 	char dir[300];
+
+	if (_dir && strlen(_dir) == 1 && _dir[0] == '/') {
+		client->_cur_path[0] = 0;
+		send_msg(client->_client_socket, "250 OK\r\n");
+		return;
+	}
+
+	if (_dir[0] != '/')
+		flag = 1;
 
 	strlcpy(dir, client->_root, sizeof(dir));
 	if (flag) {
@@ -534,12 +543,15 @@ void handle_LIST(struct FtpClient *client)
 
 	sprintf(log, "pipe open successfully!, cmd is %s.", list_cmd_info);
 	show_log(log);
+
+
 	if (establish_tcp_connection(client)) {
-		show_log("establish tcp socket");
-	} else {
-		send_msg(client->_client_socket,
-			 "425 TCP connection cannot be established.\r\n");
+		send_msg(client->_client_socket, "425 TCP connection cannot be established.\r\n");
+		pclose(pipe_fp);
+		return;
 	}
+
+	show_log("Established TCP socket for data communication.");
 	send_msg(client->_client_socket,
 		 "150 Data connection accepted; transfer starting.\r\n");
 
@@ -626,7 +638,6 @@ void handle_PASV(struct FtpClient *client)
 	strcpy(buf, "227 Entering Passive Mode (");
 	strcat(buf, msg);
 	strcat(buf, ")\r\n");
-	show_log(buf);
 	send_msg(client->_client_socket, buf);
 
 	free(msg);
@@ -642,7 +653,6 @@ void *handle_RETR(void *retr)
 	struct FtpClient *client = re->client;
 
 	strcpy(path, re->path);
-	//establish_tcp_connection(client);
 
 	compose_path(client, path, _path, sizeof(_path));
 	show_log(_path);
@@ -650,15 +660,17 @@ void *handle_RETR(void *retr)
 	file = fopen(_path, "rb");
 	if (!file) {
 		fprintf(stderr, "Failed fopen(%s): %s", _path, strerror(errno));
-		send_msg(client->_client_socket,
-			 "451 trouble to retr file\r\n");
+		send_msg(client->_client_socket, "451 trouble to retr file\r\n");
+
 		return NULL;
 	}
 
-	if (establish_tcp_connection(client) > 0) {
-		send_msg(client->_client_socket,
-			 "150 Data connection accepted; transfer starting.\r\n");
+	if (establish_tcp_connection(client)) {
+		send_msg(client->_client_socket, "425 TCP connection cannot be established.\r\n");
+	} else {
 		char buf[1000];
+
+		send_msg(client->_client_socket, "150 Data connection accepted; transfer starting.\r\n");
 
 		while (!feof(file)) {
 			int n = fread(buf, 1, 1000, file);
@@ -678,10 +690,8 @@ void *handle_RETR(void *retr)
 		cancel_tcp_connection(client);
 
 		send_msg(client->_client_socket, "226 Transfer ok.\r\n");
-	} else {
-		send_msg(client->_client_socket,
-			 "425 TCP connection cannot be established.\r\n");
 	}
+
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -689,53 +699,49 @@ void *handle_RETR(void *retr)
 //
 void handle_STOR(struct FtpClient *client, char *path)
 {
-	//establish_tcp_connection(client);
 	FILE *file = NULL;
 	char _path[400];
 
 	strcpy(_path, client->_root);
 	strcat(_path, client->_cur_path);
-	if (_path[strlen(_path) - 1] != '/') {
+	if (_path[strlen(_path) - 1] != '/')
 		strcat(_path, "/");
-	}
 	strcat(_path, path);
 
 	file = fopen(_path, "wb");
 	show_log(_path);
 
-	if (file == NULL) {
-		send_msg(client->_client_socket,
-			 "451 trouble to stor file\r\n");
+	if (!file) {
+		send_msg(client->_client_socket, "451 trouble to stor file\r\n");
 		return;
 	}
 
-	if (establish_tcp_connection(client) > 0) {
-		send_msg(client->_client_socket,
-			 "150 Data connection accepted; transfer starting.\r\n");
+	if (establish_tcp_connection(client)) {
+		send_msg(client->_client_socket, "425 TCP connection cannot be established.\r\n");
+	} else {
 		char buf[1000];
 		int j = 0;
 
+		send_msg(client->_client_socket, "150 Data connection accepted; transfer starting.\r\n");
 		while (1) {
 			j = recv(client->_data_socket, buf, 1000, 0);
-			if (j == 0) {
-				cancel_tcp_connection(client);
+			if (j == 0)
 				break;
-			}
+
 			if (j < 0) {
-				send_msg(client->_client_socket,
-					 "426 TCP connection was established but then broken\r\n");
+				send_msg(client->_client_socket, "426 TCP connection was established but then broken\r\n");
+				cancel_tcp_connection(client);
+				fclose(file);
 				return;
 			}
-			fwrite(buf, 1, j, file);
 
+			fwrite(buf, 1, j, file);
 		}
+
 		cancel_tcp_connection(client);
 		fclose(file);
 
 		send_msg(client->_client_socket, "226 stor ok.\r\n");
-	} else {
-		send_msg(client->_client_socket,
-			 "425 TCP connection cannot be established.\r\n");
 	}
 }
 
@@ -824,6 +830,7 @@ void free_ftp_client(struct FtpClient *client)
 
 	if (client->_data_server_socket > 0)
 		close(client->_data_server_socket);
+
 	if (client->_data_socket > 0)
 		close(client->_data_socket);
 }

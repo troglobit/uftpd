@@ -19,13 +19,29 @@
 #ifndef UFTPD_H_
 #define UFTPD_H_
 
+#include <arpa/ftp.h>
+#include <arpa/inet.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <syslog.h>
+#include <unistd.h>
+
+#include "ftpcmd.h"
+#include "string.h"
+
 #define UFTPD_IDENT   "uftpd"
 #define UFTPD_LOGFILE "uftpd.log"
 
-#define ERROR(code, fmt, args...)   logit(LOG_ERR, code, fmt, ##args)
-#define WARNING(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
-#define INFO(code, fmt, args...)    logit(LOG_INFO, code, fmt, ##args)
-#define DEBUG(code, fmt, args...)   logit(LOG_DEBUG, code, fmt, ##args)
+#define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
+#define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
+#define INFO(fmt, args...)       logit(LOG_INFO, 0, fmt, ##args)
+#define DBG(fmt, args...)        logit(LOG_DEBUG, 0, fmt, ##args)
 
 void show_log(char *msg);
 void logit(int severity, int code, const char *fmt, ...);

@@ -19,12 +19,6 @@
 #ifndef FOPS_H_
 #define FOPS_H_
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/stat.h>
-
 int _get_file_size(int file)
 {
 	int size;

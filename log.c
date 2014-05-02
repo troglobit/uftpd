@@ -16,15 +16,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <syslog.h>
-
 #include "uftpd.h"
 
 static int  do_syslog = 0;
-static char log_msg[128];
+static char log_msg[300];
 
 void logit(int level, int code, const char *fmt, ...)
 {
@@ -40,7 +35,7 @@ void logit(int level, int code, const char *fmt, ...)
 	if (!do_syslog) {
 		FILE *file = fopen(UFTPD_LOGFILE, "a");
 
-		fprintf(file, "%s\n", log_msg);
+		fprintf(file, "%s%s", log_msg, !strchr(log_msg, '\n') ? "\n" : "");
 
 		fclose(file);
 	} else {

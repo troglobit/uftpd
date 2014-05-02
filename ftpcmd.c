@@ -523,6 +523,7 @@ void handle_PORT(struct FtpClient *client, char *str)
 void handle_LIST(struct FtpClient *client)
 {
 	char path[200];
+	char log[100];
 	char list_cmd_info[200];
 	FILE *pipe_fp = NULL;
 
@@ -530,20 +531,17 @@ void handle_LIST(struct FtpClient *client)
 
 	strlcpy(path, client->_root, sizeof(path));
 	strlcat(path, client->_cur_path, sizeof(path));
-	sprintf(list_cmd_info, "ls -lgA %s", path);
-	show_log(list_cmd_info);
+	sprintf(list_cmd_info, "LC_TIME=C ls -lnA %s", path);
 
 	pipe_fp = popen(list_cmd_info, "r");
 	if (!pipe_fp) {
-		show_log("pipe open error in cmd_list\n");
+		show_log("Failed opening LIST command pipe!");
 		send_msg(client->_client_socket,
 			 "451 the server had trouble reading the directory from disk\r\n");
 		return;
 	}
 
-	char log[100];
-
-	sprintf(log, "pipe open successfully!, cmd is %s.", list_cmd_info);
+	sprintf(log, "Command pipe opened successfully: %s", list_cmd_info);
 	show_log(log);
 
 

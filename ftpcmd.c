@@ -188,6 +188,8 @@ void handle_client_command(struct FtpClient *client)
 			handle_STOR(client, argument);
 		} else if (strcmp("CWD", cmd) == 0) {
 			handle_CWD(client, argument);
+		} else if (strcmp("SIZE", cmd) == 0) {
+			handle_SIZE(client, argument);
 		} else {
 			char buf[100];
 
@@ -336,6 +338,19 @@ int send_file(struct FtpClient *client, FILE * file)
 		send(client->_data_socket, buf, strlen(buf), 0);
 	}
 	return 0;
+}
+
+static char *compose_path(struct FtpClient *client, char *file, char *path, size_t len)
+{
+	strlcpy(path, client->_root, len);
+	strlcat(path, client->_cur_path, len);
+
+	if (path[strlen(path) - 1] != '/')
+		strlcat(path, "/", len);
+
+	strlcat(path, file, len);
+
+	return path;
 }
 
 //redefine write
@@ -601,11 +616,7 @@ void *handle_RETR(void *retr)
 	strcpy(path, re->path);
 	//establish_tcp_connection(client);
 
-	strcpy(_path, client->_root);
-	strcat(_path, client->_cur_path);
-	if (_path[strlen(_path) - 1] != '/')
-		strcat(_path, "/");
-	strcat(_path, path);
+	compose_path(client, path, _path, sizeof(_path));
 	show_log(_path);
 
 	file = fopen(_path, "rb");
@@ -719,9 +730,20 @@ void handle_RMD(struct FtpClient *client)
 }
 
 //
-void handle_SIZE(struct FtpClient *client)
+void handle_SIZE(struct FtpClient *client, char *file)
 {
+	char path[300];
+	struct stat st;
 
+	compose_path(client, file, path, sizeof(path));
+
+	if (-1 == stat(path, &st)) {
+		send_msg(client->_client_socket, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	snprintf(path, sizeof(path), "213 %td\r\n", st.st_size);
+	send_msg(client->_client_socket, path);
 }
 
 //

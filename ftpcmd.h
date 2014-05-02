@@ -146,7 +146,7 @@ void handle_MKD(struct FtpClient *client);
 void handle_RMD(struct FtpClient *client);
 
 //
-void handle_SIZE(struct FtpClient *client);
+void handle_SIZE(struct FtpClient *client, char *file);
 
 //
 void handle_RNFR(struct FtpClient *client);

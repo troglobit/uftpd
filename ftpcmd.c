@@ -180,6 +180,8 @@ void handle_client_command(struct FtpClient *client)
 			handle_CWD(client, argument);
 		} else if (strcmp("SIZE", cmd) == 0) {
 			handle_SIZE(client, argument);
+		} else if (strcmp("NOOP", cmd) == 0) {
+			send_msg(client->_client_socket, "200 NOOP OK.\r\n");
 		} else {
 			char buf[100];
 

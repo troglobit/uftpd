@@ -337,25 +337,29 @@ static void stop_session(ctx_t *ctrl)
 
 static int session(ctx_t *ctrl)
 {
+	static int privs_dropped = 0;
+
 	/* Chroot to FTP root */
 	if (!chrooted && geteuid() == 0) {
 		if (chroot(home) || chdir(".")) {
-			ERR(errno, "Failed chrooting to FTP root, aborting");
+			ERR(errno, "Failed chrooting to FTP root, %s, aborting", home);
 			return -1;
 		}
 		chrooted = 1;
-	} else {
+	} else if (!chrooted) {
 		if (chdir(home)) {
-			WARN(errno, "Failed changing to FTP root, aborting");
+			WARN(errno, "Failed changing to FTP root, %s, aborting", home);
 			return -1;
 		}
 	}
 
 	/* If ftp user exists and we're running as root we can drop privs */
-	if (pw && geteuid() == 0) {
+	if (!privs_dropped && pw && geteuid() == 0) {
 		if (setuid(pw->pw_uid) || setgid(pw->pw_gid))
 			WARN(errno, "Failed dropping privileges to uid:gid %d:%d",
 			     pw->pw_uid, pw->pw_gid);
+		else
+			privs_dropped = 1;
 	}
 
 	handle_command(ctrl);

@@ -127,6 +127,11 @@ int main(int argc, char **argv)
 		openlog (__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
 	}
 
+	if (inetd) {
+		LOG("Started from inetd, serving files from %s ...", home);
+		return start_session(STDIN_FILENO);
+	}
+
 	return serve_files();
 }
 

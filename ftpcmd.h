@@ -52,6 +52,7 @@ typedef struct {
 } ctx_t;
 
 int  serve_files(void);
+int  start_session(int sd);
 
 void handle_USER(ctx_t *ctrl, char *name);
 void handle_PASS(ctx_t *ctrl, char *pass);

@@ -21,8 +21,6 @@
 static int sd       = -1;
 static int chrooted = 0;
 
-static void start_session(int sd, char *ouraddr, char *hisaddr);
-
 int serve_files(void)
 {
 	int err, val = 1;
@@ -57,30 +55,15 @@ int serve_files(void)
 	LOG("Serving files from %s, listening on port %d ...", home, port);
 
 	while (1) {
-		int client;	/* Client socket */
-		char ouraddr[INET_ADDRSTRLEN], hisaddr[INET_ADDRSTRLEN];;
-		socklen_t len = sizeof(struct sockaddr);
-		struct sockaddr_in host_addr;
-		struct sockaddr_in client_addr;
+		int client;
 
-		client = accept(sd, (struct sockaddr *)&client_addr, &len);
+		client = accept(sd, NULL, NULL);
 		if (client < 0) {
 			perror("Failed accepting incoming client connection");
 			continue;
 		}
 
-		/* Find our address */
-		len = sizeof(struct sockaddr);
-		getsockname(client, (struct sockaddr *)&host_addr, &len);
-		inet_ntop(AF_INET, &(host_addr.sin_addr), ouraddr, INET_ADDRSTRLEN);
-
-		/* Find peer address */
-		len = sizeof(struct sockaddr);
-		getpeername(client, (struct sockaddr *)&client_addr, &len);
-		inet_ntop(AF_INET, &(client_addr.sin_addr), hisaddr, INET_ADDRSTRLEN);
-		INFO("Client connection from %s", hisaddr);
-
-		start_session(client, ouraddr, hisaddr);
+		start_session(client);
 	}
 
 	return 0;
@@ -352,19 +335,19 @@ static void stop_session(ctx_t *ctrl)
 	free(ctrl);
 }
 
-static void session(ctx_t *ctrl)
+static int session(ctx_t *ctrl)
 {
 	/* Chroot to FTP root */
 	if (!chrooted && geteuid() == 0) {
 		if (chroot(home) || chdir(".")) {
 			ERR(errno, "Failed chrooting to FTP root, aborting");
-			exit(1);
+			return -1;
 		}
 		chrooted = 1;
 	} else {
 		if (chdir(home)) {
 			WARN(errno, "Failed changing to FTP root, aborting");
-			exit(1);
+			return -1;
 		}
 	}
 
@@ -377,15 +360,35 @@ static void session(ctx_t *ctrl)
 
 	handle_command(ctrl);
 	stop_session(ctrl);
+
+	return 0;
 }
 
-static void start_session(int sd, char *ouraddr, char *hisaddr)
+int start_session(int sd)
 {
-	ctx_t *ctrl = malloc(sizeof(ctx_t));
+	pid_t pid;
+	ctx_t *ctrl;
+	socklen_t len;
+	struct sockaddr_in host_addr;
+	struct sockaddr_in client_addr;
+
+	ctrl = malloc(sizeof(ctx_t));
+	if (!ctrl) {
+		ERR(errno, "Failed allocating session context");
+		return -1;
+	}
+
+	/* Find our address */
+	len = sizeof(struct sockaddr);
+	getsockname(sd, (struct sockaddr *)&host_addr, &len);
+	inet_ntop(AF_INET, &(host_addr.sin_addr), ctrl->ouraddr, sizeof(ctrl->ouraddr));
+
+	/* Find peer address */
+	len = sizeof(struct sockaddr);
+	getpeername(sd, (struct sockaddr *)&client_addr, &len);
+	inet_ntop(AF_INET, &(client_addr.sin_addr), ctrl->hisaddr, sizeof(ctrl->hisaddr));
 
 	ctrl->sd = sd;
-	strlcpy(ctrl->ouraddr, ouraddr, sizeof(ctrl->ouraddr));
-	strlcpy(ctrl->hisaddr, hisaddr, sizeof(ctrl->hisaddr));
 	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
 	ctrl->type = TYPE_A;
 	ctrl->status = 0;
@@ -395,10 +398,16 @@ static void start_session(int sd, char *ouraddr, char *hisaddr)
 	ctrl->pass[0] = 0;
 	ctrl->data_address[0] = 0;
 
-	if (fork () == 0) {
-		session(ctrl);
-		exit(0);
+	if (!inetd) {
+		pid = fork();
+		if (pid) {
+			DBG("Forked off client session as PID %d", pid);
+			return pid;
+		}
 	}
+
+	INFO("Client connection from %s", ctrl->hisaddr);
+	return session(ctrl);
 }
 
 int check_user_pass(ctx_t *ctrl)

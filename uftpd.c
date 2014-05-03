@@ -16,20 +16,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <netdb.h>
-#include <pwd.h>
 #include "uftpd.h"
 
 /* Global daemon settings */
-int   port       = FTP_DEFAULT_PORT;
-char *home       = NULL;
-char  inetd      = 0;
-char  daemonize  = 0;
-char  debug      = 0;
-char  verbose    = 0;
-char  do_log     = 0;
-char *logfile    = NULL;
-
+int   port        = FTP_DEFAULT_PORT;
+char *home        = NULL;
+char  inetd       = 0;
+char  daemonize   = 0;
+char  debug       = 0;
+char  verbose     = 0;
+char  do_log      = 0;
+char *logfile     = NULL;
+struct passwd *pw = NULL;
 
 static int version(void)
 {
@@ -57,7 +55,6 @@ static int usage(void)
 
 static void init(void)
 {
-	struct passwd *pw;
 	struct servent *sv;
 
 	sv = getservbyname(FTP_SERVICE_NAME, FTP_PROTO_NAME);
@@ -69,7 +66,7 @@ static void init(void)
 		port = ntohs(sv->s_port);
 	}
 
-	pw   = getpwnam(FTP_DEFAULT_USER);
+	pw = getpwnam(FTP_DEFAULT_USER);
 	if (!pw) {
 		home = strdup(FTP_DEFAULT_HOME);
 		WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",

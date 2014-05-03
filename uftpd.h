@@ -24,12 +24,16 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <locale.h>
+#include <netdb.h>
+#include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "defs.h"
@@ -61,6 +65,7 @@ extern char  debug;             /* Level: 1-7, only 1 implemented   */
 extern char  verbose;           /* Bool: Enables extra logging info */
 extern char  do_log;            /* Bool: False at daemon start      */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
+extern struct passwd *pw;       /* FTP user's passwd entry          */
 
 void logit(int severity, int code, const char *fmt, ...);
 

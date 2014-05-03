@@ -39,7 +39,6 @@ datadir     = $(prefix)/share/doc/$(NAME)
 mandir      = $(prefix)/share/man/man8
 
 CFLAGS     += -O2 -W -Wall -Werror -g
-LDLIBS      = -lpthread
 
 include common.mk
 

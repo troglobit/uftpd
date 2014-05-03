@@ -162,7 +162,7 @@ static int open_data_connection(ctx_t *ctrl)
 			return -1;
 		}
 
-		DBG("Connected successfully to client's previously requested address:PORT %s:%s", ctrl->data_address, ctrl->data_port);
+		DBG("Connected successfully to client's previously requested address:PORT %s:%d", ctrl->data_address, ctrl->data_port);
 		return 0;
 	}
 
@@ -546,7 +546,7 @@ void handle_PORT(ctx_t *ctrl, char *str)
 	strlcpy(ctrl->data_address, addr, sizeof(ctrl->data_address));
 	ctrl->data_port = e * 256 + f;
 
-	DBG("Client PORT command accepted for %s:%s", ctrl->data_address, ctrl->data_port);
+	DBG("Client PORT command accepted for %s:%d", ctrl->data_address, ctrl->data_port);
 	send_msg(ctrl->sd, "200 PORT command successful.\r\n");
 }
 

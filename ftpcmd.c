@@ -539,7 +539,7 @@ void handle_PORT(ctx_t *ctrl, char *str)
 	sprintf(addr, "%d.%d.%d.%d", a, b, c, d);
 	if (!inet_aton(addr, &(sin.sin_addr))) {
 		ERR(0, "Invalid address '%s' given to PORT command", addr);
-		send_msg(ctrl->sd, "200 PORT command successful.\r\n");
+		send_msg(ctrl->sd, "500 Illegal PORT command.\r\n");
 		return;
 	}
 

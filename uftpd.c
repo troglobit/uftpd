@@ -19,7 +19,7 @@
 #include "uftpd.h"
 
 /* Global daemon settings */
-int   port        = FTP_DEFAULT_PORT;
+int   port        = 0;
 char *home        = NULL;
 char  inetd       = 0;
 char  daemonize   = 0;
@@ -55,15 +55,17 @@ static int usage(void)
 
 static void init(void)
 {
-	struct servent *sv;
+	if (!port) {
+		struct servent *sv;
 
-	sv = getservbyname(FTP_SERVICE_NAME, FTP_PROTO_NAME);
-	if (!sv) {
-		port = FTP_DEFAULT_PORT;
-		WARN(errno, "Cannot find service %s/%s, falling back to port %d.",
-		     FTP_SERVICE_NAME, FTP_PROTO_NAME, ntohs(port));
-	} else {
-		port = ntohs(sv->s_port);
+		sv = getservbyname(FTP_SERVICE_NAME, FTP_PROTO_NAME);
+		if (!sv) {
+			port = FTP_DEFAULT_PORT;
+			WARN(errno, "Cannot find service %s/%s, falling back to port %d.",
+			     FTP_SERVICE_NAME, FTP_PROTO_NAME, ntohs(port));
+		} else {
+			port = ntohs(sv->s_port);
+		}
 	}
 
 	pw = getpwnam(FTP_DEFAULT_USER);
@@ -79,8 +81,6 @@ static void init(void)
 int main(int argc, char **argv)
 {
 	int c;
-
-	init();
 
 	while ((c = getopt (argc, argv, "h?dDil:p:vV")) != EOF) {
 		switch (c) {
@@ -127,6 +127,7 @@ int main(int argc, char **argv)
 		openlog (__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
 	}
 
+	init();
 	if (inetd) {
 		LOG("Started from inetd, serving files from %s ...", home);
 		return start_session(STDIN_FILENO);

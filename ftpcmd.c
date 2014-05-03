@@ -232,9 +232,11 @@ static char *compose_path(ctx_t *ctrl, char *path)
 
 	strlcpy(dir, ctrl->cwd, sizeof(dir));
 
+	DBG("Compose path from cwd: %s, arg: %s", ctrl->cwd, path);
 	if (!path || path[0] != '/') {
 		if (path && path[0] != 0) {
-			strlcat(dir, "/", sizeof(dir));
+			if (dir[strlen(dir) - 1] != '/')
+				strlcat(dir, "/", sizeof(dir));
 			strlcat(dir, path, sizeof(dir));
 		}
 	} else {
@@ -246,9 +248,10 @@ static char *compose_path(ctx_t *ctrl, char *path)
 	if (!chrooted) {
 		size_t len = strlen(home);
 
-		memmove(dir + len, dir, len + 1);
+		DBG("Server path from CWD: %s", dir);
+		memmove(dir + len, dir, strlen(dir) + 1);
 		memcpy(dir, home, len);
-		DBG("Not chrooted => %s ...", dir);
+		DBG("Resulting non-chroot path: %s", dir);
 	}
 
 	return dir;

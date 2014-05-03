@@ -600,9 +600,9 @@ void handle_LIST(ctx_t *ctrl)
 			if (!strcmp(name, ".") || !strcmp(name, ".."))
 				continue;
 
-			DBG("Dir %s entry %s", path, name);
-			if (stat(name, &st)) {
-				ERR(errno, "Failed reading status for %s", name);
+			path = compose_path(ctrl, name);
+			if (stat(path, &st)) {
+				ERR(errno, "Failed reading status for %s", path);
 				continue;
 			}
 

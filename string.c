@@ -27,10 +27,9 @@
 //memory be released out of  the function
 char *_transfer_ip_port_str(char *ip, int port)
 {
-	int i, j, l;
+	int i;
 	char *a, *b, *buf;
 	char *dup = strdup(ip);
-	int curIndex = 0;
 	size_t len;
 
 	if (!dup)

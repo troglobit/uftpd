@@ -32,18 +32,36 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include "defs.h"
 #include "ftpcmd.h"
 #include "string.h"
 
-#define UFTPD_IDENT   "uftpd"
-#define UFTPD_LOGFILE "uftpd.log"
+#define FTP_DEFAULT_PORT  21
+#define FTP_DEFAULT_USER  "ftp"
+#define FTP_SERVICE_NAME  "ftp"
+#define FTP_PROTO_NAME    "tcp"
+#define FTP_DEFAULT_HOME  "/srv/ftp"
+
+/* XXX: What's a "good" buffer size, 4096? */
+#define BUFFER_SIZE       1000
 
 #define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
 #define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
-#define INFO(fmt, args...)       logit(LOG_INFO, 0, fmt, ##args)
-#define DBG(fmt, args...)        logit(LOG_DEBUG, 0, fmt, ##args)
+#define LOG(fmt, args...)        logit(LOG_NOTICE, 0, fmt, ##args)
+#define INFO(fmt, args...)       do { if (verbose) logit(LOG_INFO, 0, fmt, ##args);  } while(0)
+#define DBG(fmt, args...)        do { if (debug)   logit(LOG_DEBUG, 0, fmt, ##args); } while(0)
+#define show_log(msg)            DBG(msg)
 
-void show_log(char *msg);
+extern char *__progname;
+extern int   port;              /* Server listening port            */
+extern char *home;		/* Server root/home directory       */
+extern char  inetd;             /* Bool: conflicts with daemonize   */
+extern char  daemonize;		/* Bool: conflicts with inetd       */
+extern char  debug;             /* Level: 1-7, only 1 implemented   */
+extern char  verbose;           /* Bool: Enables extra logging info */
+extern char  do_log;            /* Bool: False at daemon start      */
+extern char *logfile;           /* Logfile, when NULL --> syslog    */
+
 void logit(int severity, int code, const char *fmt, ...);
 
 #endif  /* UFTPD_H_ */

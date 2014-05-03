@@ -19,75 +19,28 @@
 #include "uftpd.h"
 #include "fops.h"
 
+static int  sd = -1;
+
 struct ftp_retr {
-	struct controller *ctrl;
+	ctx_t *ctrl;
 	char path[200];
 };
 
+static void start_session(int sd, char *ouraddr, char *hisaddr);
 
-void init_defaults(struct context *ctx)
-{
-	ctx->port = FTP_DEFAULT_PORT;
-	strlcpy(ctx->home, FTP_DEFAULT_HOME, sizeof(ctx->home));
-}
-
-static void stop_controller(struct controller *ctrl)
-{
-	if (ctrl->sd > 0)
-		close(ctrl->sd);
-
-	if (ctrl->data_listen_sd > 0)
-		close(ctrl->data_listen_sd);
-
-	if (ctrl->data_sd > 0)
-		close(ctrl->data_sd);
-
-	free(ctrl);
-}
-
-static void *session(void *c)
-{
-	struct controller *ctrl = (struct controller *)c;
-
-	handle_client_command(ctrl);
-	stop_controller(ctrl);
-
-	return NULL;
-}
-
-static void start_controller(struct context *ctx, int sd)
-{
-	pthread_t pid;
-	struct controller *ctrl = malloc(sizeof(struct controller));
-
-	ctrl->sd = sd;
-	strlcpy(ctrl->address, ctx->address, sizeof(ctrl->address));
-	strlcpy(ctrl->home, ctx->home, sizeof(ctrl->home));
-	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
-	ctrl->type = TYPE_A;
-	ctrl->status = 0;
-	ctrl->data_listen_sd = -1;
-	ctrl->data_sd = -1;
-	ctrl->name[0] = 0;
-	ctrl->pass[0] = 0;
-	ctrl->data_address[0] = 0;
-
-	pthread_create(&pid, NULL, session, (void *)ctrl);
-}
-
-int serve_files(struct context *ctx)
+int serve_files(void)
 {
 	int err, val = 1;
 	socklen_t len = sizeof(struct sockaddr);
 	struct sockaddr_in server;
 
-	ctx->sd = socket(AF_INET, SOCK_STREAM, 0);
-	if (ctx->sd < 0) {
+	sd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sd < 0) {
 		ERR(errno, "Failed creating FTP server socket");
 		exit(1);
 	}
 
-	err = setsockopt(ctx->sd, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
+	err = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
 	if (err != 0) {
 		ERR(errno, "Failed setting SO_REUSEADDR");
 		return 1;
@@ -95,51 +48,199 @@ int serve_files(struct context *ctx)
 
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port        = htons(ctx->port);
-	if (bind(ctx->sd, (struct sockaddr *)&server, len) < 0) {
-		ERR(errno, "Failed binding to port %d, maye another FTP server is already running", ctx->port);
+	server.sin_port        = htons(port);
+	if (bind(sd, (struct sockaddr *)&server, len) < 0) {
+		ERR(errno, "Failed binding to port %d, maye another FTP server is already running", port);
 		return 1;
 	}
 
-	if (-1 == listen(ctx->sd, 20)) {
+	if (-1 == listen(sd, 20)) {
 		ERR(errno, "Failed starting FTP server");
 		return 1;
 	}
 
-	show_log("FTP server started, waiting for client connnections ...");
+	LOG("Serving files from %s, listening on port %d ...", home, port);
 
 	while (1) {
-		int sd;		/* Client socket */
-		char address[INET_ADDRSTRLEN];
+		int client;	/* Client socket */
+		char ouraddr[INET_ADDRSTRLEN], hisaddr[INET_ADDRSTRLEN];;
 		socklen_t len = sizeof(struct sockaddr);
 		struct sockaddr_in host_addr;
 		struct sockaddr_in client_addr;
 
-		sd = accept(ctx->sd, (struct sockaddr *)&client_addr, &len);
-		if (sd < 0) {
-			perror("accept error");
+		client = accept(sd, (struct sockaddr *)&client_addr, &len);
+		if (client < 0) {
+			perror("Failed accepting incoming client connection");
 			continue;
 		}
 
 		/* Find our address */
 		len = sizeof(struct sockaddr);
-		getsockname(sd, (struct sockaddr *)&host_addr, &len);
-		inet_ntop(AF_INET, &(host_addr.sin_addr), address, INET_ADDRSTRLEN);
-		strlcpy(ctx->address, address, sizeof(ctx->address));
+		getsockname(client, (struct sockaddr *)&host_addr, &len);
+		inet_ntop(AF_INET, &(host_addr.sin_addr), ouraddr, INET_ADDRSTRLEN);
 
 		/* Find peer address */
 		len = sizeof(struct sockaddr);
-		getpeername(sd, (struct sockaddr *)&client_addr, &len);
-		inet_ntop(AF_INET, &(client_addr.sin_addr), address, INET_ADDRSTRLEN);
-		DBG("%s connected to server.", address);
+		getpeername(client, (struct sockaddr *)&client_addr, &len);
+		inet_ntop(AF_INET, &(client_addr.sin_addr), hisaddr, INET_ADDRSTRLEN);
+		LOG("Client connection from %s", hisaddr);
 
-		start_controller(ctx, sd);
+		start_session(client, ouraddr, hisaddr);
 	}
 
 	return 0;
 }
 
-void handle_client_command(struct controller *ctrl)
+static void send_msg(int sd, char *msg)
+{
+	int n = 0;
+	int l;
+
+	if (!msg) {
+	err:
+		ERR(EINVAL, "Missing argument to send_msg()");
+		return;
+	}
+
+	l = strlen(msg);
+	if (l <= 0)
+		goto err;
+
+	while (n < l) {
+		int result = send(sd, msg + n, l, 0);
+
+		if (result < 0) {
+			perror("Failed sending message to client");
+			return;
+		}
+
+		n += result;
+	}
+
+	DBG("%s\n", msg);
+}
+
+/*
+ * Receive message from client, split into command and argument
+ */
+void recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
+{
+	char *ptr;
+	ssize_t bytes;
+
+	/* Clear for every new command. */
+	memset(msg, 0, len);
+
+	bytes = recv(sd, msg, len, 0);
+	if (!bytes) {
+		show_log("Client disconnected.");
+		pthread_exit(NULL);
+		return;		/* Dummy */
+	}
+
+	if (bytes < 0) {
+		perror("Failed reading client command");
+		return;
+	}
+
+	*cmd = msg;
+	ptr  = strpbrk(msg, " ");
+	if (ptr) {
+		*ptr = 0;
+		ptr++;
+		*argument = ptr;
+	} else {
+		*argument = NULL;
+		ptr = msg;
+	}
+
+	ptr = strpbrk(ptr, "\r\n");
+	if (ptr)
+		*ptr = 0;
+}
+
+static int open_data_connection(ctx_t *ctrl)
+{
+	socklen_t len = sizeof(struct sockaddr);
+	struct sockaddr_in sin;
+
+	/* Previous PORT command from client */
+	if (ctrl->data_address[0]) {
+		ctrl->data_sd = socket(AF_INET, SOCK_STREAM, 0);
+
+		sin.sin_family = AF_INET;
+		sin.sin_port = htons(ctrl->data_port);
+		inet_aton(ctrl->data_address, &(sin.sin_addr));
+
+		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
+			perror("connect");
+			return -1;
+		}
+
+		DBG("Connected successfully to client's previously requested address:PORT %s:%s", ctrl->data_address, ctrl->data_port);
+		return 0;
+	}
+
+	/* Previous PASV command, accept connect from client */
+	if (ctrl->data_listen_sd > 0) {
+		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
+
+		if (ctrl->data_sd < 0) {
+			perror("accept error");
+		} else {
+			char client_ip[100];
+
+			len = sizeof(struct sockaddr);
+			getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len);
+			inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
+			DBG("Client PASV data connection from %s", client_ip);
+		}
+	}
+
+	return 0;
+}
+
+static void close_data_connection(ctx_t *ctrl)
+{
+	/* PASV server listening socket */
+	if (ctrl->data_listen_sd > 0) {
+		close(ctrl->data_listen_sd);
+		ctrl->data_listen_sd = -1;
+	}
+
+	/* PASV client socket */
+	if (ctrl->data_sd > 0) {
+		close(ctrl->data_sd);
+		ctrl->data_sd = -1;
+	}
+
+	/* PORT */
+	if (ctrl->data_address[0]) {
+		ctrl->data_address[0] = 0;
+		ctrl->data_port = 0;
+	}
+}
+
+static char *compose_path(ctx_t *ctrl, char *file, char *path, size_t len)
+{
+	strlcpy(path, ctrl->home, len);
+	strlcat(path, ctrl->cwd, len);
+
+	DBG("home: %s, cwd: %s, path: %s, file: %s, strlen(path): %zd",
+	    ctrl->home, ctrl->cwd, path, file, strlen(path));
+
+	if (path[strlen(path) - 1] != '/')
+		strlcat(path, "/", len);
+
+	if (file[0] == '/')
+		file++;
+
+	strlcat(path, file, len);
+
+	return path;
+}
+
+static void handle_command(ctx_t *ctrl)
 {
 	int client_socket = ctrl->sd;
 	size_t len = BUFFER_SIZE * sizeof(char);
@@ -153,7 +254,8 @@ void handle_client_command(struct controller *ctrl)
                 exit(1);
 	}
 
-	send_msg(ctrl->sd, "220 Anonymous FTP server ready.\r\n");
+	snprintf(buffer, len, "220 %s (%s) ready.\r\n", __progname, VERSION);
+	send_msg(ctrl->sd, buffer);
 
 	while (1) {
 		recv_msg(client_socket, buffer, len, &cmd, &argument);
@@ -214,166 +316,63 @@ void handle_client_command(struct controller *ctrl)
 	free(buffer);
 }
 
-//send message
-void send_msg(int socket, char *msg)
+static void stop_session(ctx_t *ctrl)
 {
-	int n = 0;
-	int l;
+	if (ctrl->sd > 0)
+		close(ctrl->sd);
 
-	if (!msg) {
-	err:
-		ERR(EINVAL, "Missing argument to send_msg()");
-		return;
-	}
-
-	l = strlen(msg);
-	if (l <= 0)
-		goto err;
-
-	while (n < l) {
-		int result = send(socket, msg + n, l, 0);
-
-		if (result < 0) {
-			perror("Failed sending message to client");
-			return;
-		}
-
-		n += result;
-	}
-
-	DBG("%s\n", msg);
-}
-
-/*
- * Receive message from client, split into command and argument
- */
-void recv_msg(int sd, char *buf, size_t len, char **cmd, char **argument)
-{
-	char *ptr;
-	ssize_t bytes;
-
-	/* Clear for every new command. */
-	memset(buf, 0, len);
-
-	bytes = recv(sd, buf, len, 0);
-	if (!bytes) {
-		show_log("Client disconnected.");
-		pthread_exit(NULL);
-		return;		/* Dummy */
-	}
-
-	if (bytes < 0) {
-		perror("Failed reading client command");
-		return;
-	}
-
-	*cmd = buf;
-	ptr  = strpbrk(buf, " ");
-	if (ptr) {
-		*ptr = 0;
-		ptr++;
-		*argument = ptr;
-	} else {
-		*argument = NULL;
-		ptr = buf;
-	}
-
-	ptr = strpbrk(ptr, "\r\n");
-	if (ptr)
-		*ptr = 0;
-}
-
-int establish_tcp_connection(struct controller *ctrl)
-{
-	socklen_t len = sizeof(struct sockaddr);
-	struct sockaddr_in sin;
-
-	/* Previous PORT command from client */
-	if (ctrl->data_address[0]) {
-		ctrl->data_sd = socket(AF_INET, SOCK_STREAM, 0);
-
-		sin.sin_family = AF_INET;
-		sin.sin_port = htons(ctrl->data_port);
-		inet_aton(ctrl->data_address, &(sin.sin_addr));
-
-		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
-			perror("connect");
-			return -1;
-		}
-
-		show_log("port connect success.");
-		return 0;
-	}
-
-	/* Previous PASV command, accept connect from client */
-	if (ctrl->data_listen_sd > 0) {
-		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
-
-		if (ctrl->data_sd < 0) {
-			perror("accept error");
-		} else {
-			char client_ip[100];
-
-			len = sizeof(struct sockaddr);
-			getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len);
-			inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
-			DBG("%s connected to server.", client_ip);
-		}
-	}
-
-	return 0;
-}
-
-//
-void cancel_tcp_connection(struct controller *ctrl)
-{
-	/* PASV server listening socket */
-	if (ctrl->data_listen_sd > 0) {
+	if (ctrl->data_listen_sd > 0)
 		close(ctrl->data_listen_sd);
-		ctrl->data_listen_sd = -1;
-	}
 
-	/* PASV client socket */
-	if (ctrl->data_sd > 0) {
+	if (ctrl->data_sd > 0)
 		close(ctrl->data_sd);
-		ctrl->data_sd = -1;
-	}
 
-	/* PORT */
-	if (ctrl->data_address[0]) {
-		ctrl->data_address[0] = 0;
-		ctrl->data_port = 0;
-	}
+	free(ctrl);
 }
 
-//
-int send_file(struct controller *ctrl, FILE * file)
+static void *session(void *c)
 {
-	char buf[1000];
+	ctx_t *ctrl = (ctx_t *)c;
 
-	while (!feof(file)) {
-		fread(file, 1000, 1, file);
-		send(ctrl->data_sd, buf, strlen(buf), 0);
-	}
+	handle_command(ctrl);
+	stop_session(ctrl);
+
+	return NULL;
+}
+
+static void start_session(int sd, char *ouraddr, char *hisaddr)
+{
+	pthread_t pid;
+	ctx_t *ctrl = malloc(sizeof(ctx_t));
+
+	ctrl->sd = sd;
+	strlcpy(ctrl->ouraddr, ouraddr, sizeof(ctrl->ouraddr));
+	strlcpy(ctrl->hisaddr, hisaddr, sizeof(ctrl->hisaddr));
+	strlcpy(ctrl->home, home, sizeof(ctrl->home));
+	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
+	ctrl->type = TYPE_A;
+	ctrl->status = 0;
+	ctrl->data_listen_sd = -1;
+	ctrl->data_sd = -1;
+	ctrl->name[0] = 0;
+	ctrl->pass[0] = 0;
+	ctrl->data_address[0] = 0;
+
+	pthread_create(&pid, NULL, session, (void *)ctrl);
+}
+
+int check_user_pass(ctx_t *ctrl)
+{
+	if (!ctrl->name)
+		return -1;
+
+	if (strcmp("anonymous", ctrl->name) == 0)
+		return 1;
 
 	return 0;
 }
 
-static char *compose_path(struct controller *ctrl, char *file, char *path, size_t len)
-{
-	strlcpy(path, ctrl->home, len);
-	strlcat(path, ctrl->cwd, len);
-
-	if (path[strlen(path) - 1] != '/')
-		strlcat(path, "/", len);
-
-	strlcat(path, file, len);
-
-	return path;
-}
-
-//redefine write
-void handle_USER(struct controller *ctrl, char *name)
+void handle_USER(ctx_t *ctrl, char *name)
 {
 	if (ctrl->name[0]) {
 		ctrl->name[0] = 0;
@@ -382,17 +381,18 @@ void handle_USER(struct controller *ctrl, char *name)
 
 	if (name) {
 		strlcpy(ctrl->name, name, sizeof(ctrl->name));
-		if (check_user_pass(ctrl) == 1)
+		if (check_user_pass(ctrl) == 1) {
+			LOG("Guest logged in from %s", ctrl->hisaddr);
 			send_msg(ctrl->sd, "230 Guest login OK, access restrictions apply.\r\n");
-		else
+		} else {
 			send_msg(ctrl->sd, "331 Login OK, please enter password.\r\n");
+		}
 	} else {
 		send_msg(ctrl->sd, "530 You must input your name.\r\n");
 	}
 }
 
-//
-void handle_PASS(struct controller *ctrl, char *pass)
+void handle_PASS(ctx_t *ctrl, char *pass)
 {
 	if (ctrl->name[0] == 0) {
 		send_msg(ctrl->sd, "503 Your haven't input your username\r\n");
@@ -401,23 +401,23 @@ void handle_PASS(struct controller *ctrl, char *pass)
 
 	strlcpy(ctrl->pass, pass, sizeof(ctrl->pass));
 	if (check_user_pass(ctrl) < 0) {
+		LOG("User %s from %s, invalid password!", ctrl->name, ctrl->hisaddr);
 		send_msg(ctrl->sd, "530 username or password is unacceptable\r\n");
 		return;
 	}
 
+	LOG("User %s login from %s", ctrl->name, ctrl->hisaddr);
 	send_msg(ctrl->sd, "230 Guest login OK, access restrictions apply.\r\n");
 }
 
-//
-void handle_SYST(struct controller *ctrl)
+void handle_SYST(ctx_t *ctrl)
 {
 	char system[] = "215 UNIX Type: L8\r\n";
 
 	send_msg(ctrl->sd, system);
 }
 
-//
-void handle_TYPE(struct controller *ctrl, char *argument)
+void handle_TYPE(ctx_t *ctrl, char *argument)
 {
 	char type[24]  = "200 Type set to I.\r\n";
 	char unknown[] = "501 Invalid argument to TYPE.\r\n";
@@ -443,8 +443,7 @@ void handle_TYPE(struct controller *ctrl, char *argument)
 	send_msg(ctrl->sd, type);
 }
 
-//
-void handle_PWD(struct controller *ctrl)
+void handle_PWD(ctx_t *ctrl)
 {
 	char buf[300];
 
@@ -452,8 +451,7 @@ void handle_PWD(struct controller *ctrl)
 	send_msg(ctrl->sd, buf);
 }
 
-//
-void handle_CWD(struct controller *ctrl, char *_dir)
+void handle_CWD(ctx_t *ctrl, char *_dir)
 {
 	int flag = 0;
 	char dir[300];
@@ -495,7 +493,7 @@ void handle_CWD(struct controller *ctrl, char *_dir)
 	send_msg(ctrl->sd, "250 OK\r\n");
 }
 
-void handle_PORT(struct controller *ctrl, char *str)
+void handle_PORT(ctx_t *ctrl, char *str)
 {
 	int a, b, c, d, e, f;
 	char addr[INET_ADDRSTRLEN];
@@ -515,39 +513,41 @@ void handle_PORT(struct controller *ctrl, char *str)
 	strlcpy(ctrl->data_address, addr, sizeof(ctrl->data_address));
 	ctrl->data_port = e * 256 + f;
 
-	show_log(ctrl->data_address);
-	//show_log(ctrl->data_port);
-
+	DBG("Client PORT command accepted for %s:%s", ctrl->data_address, ctrl->data_port);
 	send_msg(ctrl->sd, "200 PORT command successful.\r\n");
 }
 
-void handle_LIST(struct controller *ctrl)
+void handle_LIST(ctx_t *ctrl)
 {
+	char *buf;
 	char path[200];
-	char log[100];
-	char list_cmd_info[200];
 	FILE *pipe_fp = NULL;
+	size_t len = BUFFER_SIZE * sizeof(char);
 
 	show_log(ctrl->cwd);
 
 	strlcpy(path, ctrl->home, sizeof(path));
 	strlcat(path, ctrl->cwd, sizeof(path));
-	sprintf(list_cmd_info, "LC_TIME=C ls -lnA %s", path);
 
-	pipe_fp = popen(list_cmd_info, "r");
-	if (!pipe_fp) {
-		show_log("Failed opening LIST command pipe!");
-		send_msg(ctrl->sd, "451 the server had trouble reading the directory from disk\r\n");
+	buf = malloc(len);
+	if (!buf) {
+		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		return;
 	}
 
-	sprintf(log, "Command pipe opened successfully: %s", list_cmd_info);
-	show_log(log);
+	snprintf(buf, len, "LC_TIME=C ls -lnA %s", path);
+	pipe_fp = popen(buf, "r");
+	if (!pipe_fp) {
+		free(buf);
+		show_log("Failed opening LIST command pipe!");
+		send_msg(ctrl->sd, "451 Internal server error.\r\n");
+		return;
+	}
 
-
-	if (establish_tcp_connection(ctrl)) {
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+	if (open_data_connection(ctrl)) {
+		free(buf);
 		pclose(pipe_fp);
+		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
 		return;
 	}
 
@@ -555,11 +555,10 @@ void handle_LIST(struct controller *ctrl)
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
 	while (!feof(pipe_fp)) {
-		char *ptr;
-		char buf[BUFFER_SIZE];
+		char *ptr, *pos;
 
-		char *pos = buf;
-		while (fgets(pos, sizeof(buf) - (pos - buf) - 1, pipe_fp)) {
+		pos = buf;
+		while (fgets(pos, len - (pos - buf) - 1, pipe_fp)) {
 			if (!strncmp(pos, "total ", 6))
 				continue;
 
@@ -577,19 +576,20 @@ void handle_LIST(struct controller *ctrl)
 		send_msg(ctrl->data_sd, buf);
 	}
 
+	free(buf);
 	pclose(pipe_fp);
+	close_data_connection(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
-	cancel_tcp_connection(ctrl);
 }
 
-//
-void handle_PASV(struct controller *ctrl)
+/* XXX: Audit this, does it really work with multiple interfaces? */
+void handle_PASV(ctx_t *ctrl)
 {
 	int port;
 	char *msg, buf[200];
 	struct sockaddr_in server;
-	struct sockaddr_in file_addr;
-	socklen_t file_sock_len = sizeof(struct sockaddr);
+	struct sockaddr_in data;
+	socklen_t len = sizeof(struct sockaddr);
 
 	if (ctrl->data_sd > 0) {
 		close(ctrl->data_sd);
@@ -607,7 +607,7 @@ void handle_PASV(struct controller *ctrl)
 	}
 
 	server.sin_family      = AF_INET;
-	server.sin_addr.s_addr = inet_addr(ctrl->address);
+	server.sin_addr.s_addr = inet_addr(ctrl->ouraddr);
 	server.sin_port        = htons(0);
 	if (bind(ctrl->data_listen_sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) < 0) {
 		perror("Failed binding to client socket");
@@ -621,11 +621,10 @@ void handle_PASV(struct controller *ctrl)
 		send_msg(ctrl->sd, "426 PASV failure\r\n");
 	}
 
-	getsockname(ctrl->data_listen_sd, (struct sockaddr *)&file_addr, &file_sock_len);
-	show_log(ctrl->address);
-
-	port = ntohs(file_addr.sin_port);
-	msg = _transfer_ip_port_str(ctrl->address, port);
+	getsockname(ctrl->data_listen_sd, (struct sockaddr *)&data, &len);
+	port = ntohs(data.sin_port);
+	/* XXX: s/ctrl->ouraddr/data.sin_addr.saddr? */
+	msg = _transfer_ip_port_str(ctrl->ouraddr, port);
 	if (!msg) {
 		send_msg(ctrl->sd, "426 PASV failure\r\n");
 		exit(1);
@@ -647,44 +646,51 @@ void *handle_RETR(void *retr)
 	FILE *fp = NULL;
 	char path[200];
 	char _path[400];
-	char buf[BUFFER_SIZE];
+	char *buf;
+	size_t len = BUFFER_SIZE * sizeof(char);
 	struct ftp_retr *re = (struct ftp_retr *)retr;
-	struct controller *ctrl = re->ctrl;
+	ctx_t *ctrl = re->ctrl;
 
 	strlcpy(path, re->path, sizeof(path));
 	compose_path(ctrl, path, _path, sizeof(_path));
 	show_log(_path);
 
-	fp = fopen(_path, "rb");
-	if (!fp) {
-		fprintf(stderr, "Failed fopen(%s): %s", _path, strerror(errno));
-		send_msg(ctrl->sd, "451 trouble to retr file\r\n");
-		free(re);
-		pthread_exit(NULL);
-
+	buf = malloc(len);
+	if (!buf) {
+		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		return NULL;
 	}
 
-	if (establish_tcp_connection(ctrl)) {
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
-		fclose(fp);
+	fp = fopen(_path, "rb");
+	if (!fp) {
+		ERR(errno, "Failed opening file %s for RETR", _path);
+		free(buf);
 		free(re);
+		send_msg(ctrl->sd, "451 Trouble to RETR file.\r\n");
 		pthread_exit(NULL);
+		return NULL;
+	}
 
+	if (open_data_connection(ctrl)) {
+		fclose(fp);
+		free(buf);
+		free(re);
+		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+		pthread_exit(NULL);
 		return NULL;
 	}
 
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
 	while (!feof(fp) && !result) {
-		int n = fread(buf, 1, 1000, fp);
+		int n = fread(buf, sizeof(char), len, fp);
 		int j = 0;
 
 		while (j < n) {
 			ssize_t bytes = send(ctrl->data_sd, buf + j, n - j, 0);
 
 			if (-1 == bytes) {
-				ERR(errno, "Failed sending file %s to client", re->path);
+				ERR(errno, "Failed sending file %s to client", _path);
 				result = 1;
 				break;
 			}
@@ -692,13 +698,16 @@ void *handle_RETR(void *retr)
 		}
 	}
 
-	if (result)
+	if (result) {
 		send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
-	else
+	} else {
+		LOG("User %s from %s downloaded file %s", ctrl->name, ctrl->hisaddr, _path);
 		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+	}
 
-	cancel_tcp_connection(ctrl);
+	close_data_connection(ctrl);
 	fclose(fp);
+	free(buf);
 	free(re);
 	pthread_exit(NULL);
 
@@ -706,12 +715,13 @@ void *handle_RETR(void *retr)
 }
 
 //
-void handle_STOR(struct controller *ctrl, char *path)
+void handle_STOR(ctx_t *ctrl, char *path)
 {
 	int result = 0;
 	FILE *fp = NULL;
 	char _path[400];
-	char buf[BUFFER_SIZE];
+	char *buf;
+	size_t len = BUFFER_SIZE * sizeof(char);
 
 	strlcpy(_path, ctrl->home, sizeof(_path));
 	strlcat(_path, ctrl->cwd, sizeof(_path));
@@ -720,15 +730,23 @@ void handle_STOR(struct controller *ctrl, char *path)
 	strlcat(_path, path, sizeof(_path));
 	DBG("STOR %s", _path);
 
+	buf = malloc(len);
+	if (!buf) {
+		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+		return;
+	}
+
 	fp = fopen(_path, "wb");
 	if (!fp) {
+		free(buf);
 		send_msg(ctrl->sd, "451 Trouble storing file.\r\n");
 		return;
 	}
 
-	if (establish_tcp_connection(ctrl)) {
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+	if (open_data_connection(ctrl)) {
 		fclose(fp);
+		free(buf);
+		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
 		return;
 	}
 
@@ -747,35 +765,38 @@ void handle_STOR(struct controller *ctrl, char *path)
 		fwrite(buf, 1, j, fp);
 	}
 
-	if (result)
+	if (result) {
 		send_msg(ctrl->sd, "426 TCP connection was established but then broken\r\n");
-	else
+	} else {
+		LOG("User %s at %s uploaded file %s", ctrl->name, ctrl->hisaddr, _path);
 		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+	}
 
-	cancel_tcp_connection(ctrl);
+	close_data_connection(ctrl);
 	fclose(fp);
+	free(buf);
 }
 
 //
-void handle_DELE(struct controller *ctrl, char *name)
+void handle_DELE(ctx_t *ctrl __attribute__((unused)), char *name __attribute__((unused)))
 {
 
 }
 
 //
-void handle_MKD(struct controller *ctrl)
+void handle_MKD(ctx_t *ctrl __attribute__((unused)))
 {
 
 }
 
 //
-void handle_RMD(struct controller *ctrl)
+void handle_RMD(ctx_t *ctrl __attribute__((unused)))
 {
 
 }
 
 //
-void handle_SIZE(struct controller *ctrl, char *file)
+void handle_SIZE(ctx_t *ctrl, char *file)
 {
 	char path[300];
 	struct stat st;
@@ -792,45 +813,33 @@ void handle_SIZE(struct controller *ctrl, char *file)
 }
 
 //
-void handle_RNFR(struct controller *ctrl)
+void handle_RNFR(ctx_t *ctrl __attribute__((unused)))
 {
 
 }
 
 //
-void handle_RNTO(struct controller *ctrl)
+void handle_RNTO(ctx_t *ctrl __attribute__((unused)))
 {
 
 }
 
 //
-void handle_QUIT(struct controller *ctrl)
+void handle_QUIT(ctx_t *ctrl)
 {
-	send_msg(ctrl->sd, "221 goodby~\r\n");
+	send_msg(ctrl->sd, "221 Goodbye.\r\n");
 }
 
 //
-void handle_CLNT(struct controller *ctrl)
+void handle_CLNT(ctx_t *ctrl)
 {
 	send_msg(ctrl->sd, "200 CLNT\r\n");
 }
 
 //
-void handle_OPTS(struct controller *ctrl)
+void handle_OPTS(ctx_t *ctrl)
 {
 	send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
-}
-
-//
-int check_user_pass(struct controller *ctrl)
-{
-	if (!ctrl->name)
-		return -1;
-
-	if (strcmp("anonymous", ctrl->name) == 0)
-		return 1;
-
-	return 0;
 }
 
 /**

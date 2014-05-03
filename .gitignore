@@ -1,2 +1,5 @@
 *.o
 uftpd
+.*.d
+defs.h
+*.map

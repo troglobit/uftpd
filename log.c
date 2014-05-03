@@ -18,34 +18,32 @@
 
 #include "uftpd.h"
 
-static int  do_syslog = 0;
 static char log_msg[300];
 
 void logit(int level, int code, const char *fmt, ...)
 {
         int len;
+	FILE *fp = stderr;
         va_list args;
 
         va_start(args, fmt);
-        len = vsnprintf(log_msg, sizeof(log_msg) - len, fmt, args);
+        len = vsnprintf(log_msg, sizeof(log_msg), fmt, args);
         va_end(args);
         if (code)
                 snprintf(log_msg + len, sizeof(log_msg) - len, ". Error %d: %s", code, strerror(code));
 
-	if (!do_syslog) {
-		FILE *file = fopen(UFTPD_LOGFILE, "a");
-
-		fprintf(file, "%s%s", log_msg, !strchr(log_msg, '\n') ? "\n" : "");
-
-		fclose(file);
-	} else {
-		syslog(level | LOG_FTP, "%s", log_msg);
+	if (do_log) {
+		syslog(level, "%s", log_msg);
+		return;
 	}
-}
 
-void show_log(char *msg)
-{
-	logit(LOG_DEBUG, 0, msg);
+	if (logfile)
+		fp = fopen(logfile, "a");
+
+	fprintf(fp, "%s%s", log_msg, log_msg[strlen(log_msg)] != '\n' ? "\n" : "");
+
+	if (logfile)
+		fclose(fp);
 }
 
 /**

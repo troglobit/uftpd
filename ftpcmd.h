@@ -25,21 +25,13 @@
 #include <netinet/in.h>
 #include <pthread.h>
 
-#define BUFFER_SIZE       1000
-#define FTP_DEFAULT_PORT  21
-#define FTP_DEFAULT_HOME  "/srv/ftp"
+#include "uftpd.h"
 
-struct context {
-	int sd;
-	int port;
-	char home[100];
-	char address[INET_ADDRSTRLEN];
-};
-
-struct controller {
+typedef struct {
 	int sd;
 	int type;
 
+	/* User credentials */
 	char name[20];
 	char pass[20];
 
@@ -54,99 +46,47 @@ struct controller {
 	char home[100];
 	char cwd[100];
 
-	char address[INET_ADDRSTRLEN];
+	char ouraddr[INET_ADDRSTRLEN];
+	char hisaddr[INET_ADDRSTRLEN];
 
 	int status;
-};
+} ctx_t;
 
-void init_defaults(struct context *ctx);
-int  serve_files(struct context *ctx);
+int  serve_files(void);
 
-//handle command
-void handle_client_command(struct controller *ctrl);
+void handle_USER(ctx_t *ctrl, char *name);
+void handle_PASS(ctx_t *ctrl, char *pass);
 
-//send file
-int send_file(struct controller *ctrl, FILE * file);
+void handle_SYST(ctx_t *ctrl);
+void handle_TYPE(ctx_t *ctrl, char *argument);
 
-//send message
-void send_msg(int socket, char *msg);
-
-//receive message
-void recv_msg(int socket, char *buf, size_t len, char **cmd, char **arguments);
-
+void handle_PWD(ctx_t *ctrl);
+void handle_CWD(ctx_t *ctrl, char *dir);
 //
-int check_user_pass(struct controller *ctrl);
-
-//printf log
-void show_log(char *log);
-
+//void handle_XPWD(ctx_t *ctrl);
 //
-int establish_tcp_connection(struct controller *ctrl);
 
-//
-void cancel_tcp_connection(struct controller *ctrl);
+void handle_PORT(ctx_t *ctrl, char *str);
+void handle_LIST(ctx_t *ctrl);
 
-//
-void handle_USER(struct controller *ctrl, char *name);
-
-//
-void handle_PASS(struct controller *ctrl, char *pass);
-
-//
-void handle_SYST(struct controller *ctrl);
-
-//
-void handle_TYPE(struct controller *ctrl, char *argument);
-
-//void
-void handle_PWD(struct controller *ctrl);
-
-//
-void handle_CWD(struct controller *ctrl, char *dir);
-
-//
-//void handle_XPWD(struct controller *ctrl);
-//
-void handle_PORT(struct controller *ctrl, char *str);
-
-//
-void handle_LIST(struct controller *ctrl);
-
-//
-void handle_PASV(struct controller *ctrl);
-
-//
+void handle_PASV(ctx_t *ctrl);
 void *handle_RETR(void *ctrl);
 
-//
-void handle_STOR(struct controller *ctrl, char *path);
+void handle_STOR(ctx_t *ctrl, char *path);
+void handle_DELE(ctx_t *ctrl, char *path);
 
-//
-void handle_DELE(struct controller *ctrl, char *path);
+void handle_MKD(ctx_t *ctrl);
+void handle_RMD(ctx_t *ctrl);
 
-//
-void handle_MKD(struct controller *ctrl);
+void handle_SIZE(ctx_t *ctrl, char *file);
 
-//
-void handle_RMD(struct controller *ctrl);
+void handle_RNFR(ctx_t *ctrl);
+void handle_RNTO(ctx_t *ctrl);
 
-//
-void handle_SIZE(struct controller *ctrl, char *file);
+void handle_QUIT(ctx_t *ctrl);
+void handle_CLNT(ctx_t *ctrl);
 
-//
-void handle_RNFR(struct controller *ctrl);
-
-//
-void handle_RNTO(struct controller *ctrl);
-
-//
-void handle_QUIT(struct controller *ctrl);
-
-//
-void handle_CLNT(struct controller *ctrl);
-
-//
-void handle_OPTS(struct controller *ctrl);
+void handle_OPTS(ctx_t *ctrl);
 
 #endif  /* FTPCMD_H_ */
 

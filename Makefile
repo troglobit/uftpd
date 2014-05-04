@@ -18,13 +18,14 @@
 .PHONY: all install uninstall clean distclean dist
 
 #VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.0-beta1
+VERSION    ?= 1.0-rc1
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)
 DEV         = $(NAME)-dev
 ARCHIVE     = $(PKG).tar.xz
 EXEC        = $(NAME)
+MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
 OBJS        = uftpd.o daemonize.o ftpcmd.o string.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
@@ -68,6 +69,8 @@ install-data:
 		printf "  INSTALL $(DESTDIR)$(datadir)/$$file\n";	\
 		$(INSTALL) -m 0644 $$file $(DESTDIR)$(datadir)/$$file;	\
 	done
+	@printf "  INSTALL $(DESTDIR)$(mandir)/$(MANUAL)\n"
+	$(INSTALL) -m 0644 $(MANUAL) $(DESTDIR)$(mandir)/$(MANUAL)
 
 install: install-exec install-data
 
@@ -83,6 +86,8 @@ uninstall-data:
 		printf "  REMOVE  $(DESTDIR)$(datadir)/$$file\n";	\
 		rm $(DESTDIR)$(datadir)/$$file 2>/dev/null;		\
 	done
+	@printf "  REMOVE  $(DESTDIR)$(mandir)/$(MANUAL)\n"
+	-@rm $(DESTDIR)$(mandir)/$(MANUAL)
 	-@rmdir $(DESTDIR)$(mandir)
 	-@rmdir $(DESTDIR)$(datadir)
 

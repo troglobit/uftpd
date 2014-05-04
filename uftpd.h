@@ -24,6 +24,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <locale.h>
 #include <netdb.h>
 #include <pwd.h>

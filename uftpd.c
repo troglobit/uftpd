@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
 	init();
 	if (inetd) {
-		LOG("Started from inetd, serving files from %s ...", home);
+		INFO("Started from inetd, serving files from %s ...", home);
 		return start_session(STDIN_FILENO);
 	}
 

@@ -52,7 +52,7 @@ int serve_files(void)
 		return 1;
 	}
 
-	LOG("Serving files from %s, listening on port %d ...", home, port);
+	INFO("Serving files from %s, listening on port %d ...", home, port);
 
 	while (1) {
 		int client;
@@ -358,11 +358,21 @@ static int session(ctx_t *ctrl)
 
 	/* If ftp user exists and we're running as root we can drop privs */
 	if (!privs_dropped && pw && geteuid() == 0) {
-		if (setuid(pw->pw_uid) || setgid(pw->pw_gid))
-			WARN(errno, "Failed dropping privileges to uid:gid %d:%d",
-			     pw->pw_uid, pw->pw_gid);
-		else
-			privs_dropped = 1;
+		int fail1, fail2;
+
+		initgroups (pw->pw_name, pw->pw_gid);
+		if ((fail1 = setegid(pw->pw_gid)))
+			WARN(errno, "Failed dropping group privileges to gid %d", pw->pw_gid);
+		if ((fail2 = seteuid(pw->pw_uid)))
+			WARN(errno, "Failed dropping user privileges to uid %d", pw->pw_uid);
+
+		setenv("HOME", pw->pw_dir, 1);
+
+		if (!fail1 && !fail2)
+			INFO("Successfully dropped privilges to %d:%d (uid:gid)", pw->pw_uid, pw->pw_gid);
+
+		/* On failure, we tried at least.  Only warn once. */
+		privs_dropped = 1;
 	}
 
 	handle_command(ctrl);

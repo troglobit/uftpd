@@ -1,0 +1,15 @@
+uftpd for Debian
+----------------
+
+(May 4th, 2014)
+
+uftpd is a very insecure FTP server.  It is also and totally useless for
+multiple users.  It is however really small, easy to setup, and just works
+right out of the box. 
+
+The use-case is home users, developers or other's in already secured local
+area networks.
+
+Don't use it on the Internet.
+
+Joachim Nilsson <troglobit@gmail.com>

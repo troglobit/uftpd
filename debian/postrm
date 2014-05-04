@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = purge ]; then
+	if command -v update-inetd >/dev/null 2>&1; then
+		update-inetd --pattern '/usr/sbin/uftpd' --remove "#<off># ftp"
+	fi
+fi
+
+#DEBHELPER#

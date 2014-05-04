@@ -1,0 +1,21 @@
+Source: uftpd
+Section: net
+Priority: extra
+Maintainer: Joachim Nilsson <troglobit@gmail.com>
+Build-Depends: debhelper (>= 7.0.0)
+Standards-Version: 3.9.3
+Homepage: http://troglobit.com/uftpd.html
+
+Package: uftpd
+Architecture: any
+Depends: openbsd-inetd | inet-superserver, ${shlibs:Depends}, ${misc:Depends}
+Provides: ftp-server
+Conflicts: ftp-server
+Description: Micro File Transfer Protocol (FTP) server
+ This is the no nonsense FTP server.  Unless you are a developer, or home user
+ who do not care about security, and just want a simple and out-of-the-box
+ working anonymous FTP server, you are recommended to use one of its
+ alternatives, such as vsftpd, proftpd, or pure-ftpd.
+ .
+ This server does not support IPv6, but it can be used in standalone mode as
+ well as in inetd mode, but other servers are probably a lot more secure.

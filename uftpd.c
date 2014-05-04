@@ -22,7 +22,7 @@
 int   port        = 0;
 char *home        = NULL;
 char  inetd       = 0;
-char  daemonize   = 0;
+char  background  = 1;
 char  debug       = 0;
 char  verbose     = 0;
 char  do_log      = 0;
@@ -37,11 +37,11 @@ static int version(void)
 
 static int usage(void)
 {
-	printf("\nUsage: %s [-d | -i] [-D] [-V] [-l LOGFILE] [-p PORT]\n"
+	printf("\nUsage: %s [-dfivV] [-l LOGFILE] [-p PORT]\n"
 	       "\n"
 	       "  -h | -?  Show this help text\n"
-	       "  -d       Daemonize, run in background\n"
-	       "  -D       Enable developer debug logs\n"
+	       "  -d       Enable developer debug logs\n"
+	       "  -f       Run in foreground, do not detach from calling terminal\n"
 	       "  -i       Inetd mode, take client connections from stdin\n"
 	       "  -l PATH  Full path to logfile, otherwise syslog is used\n"
 	       "  -p PORT  Port to serve files on, default %d\n"
@@ -82,24 +82,18 @@ int main(int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt (argc, argv, "h?dDil:p:vV")) != EOF) {
+	while ((c = getopt (argc, argv, "h?dfil:p:vV")) != EOF) {
 		switch (c) {
 		case 'd':
-			if (inetd)
-				WARN(0, "-i already given, cannot daemonize %s.", __progname);
-			else
-				daemonize = 1;
-			break;
-
-		case 'D':
 			debug = 1;
 			break;
 
+		case 'f':
+			background = 0;
+			break;
+
 		case 'i':
-			if (daemonize)
-				WARN(0, "-d already given, cannot start %s in inetd mode.", __progname);
-			else
-				inetd = 1;
+			inetd = 1;
 			break;
 
 		case 'l':
@@ -131,6 +125,11 @@ int main(int argc, char **argv)
 	if (inetd) {
 		LOG("Started from inetd, serving files from %s ...", home);
 		return start_session(STDIN_FILENO);
+	}
+
+	if (background) {
+		if (daemonize(NULL))
+			return 0;
 	}
 
 	return serve_files();

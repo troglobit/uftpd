@@ -60,13 +60,14 @@ extern char *__progname;
 extern int   port;              /* Server listening port            */
 extern char *home;		/* Server root/home directory       */
 extern char  inetd;             /* Bool: conflicts with daemonize   */
-extern char  daemonize;		/* Bool: conflicts with inetd       */
+extern char  background;	/* Bool: conflicts with inetd       */
 extern char  debug;             /* Level: 1-7, only 1 implemented   */
 extern char  verbose;           /* Bool: Enables extra logging info */
 extern char  do_log;            /* Bool: False at daemon start      */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 
+int  daemonize(char *output);
 void logit(int severity, int code, const char *fmt, ...);
 
 #endif  /* UFTPD_H_ */

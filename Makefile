@@ -26,7 +26,7 @@ DEV         = $(NAME)-dev
 ARCHIVE     = $(PKG).tar.xz
 EXEC        = $(NAME)
 DISTFILES   = LICENSE README
-OBJS        = uftpd.o ftpcmd.o string.o strlcpy.o strlcat.o log.o
+OBJS        = uftpd.o daemonize.o ftpcmd.o string.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(addprefix .,$(SRCS:.c=.d))
 

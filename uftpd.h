@@ -28,11 +28,13 @@
 #include <locale.h>
 #include <netdb.h>
 #include <pwd.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
@@ -49,6 +51,21 @@
 
 /* XXX: What's a "good" buffer size, 4096? */
 #define BUFFER_SIZE       1000
+
+/* This is a stupid server, it doesn't expect >20 sec inactivity */
+#define INACTIVITY_TIMER  20
+
+#ifndef UNUSED
+#define UNUSED(x) UNUSED_ ## x __attribute__ ((unused))
+#endif
+
+#define SETSIG(sa, sig, fun, flags)			\
+	do {						\
+		sa.sa_sigaction = fun;			\
+		sa.sa_flags = SA_SIGINFO | flags;	\
+		sigemptyset(&sa.sa_mask);		\
+		sigaction(sig, &sa, NULL);		\
+	} while (0)
 
 #define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
 #define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
@@ -68,7 +85,7 @@ extern char  do_log;            /* Bool: False at daemon start      */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 
-int  daemonize(char *output);
+void collect_sessions(void);
 void logit(int severity, int code, const char *fmt, ...);
 
 #endif  /* UFTPD_H_ */

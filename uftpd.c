@@ -53,8 +53,40 @@ static int usage(void)
 	return 0;
 }
 
+/*
+ * SIGCHLD: one of our children has died
+ */
+static void sigchld_handler(int UNUSED(sig), siginfo_t *UNUSED(info), void *UNUSED(ctx))
+{
+	collect_sessions();
+}
+
+/*
+ * SIGQUIT: request termination
+ */
+static void sigquit_handler(int sig, siginfo_t *UNUSED(info), void *UNUSED(ctx))
+{
+	INFO("Recieved signal %d, exiting ...", sig);
+	killpg(0, SIGTERM);
+	sleep(2);
+	killpg(0, SIGKILL);
+}
+
+static void sig_init(void)
+{
+	struct sigaction sa;
+
+	SETSIG(sa, SIGCHLD, sigchld_handler, SA_RESTART);
+	SETSIG(sa, SIGTERM, sigquit_handler, SA_RESTART);
+	SETSIG(sa, SIGQUIT, sigquit_handler, SA_RESTART);
+	SETSIG(sa, SIGHUP, sigquit_handler, SA_RESTART);
+	SETSIG(sa, SIGINT, sigquit_handler, SA_RESTART);
+}
+
 static void init(void)
 {
+	sig_init();
+
 	if (!port) {
 		struct servent *sv;
 
@@ -128,8 +160,10 @@ int main(int argc, char **argv)
 	}
 
 	if (background) {
-		if (daemonize(NULL))
-			return 0;
+		if (-1 == daemon(0, 0)) {
+			ERR(errno, "Failed daemonizing");
+			return 1;
+		}
 	}
 
 	return serve_files();

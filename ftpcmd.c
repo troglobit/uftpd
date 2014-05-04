@@ -21,6 +21,21 @@
 static int sd       = -1;
 static int chrooted = 0;
 
+/* Check for any forked off children that exited. */
+void collect_sessions(void)
+{
+	while (1) {
+		pid_t pid;
+
+		pid = waitpid(0, NULL, WNOHANG);
+		if (!pid)
+			continue;
+
+		if (-1 == pid)
+			break;
+	}
+}
+
 int serve_files(void)
 {
 	int err, val = 1;
@@ -64,6 +79,7 @@ int serve_files(void)
 		}
 
 		start_session(client);
+		collect_sessions();
 	}
 
 	return 0;
@@ -112,7 +128,7 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	while ((bytes = recv(sd, msg, len, 0))) {
 		if (bytes < 0) {
 			if (EINTR == errno)
-				continue;
+				return 1;
 
 			ERR(errno, "Failed reading client command");
 			return 1;
@@ -257,12 +273,20 @@ static char *compose_path(ctx_t *ctrl, char *path)
 	return dir;
 }
 
+/* Inactivity timer, bye bye */
+static void sigalrm_handler(int UNUSED(sig), siginfo_t *UNUSED(info), void *UNUSED(ctx))
+{
+	INFO("Inactivity timer, exiting ...");
+	exit(0);
+}
+
 static void handle_command(ctx_t *ctrl)
 {
 	size_t len = BUFFER_SIZE * sizeof(char);
 	char *buffer;
 	char *cmd;
 	char *argument;
+	struct sigaction sa;
 
 	buffer = malloc(len);
 	if (!buffer) {
@@ -273,9 +297,15 @@ static void handle_command(ctx_t *ctrl)
 	snprintf(buffer, len, "220 %s (%s) ready.\r\n", __progname, VERSION);
 	send_msg(ctrl->sd, buffer);
 
+	SETSIG(sa, SIGALRM, sigalrm_handler, SA_RESTART);
+
 	while (1) {
+		alarm(INACTIVITY_TIMER);
+
 		if (recv_msg(ctrl->sd, buffer, len, &cmd, &argument))
 			break;
+
+		alarm(0);
 
 		show_log(cmd);
 		show_log(argument);
@@ -378,7 +408,8 @@ static int session(ctx_t *ctrl)
 	handle_command(ctrl);
 	stop_session(ctrl);
 
-	return 0;
+	DBG("Exiting ...");
+	exit(0);
 }
 
 int start_session(int sd)
@@ -827,19 +858,19 @@ void handle_STOR(ctx_t *ctrl, char *file)
 	free(buf);
 }
 
-void handle_DELE(ctx_t *ctrl __attribute__((unused)), char *file __attribute__((unused)))
+void handle_DELE(ctx_t *UNUSED(ctrl), char *UNUSED(file))
 {
 
 }
 
 //
-void handle_MKD(ctx_t *ctrl __attribute__((unused)))
+void handle_MKD(ctx_t *UNUSED(ctrl))
 {
 
 }
 
 //
-void handle_RMD(ctx_t *ctrl __attribute__((unused)))
+void handle_RMD(ctx_t *UNUSED(ctrl))
 {
 
 }
@@ -862,13 +893,13 @@ void handle_SIZE(ctx_t *ctrl, char *file)
 }
 
 //
-void handle_RNFR(ctx_t *ctrl __attribute__((unused)))
+void handle_RNFR(ctx_t *UNUSED(ctrl))
 {
 
 }
 
 //
-void handle_RNTO(ctx_t *ctrl __attribute__((unused)))
+void handle_RNTO(ctx_t *UNUSED(ctrl))
 {
 
 }

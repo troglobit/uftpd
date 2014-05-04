@@ -28,4 +28,9 @@ if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	TEXT
 fi
 
+if ! grep -q "^ftp:" /etc/passwd; then
+	addgroup --quiet --system ftp
+	adduser --quiet --system --disabled-login --home /srv/ftp --ingroup ftp ftp || true
+fi
+
 #DEBHELPER#

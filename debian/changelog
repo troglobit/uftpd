@@ -1,3 +1,12 @@
+uftpd (1.0-2) unstable; urgency=low
+
+  * Add support for creating and removing the standard ftp user on
+    installation and removal.  Use /srv/ftp as $HOME and make sure
+    to not remove $HOME when removing uftpd.  This also means that
+    the uftpd privsep mode gets its first testing.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 04 May 2014 19:28:16 +0200
+
 uftpd (1.0-1) unstable; urgency=low
 
   * Initial release.

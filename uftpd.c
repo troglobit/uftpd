@@ -39,14 +39,14 @@ static int usage(void)
 {
 	printf("\nUsage: %s [-dfivV] [-l LOGFILE] [-p PORT]\n"
 	       "\n"
-	       "  -h | -?  Show this help text\n"
-	       "  -d       Enable developer debug logs\n"
-	       "  -f       Run in foreground, do not detach from calling terminal\n"
-	       "  -i       Inetd mode, take client connections from stdin\n"
-	       "  -l PATH  Full path to logfile, otherwise syslog is used\n"
-	       "  -p PORT  Port to serve files on, default %d\n"
-	       "  -v       Show program version\n"
-	       "  -V       Verbose logging\n"
+	       "  -h | -?    Show this help text\n"
+	       "  -d         Enable developer debug logs\n"
+	       "  -f         Run in foreground, do not detach from calling terminal\n"
+	       "  -i         Inetd mode, take client connections from stdin\n"
+	       "  -l [PATH]  Log to stdout, an optional logfile, or default to syslog\n"
+	       "  -p PORT    Port to serve files on, default %d\n"
+	       "  -v         Show program version\n"
+	       "  -V         Verbose logging\n"
 	       "\n"
 	       "Bug report address: %-40s\n\n", __progname, FTP_DEFAULT_PORT, BUGADDR);
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt (argc, argv, "h?dfil:p:vV")) != EOF) {
+	while ((c = getopt (argc, argv, "h?dfil::p:vV")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -129,7 +129,9 @@ int main(int argc, char **argv)
 			break;
 
 		case 'l':
-			logfile = strdup(optarg);
+			do_log = 1;
+			if (optarg)
+				logfile = strdup(optarg);
 			break;
 
 		case 'p':
@@ -148,9 +150,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!logfile) {
-		do_log = 1;
-		openlog (__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
+	if (!do_log) {
+		do_log = 1;	/* Syslog */
+		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
+	} else {
+		do_log = 0;	/* Stderr, or logfile if set */
 	}
 
 	init();

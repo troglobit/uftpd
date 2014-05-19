@@ -18,7 +18,7 @@
 .PHONY: all install uninstall clean distclean dist
 
 #VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.1
+VERSION    ?= 1.2
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)

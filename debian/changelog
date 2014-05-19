@@ -1,3 +1,10 @@
+uftpd (1.1-1) unstable; urgency=low
+
+  * New release.  Fixes problem with lingering zombie processes and an
+    ordering bug preventing drop privs from working properly.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 04 May 2014 23:37:24 +0200
+
 uftpd (1.0-2) unstable; urgency=low
 
   * Add support for creating and removing the standard ftp user on

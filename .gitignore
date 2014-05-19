@@ -4,3 +4,5 @@ uftpd
 .*.d
 defs.h
 *.map
+debian/files
+debian/uftpd.*

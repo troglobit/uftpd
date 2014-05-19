@@ -645,15 +645,16 @@ void handle_LIST(ctx_t *ctrl)
 
 	dir = opendir(path);
 	while (dir) {
-		char *pos;
+		char *pos = buf;
 		size_t len = sz;
 		struct dirent *entry;
 
-		pos = buf;
-		while ((entry = readdir(dir))) {
+		DBG("Reading directory %s ...", path);
+		while ((entry = readdir(dir)) && len > 80) {
 			struct stat st;
 			char *name = entry->d_name;
 
+			DBG("Found directory entry %s", name);
 			if (!strcmp(name, ".") || !strcmp(name, ".."))
 				continue;
 
@@ -670,13 +671,13 @@ void handle_LIST(ctx_t *ctrl)
 				 name, ctrl->type == TYPE_A ? "\r" : "");
 
 			DBG("LIST %s", pos);
-			pos = pos + strlen(pos);
+			len -= strlen(pos);
+			pos += strlen(pos);
 		}
 
 		send_msg(ctrl->data_sd, buf);
 		if (entry)
 			continue;
-
 		closedir(dir);
 		break;
 	}

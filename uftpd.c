@@ -26,6 +26,7 @@ char  background  = 1;
 char  debug       = 0;
 char  verbose     = 0;
 char  do_log      = 0;
+char  do_tftp     = 0;
 char *logfile     = NULL;
 struct passwd *pw = NULL;
 
@@ -45,6 +46,7 @@ static int usage(void)
 	       "  -i         Inetd mode, take client connections from stdin\n"
 	       "  -l [PATH]  Log to stdout, an optional logfile, or default to syslog\n"
 	       "  -p PORT    Port to serve files on, default %d\n"
+	       "  -t         Enable TFTP service\n"
 	       "  -v         Show program version\n"
 	       "  -V         Verbose logging\n"
 	       "\n"
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
 {
 	int c;
 
-	while ((c = getopt (argc, argv, "h?dfil::p:vV")) != EOF) {
+	while ((c = getopt (argc, argv, "h?dfil::p:tvV")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -136,6 +138,10 @@ int main(int argc, char **argv)
 
 		case 'p':
 			port = atoi(optarg);
+			break;
+
+		case 't':
+			do_tftp = 1;
 			break;
 
 		case 'v':

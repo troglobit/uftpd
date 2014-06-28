@@ -82,6 +82,7 @@ extern char  background;	/* Bool: conflicts with inetd       */
 extern char  debug;             /* Level: 1-7, only 1 implemented   */
 extern char  verbose;           /* Bool: Enables extra logging info */
 extern char  do_log;            /* Bool: False at daemon start      */
+extern char  do_tftp;           /* Bool: Enable TFTP service        */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 

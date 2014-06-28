@@ -27,7 +27,7 @@ ARCHIVE     = $(PKG).tar.xz
 EXEC        = $(NAME)
 MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
-OBJS        = uftpd.o ftpcmd.o string.o strlcpy.o strlcat.o log.o
+OBJS        = uftpd.o ftpcmd.o tftpcmd.o string.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(addprefix .,$(SRCS:.c=.d))
 

@@ -36,40 +36,58 @@ void collect_sessions(void)
 	}
 }
 
-int serve_files(void)
+static int open_socket(int port, int type, char *desc)
 {
-	int err, val = 1;
+	int sd, err, val = 1;
 	socklen_t len = sizeof(struct sockaddr);
 	struct sockaddr_in server;
 
-	sd = socket(AF_INET, SOCK_STREAM, 0);
+	sd = socket(AF_INET, type, 0);
 	if (sd < 0) {
-		ERR(errno, "Failed creating FTP server socket");
-		exit(1);
+		WARN(errno, "Failed creating %s server socket", desc);
+		return -1;
 	}
 
 	err = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
-	if (err != 0) {
-		ERR(errno, "Failed setting SO_REUSEADDR");
-		return 1;
-	}
+	if (err != 0)
+		WARN(errno, "Failed setting SO_REUSEADDR on TFTP socket");
 
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port        = htons(port);
+	len                    = sizeof(struct sockaddr);
 	if (bind(sd, (struct sockaddr *)&server, len) < 0) {
-		ERR(errno, "Failed binding to port %d, maye another FTP server is already running", port);
-		return 1;
+		WARN(errno, "Failed binding to port %d, maybe another %s server is already running", port, desc);
+		close(sd);
+
+		return -1;
 	}
 
-	if (-1 == listen(sd, 20)) {
-		ERR(errno, "Failed starting FTP server");
-		return 1;
+	if (port) {
+		if (-1 == listen(sd, 20))
+			WARN(errno, "Failed starting %s server", desc);
 	}
 
+	return sd;
+}
+
+extern int tftp_session(int client);
+
+int serve_files(void)
+{
+/*
+	sd = open_socket(port, SOCK_STREAM, "FTP");
+	if (sd < 0)
+		exit(1);
+
+	if (do_tftp)
+*/
+		sd = open_socket(69, SOCK_DGRAM, "TFTP");	/* XXX: Fix hardcoded port n:o */
+	INFO("Started TFTP server on port 69, socket %d", sd);
 	INFO("Serving files from %s, listening on port %d ...", home, port);
 
 	while (1) {
+/*
 		int client;
 
 		client = accept(sd, NULL, NULL);
@@ -77,9 +95,12 @@ int serve_files(void)
 			perror("Failed accepting incoming client connection");
 			continue;
 		}
-
+*/
+		tftp_session (sd);
+/*
 		start_session(client);
 		collect_sessions();
+*/
 	}
 
 	return 0;

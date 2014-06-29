@@ -1,7 +1,6 @@
 # uftpd -- the small no nonsense FTP server
 #
-# Copyright (c) 2013-2014  Xu Wang <wangxu.93@icloud.com>
-# Copyright (c)      2014  Joachim Nilsson <troglobit@gmail.com>
+# Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -27,7 +26,7 @@ ARCHIVE     = $(PKG).tar.xz
 EXEC        = $(NAME)
 MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
-OBJS        = uftpd.o ftpcmd.o tftpcmd.o string.o strlcpy.o strlcat.o log.o
+OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o string.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(addprefix .,$(SRCS:.c=.d))
 
@@ -39,7 +38,10 @@ sbindir    ?= /sbin
 datadir     = $(prefix)/share/doc/$(NAME)
 mandir      = $(prefix)/share/man/man8
 
+CPPFLAGS   += -Ilibuev
 CFLAGS     += -O2 -W -Wall -Werror -g
+LDFLAGS    += -Llibuev
+LDLIBS     += libuev/libuev.a
 
 include common.mk
 

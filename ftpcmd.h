@@ -19,40 +19,7 @@
 #ifndef FTPCMD_H_
 #define FTPCMD_H_
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
 #include "uftpd.h"
-
-typedef struct {
-	int sd;
-	int type;
-
-	/* User credentials */
-	char name[20];
-	char pass[20];
-
-	/* PASV */
-	int data_sd;
-	int data_listen_sd;
-
-	/* PORT */
-	char data_address[INET_ADDRSTRLEN];
-	int  data_port;
-
-	char cwd[PATH_MAX];
-
-	char ouraddr[INET_ADDRSTRLEN];
-	char hisaddr[INET_ADDRSTRLEN];
-
-	int status;
-} ctx_t;
-
-int  serve_files(void);
-int  start_session(int sd);
 
 void handle_USER(ctx_t *ctrl, char *name);
 void handle_PASS(ctx_t *ctrl, char *pass);
@@ -62,9 +29,7 @@ void handle_TYPE(ctx_t *ctrl, char *argument);
 
 void handle_PWD(ctx_t *ctrl);
 void handle_CWD(ctx_t *ctrl, char *dir);
-//
-//void handle_XPWD(ctx_t *ctrl);
-//
+void handle_XPWD(ctx_t *ctrl);
 
 void handle_PORT(ctx_t *ctrl, char *str);
 void handle_LIST(ctx_t *ctrl);

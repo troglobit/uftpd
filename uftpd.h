@@ -25,22 +25,26 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
 #include <locale.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <syslog.h>
 #include <time.h>
+#include <uev.h>
 #include <unistd.h>
 
 #include "defs.h"
-#include "ftpcmd.h"
 #include "string.h"
 
 #define FTP_DEFAULT_PORT  21
@@ -56,7 +60,7 @@
 #define INACTIVITY_TIMER  20
 
 #ifndef UNUSED
-#define UNUSED(x) UNUSED_ ## x __attribute__ ((unused))
+#define UNUSED(arg) arg __attribute__ ((unused))
 #endif
 
 #define SETSIG(sa, sig, fun, flags)			\
@@ -79,6 +83,7 @@ extern int   port;              /* Server listening port            */
 extern char *home;		/* Server root/home directory       */
 extern char  inetd;             /* Bool: conflicts with daemonize   */
 extern char  background;	/* Bool: conflicts with inetd       */
+extern int   chrooted;		/* Bool: are we chrooted?           */
 extern char  debug;             /* Level: 1-7, only 1 implemented   */
 extern char  verbose;           /* Bool: Enables extra logging info */
 extern char  do_log;            /* Bool: False at daemon start      */
@@ -86,8 +91,38 @@ extern char  do_tftp;           /* Bool: Enable TFTP service        */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 
+typedef struct {
+	int sd;
+	int type;
+
+	/* User credentials */
+	char name[20];
+	char pass[20];
+
+	/* PASV */
+	int data_sd;
+	int data_listen_sd;
+
+	/* PORT */
+	char data_address[INET_ADDRSTRLEN];
+	int  data_port;
+
+	char cwd[PATH_MAX];
+
+	char ouraddr[INET_ADDRSTRLEN];
+	char hisaddr[INET_ADDRSTRLEN];
+
+	int status;
+} ctx_t;
+
+int  serve_files(void);
+int  ftp_session(int sd);
 void collect_sessions(void);
 void logit(int severity, int code, const char *fmt, ...);
+void ftp_command(ctx_t *ctrl);
+char *compose_path(ctx_t *ctrl, char *path);
+void sigalrm_handler(int signo, siginfo_t *info, void *ctx);
+int tftp_session(int client);
 
 #endif  /* UFTPD_H_ */
 

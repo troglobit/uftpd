@@ -18,8 +18,6 @@
 #include "uftpd.h"
 
 int chrooted = 0;
-static uev_t ftp;
-static uev_t tftp;
 
 /* Check for /some/path/../new/path => /some/new/path */
 static void squash_dots(char *path)
@@ -41,7 +39,7 @@ static void squash_dots(char *path)
 	}
 }
 
-char *compose_path(ctx_t *ctrl, char *path)
+char *compose_path(ctrl_t *ctrl, char *path)
 {
 	static char dir[PATH_MAX];
 
@@ -72,22 +70,7 @@ char *compose_path(ctx_t *ctrl, char *path)
 	return dir;
 }
 
-/* Check for any forked off children that exited. */
-void collect_sessions(void)
-{
-	while (1) {
-		pid_t pid;
-
-		pid = waitpid(0, NULL, WNOHANG);
-		if (!pid)
-			continue;
-
-		if (-1 == pid)
-			break;
-	}
-}
-
-static int open_socket(int port, int type, char *desc)
+int open_socket(int port, int type, char *desc)
 {
 	int sd, err, val = 1;
 	socklen_t len = sizeof(struct sockaddr);
@@ -106,7 +89,6 @@ static int open_socket(int port, int type, char *desc)
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port        = htons(port);
-	len                    = sizeof(struct sockaddr);
 	if (bind(sd, (struct sockaddr *)&server, len) < 0) {
 		WARN(errno, "Failed binding to port %d, maybe another %s server is already running", port, desc);
 		close(sd);
@@ -114,12 +96,29 @@ static int open_socket(int port, int type, char *desc)
 		return -1;
 	}
 
-	if (port) {
+	if (port && type != SOCK_DGRAM) {
 		if (-1 == listen(sd, 20))
 			WARN(errno, "Failed starting %s server", desc);
 	}
 
+	DBG("Opened socket for port %d!", port);
+
 	return sd;
+}
+
+void convert_address(struct sockaddr_storage *ss, char *buf, size_t len)
+{
+	switch (ss->ss_family) {
+	case AF_INET:
+		inet_ntop(ss->ss_family,
+			  &((struct sockaddr_in *)ss)->sin_addr, buf, len);
+		break;
+
+	case AF_INET6:
+		inet_ntop(ss->ss_family,
+			  &((struct sockaddr_in6 *)&ss)->sin6_addr, buf, len);
+		break;
+	}
 }
 
 /* Inactivity timer, bye bye */
@@ -130,35 +129,44 @@ void sigalrm_handler(int UNUSED(signo), siginfo_t *UNUSED(info), void *UNUSED(ct
 }
 
 
-static void stop_session(ctx_t *ctrl)
+ctrl_t *new_session(int sd, int *rc)
 {
-	if (ctrl->sd > 0)
-		close(ctrl->sd);
-
-	if (ctrl->data_listen_sd > 0)
-		close(ctrl->data_listen_sd);
-
-	if (ctrl->data_sd > 0)
-		close(ctrl->data_sd);
-
-	free(ctrl);
-}
-
-static int session(ctx_t *ctrl)
-{
+	ctrl_t *ctrl;
 	static int privs_dropped = 0;
+
+	if (!inetd) {
+		pid_t pid = fork();
+
+		if (pid) {
+			DBG("Forked off client session as PID %d", pid);
+			*rc = pid;
+			return NULL;
+		}
+	}
+
+	ctrl = calloc(1, sizeof(ctrl_t));
+	if (!ctrl) {
+		ERR(errno, "Failed allocating session context");
+		*rc = -1;
+		return NULL;
+	}
+
+	ctrl->sd = sd;
+	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
 
 	/* Chroot to FTP root */
 	if (!chrooted && geteuid() == 0) {
 		if (chroot(home) || chdir(".")) {
 			ERR(errno, "Failed chrooting to FTP root, %s, aborting", home);
-			return -1;
+			*rc = -1;
+			return NULL;
 		}
 		chrooted = 1;
 	} else if (!chrooted) {
 		if (chdir(home)) {
 			WARN(errno, "Failed changing to FTP root, %s, aborting", home);
-			return -1;
+			*rc = -1;
+			return NULL;
 		}
 	}
 
@@ -181,107 +189,26 @@ static int session(ctx_t *ctrl)
 		privs_dropped = 1;
 	}
 
-	ftp_command(ctrl);
-	stop_session(ctrl);
-
-	DBG("Exiting ...");
-	exit(0);
+	return ctrl;
 }
 
-
-int ftp_session(int sd)
+int del_session(ctrl_t *ctrl)
 {
-	pid_t pid;
-	ctx_t *ctrl;
-	socklen_t len;
-	struct sockaddr_in host_addr;
-	struct sockaddr_in client_addr;
-
-	ctrl = malloc(sizeof(ctx_t));
-	if (!ctrl) {
-		ERR(errno, "Failed allocating session context");
+	if (!ctrl)
 		return -1;
-	}
 
-	/* Find our address */
-	len = sizeof(struct sockaddr);
-	getsockname(sd, (struct sockaddr *)&host_addr, &len);
-	inet_ntop(AF_INET, &(host_addr.sin_addr), ctrl->ouraddr, sizeof(ctrl->ouraddr));
+	if (ctrl->sd > 0)
+		close(ctrl->sd);
 
-	/* Find peer address */
-	len = sizeof(struct sockaddr);
-	getpeername(sd, (struct sockaddr *)&client_addr, &len);
-	inet_ntop(AF_INET, &(client_addr.sin_addr), ctrl->hisaddr, sizeof(ctrl->hisaddr));
+	if (ctrl->data_listen_sd > 0)
+		close(ctrl->data_listen_sd);
 
-	ctrl->sd = sd;
-	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
-	ctrl->type = TYPE_A;
-	ctrl->status = 0;
-	ctrl->data_listen_sd = -1;
-	ctrl->data_sd = -1;
-	ctrl->name[0] = 0;
-	ctrl->pass[0] = 0;
-	ctrl->data_address[0] = 0;
+	if (ctrl->data_sd > 0)
+		close(ctrl->data_sd);
 
-	if (!inetd) {
-		pid = fork();
-		if (pid) {
-			DBG("Forked off client session as PID %d", pid);
-			return pid;
-		}
-	}
+	free(ctrl);
 
-	INFO("Client connection from %s", ctrl->hisaddr);
-	return session(ctrl);
-}
-
-static void ftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
-{
-        int client;
-
-        client = accept(w->fd, NULL, NULL);
-        if (client < 0) {
-                perror("Failed accepting incoming FTP client connection");
-                return;
-        }
-
-        ftp_session(client);
-        collect_sessions();
-}
-
-static void tftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
-{
-        /* XXX: Fork me here ... to prevent blocking new connections during a TFTP session */
-        tftp_session(w->fd);
-}
-
-int serve_files(void)
-{
-        int sd;
-        uev_ctx_t uc;
-
-        uev_init(&uc);
-
-	sd = open_socket(port, SOCK_STREAM, "FTP");
-	if (sd < 0)
-		exit(1);
-
-        uev_io_init(&uc, &ftp, ftp_cb, NULL, sd, UEV_READ);
-        INFO("Started FTP server on port %d", port);
-
-	if (do_tftp) {
-		sd = open_socket(69, SOCK_DGRAM, "TFTP");	/* XXX: Fix hardcoded port n:o */
-                if (sd < 0) {
-                        WARN(errno, "Failed starting TFTP service");
-                } else {
-                        uev_io_init(&uc, &tftp, tftp_cb, NULL, sd, UEV_READ);
-                        INFO("Started TFTP server on port 69");
-                }
-        }
-
-	INFO("Serving files from %s ...", home);
-
-	return uev_run(&uc, 0);
+	return 0;
 }
 
 /**

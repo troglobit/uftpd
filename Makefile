@@ -26,7 +26,7 @@ ARCHIVE     = $(PKG).tar.xz
 EXEC        = $(NAME)
 MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
-OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o string.o strlcpy.o strlcat.o log.o
+OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(addprefix .,$(SRCS:.c=.d))
 
@@ -45,11 +45,15 @@ LDLIBS     += libuev/libuev.a
 
 include common.mk
 
-all: defs.h $(EXEC)
+all: defs.h $(LDLIBS) $(EXEC)
 
 defs.h: Makefile
 	@echo "#define VERSION \"$(VERSION)\"" >  $@
 	@echo "#define BUGADDR \"$(BUGADDR)\"" >> $@
+
+
+$(LDLIBS): Makefile
+	+@$(MAKE) -C libuev
 
 $(EXEC): $(OBJS)
 
@@ -99,6 +103,7 @@ clean:
 	-@$(RM) $(OBJS) $(EXEC)
 
 distclean: clean
+	+@$(MAKE) -C libuev $@
 	-@$(RM) $(JUNK) unittest *.o .*.d
 
 check:

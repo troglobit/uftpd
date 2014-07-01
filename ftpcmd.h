@@ -1,7 +1,6 @@
-/* uftpd -- the small no nonsense FTP server
+/* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2013-2014  Xu Wang <wangxu.93@icloud.com>
- * Copyright (c)      2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,37 +20,37 @@
 
 #include "uftpd.h"
 
-void handle_USER(ctx_t *ctrl, char *name);
-void handle_PASS(ctx_t *ctrl, char *pass);
+void handle_USER(ctrl_t *ctrl, char *name);
+void handle_PASS(ctrl_t *ctrl, char *pass);
 
-void handle_SYST(ctx_t *ctrl);
-void handle_TYPE(ctx_t *ctrl, char *argument);
+void handle_SYST(ctrl_t *ctrl);
+void handle_TYPE(ctrl_t *ctrl, char *argument);
 
-void handle_PWD(ctx_t *ctrl);
-void handle_CWD(ctx_t *ctrl, char *dir);
-void handle_XPWD(ctx_t *ctrl);
+void handle_PWD(ctrl_t *ctrl);
+void handle_CWD(ctrl_t *ctrl, char *dir);
+void handle_XPWD(ctrl_t *ctrl);
 
-void handle_PORT(ctx_t *ctrl, char *str);
-void handle_LIST(ctx_t *ctrl);
+void handle_PORT(ctrl_t *ctrl, char *str);
+void handle_LIST(ctrl_t *ctrl);
 
-void handle_PASV(ctx_t *ctrl);
+void handle_PASV(ctrl_t *ctrl);
 
-void handle_RETR(ctx_t *ctrl, char *file);
-void handle_STOR(ctx_t *ctrl, char *file);
-void handle_DELE(ctx_t *ctrl, char *file);
+void handle_RETR(ctrl_t *ctrl, char *file);
+void handle_STOR(ctrl_t *ctrl, char *file);
+void handle_DELE(ctrl_t *ctrl, char *file);
 
-void handle_MKD(ctx_t *ctrl);
-void handle_RMD(ctx_t *ctrl);
+void handle_MKD(ctrl_t *ctrl);
+void handle_RMD(ctrl_t *ctrl);
 
-void handle_SIZE(ctx_t *ctrl, char *file);
+void handle_SIZE(ctrl_t *ctrl, char *file);
 
-void handle_RNFR(ctx_t *ctrl);
-void handle_RNTO(ctx_t *ctrl);
+void handle_RNFR(ctrl_t *ctrl);
+void handle_RNTO(ctrl_t *ctrl);
 
-void handle_QUIT(ctx_t *ctrl);
-void handle_CLNT(ctx_t *ctrl);
+void handle_QUIT(ctrl_t *ctrl);
+void handle_CLNT(ctrl_t *ctrl);
 
-void handle_OPTS(ctx_t *ctrl);
+void handle_OPTS(ctrl_t *ctrl);
 
 #endif  /* FTPCMD_H_ */
 

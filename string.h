@@ -1,7 +1,6 @@
-/* uftpd -- the small no nonsense FTP server
+/* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2013-2014  Xu Wang <wangxu.93@icloud.com>
- * Copyright (c)      2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +18,6 @@
 #ifndef STRING_H_
 #define STRING_H_
 
-char *_transfer_ip_port_str(char *ip, int port);
 size_t strlcpy(char *dst, const char *src, size_t siz);
 size_t strlcat(char *dst, const char *src, size_t siz);
 

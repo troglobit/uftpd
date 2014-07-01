@@ -15,84 +15,204 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <errno.h>
-#include <arpa/inet.h>
-#include <arpa/tftp.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <poll.h>
+#include "uftpd.h"
 
-int tftp_session(int sd)
+/* Send @len bytes data in @ctrl->buf */
+static int do_send(ctrl_t *ctrl, size_t len)
 {
-	static FILE *fp = NULL;
-	int16_t op;
-	static uint16_t block = 0;
-	char buf[sizeof(struct tftphdr) + SEGSIZE];
-	size_t i, len;
-	struct sockaddr_in addr;
-	socklen_t addr_len;
-	struct tftphdr *th = (struct tftphdr *)buf;
-	size_t hdrsz = th->th_data - buf;
+	int     result;
+	size_t  hdrsz = ctrl->th->th_data - ctrl->buf;
+	size_t  salen = sizeof(struct sockaddr_in);
 
-	if (chdir("/srv/ftp"))
-		fprintf(stderr, "Failed changing to server root directory: %m\n");
+	if (ctrl->client_sa.ss_family == AF_INET6)
+		salen = sizeof(struct sockaddr_in6);
 
-	memset(buf, 0, sizeof(buf));
-	len = recvfrom(sd, buf, sizeof(buf), 0, (struct sockaddr *)&addr, &addr_len);
-	for (i = 0; i < len; i++)
-		fprintf(stderr, "%02X ", buf[i]);
-	fprintf(stderr, "\n");
+	DBG("tftp sending %zd + %zd bytes ...", hdrsz, len);
+	result = sendto(ctrl->sd, ctrl->buf, hdrsz + len, 0, (struct sockaddr *)&ctrl->client_sa, salen);
+	if (-1 == result)
+		return 1;
 
-	op     = ntohs(th->th_opcode);
-	block  = ntohs(th->th_block);
+	return 0;
+}
 
-	if (op == RRQ) {
-		fprintf(stderr, "tftp RRQ %s from %s:%d\n", th->th_stuff, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-		fp = fopen(th->th_stuff, "r");
-		if (!fp) {
-			char *errstr = strerror(errno);
+/* If @block is non-zero, resend that block */
+static int send_DATA(ctrl_t *ctrl, int block)
+{
+	size_t  len;
 
-			fprintf(stderr, "Failed opening %s ... %s\n", th->th_stuff, errstr);
-			memset(buf, 0, sizeof(buf));
-			th->th_opcode = htons(ERROR);
-			th->th_code   = htons(ENOTFOUND);
-			len = strlen(errstr) + 1;
-			strncpy(th->th_data, errstr, len);
-			sendto(sd, buf, hdrsz + len, 0, (struct sockaddr *)&addr, sizeof(addr));
-			return 1;
-		}
+	memset(ctrl->buf, 0, ctrl->bufsz);
 
-	sendit:
-		{
-			size_t num;
+	/* Create message */
+	ctrl->th->th_opcode = htons(DATA);
+	if (block) {
+		int pos = (block -1) * ctrl->segsize;
 
-			memset(buf, 0, sizeof(buf));
-			th->th_opcode = htons(DATA);
-			th->th_block  = htons((ftell(fp) / SEGSIZE) + 1);
-			fprintf(stderr, "tftp reading %d bytes ...\n", SEGSIZE);
-			num = fread(th->th_data, sizeof(char), SEGSIZE, fp);
-			fprintf(stderr, "tftp sending %zd + %zd bytes ...\n", hdrsz, num);
-			sendto(sd, buf, hdrsz + num, 0, (struct sockaddr *)&addr, sizeof(addr));
-		}
-	} else if (op == ERROR) {
-		fprintf(stderr, "tftp ERROR: %hd\n", ntohs(th->th_code));
-	} else if (op == ACK) {
-		fprintf(stderr, "tftp ACK, block # %hu\n", block);
-		if (fp) {
-			if (feof(fp)) {
-				fclose(fp);
-				fp = NULL;
-			} else
-				goto sendit;
-		}
+		ctrl->th->th_block = htons(block);
+		fseek(ctrl->fp, pos, SEEK_SET);
 	} else {
-		fprintf(stderr, "tftp opcode: %hd\n", op);
-		fprintf(stderr, "tftp block#: %hu\n", block);
+		ctrl->th->th_block = htons((ftell(ctrl->fp) / ctrl->segsize) + 1);
+	}
+
+	DBG("tftp block %d reading %zd bytes ...", ctrl->th->th_block, ctrl->segsize);
+	len = fread(ctrl->th->th_data, sizeof(char), ctrl->segsize, ctrl->fp);
+
+	return do_send(ctrl, len);
+}
+
+#if 0 /* TODO, for client op */
+static int send_ACK(ctrl_t *ctrl)
+{
+	return 0;
+}
+#endif
+
+static int send_ERROR(ctrl_t *ctrl, int code)
+{
+	char   *str = strerror(code);
+	size_t  len = strlen(str);
+
+	memset(ctrl->buf, 0, ctrl->segsize);
+
+	/* Create error message */
+	ctrl->th->th_opcode = htons(ERROR);
+	ctrl->th->th_code   = htons(code);
+	strlcpy(ctrl->th->th_data, str, len);
+
+	/* Error is ASCIIZ string, hence +1 */
+	return do_send(ctrl, len + 1);
+}
+
+static int handle_RRQ(ctrl_t *ctrl, char *file)
+{
+	char *path = compose_path(ctrl, file);
+
+	ctrl->fp = fopen(path, "r");
+	if (!ctrl->fp) {
+		ERR(errno, "Failed opening %s", path);
+		return send_ERROR(ctrl, ENOTFOUND);
+	}
+
+	return !send_DATA(ctrl, 0);
+}
+
+/* TODO: Add support for ACK timeout and resend */
+static int handle_ACK(ctrl_t *ctrl, int block)
+{
+	if (ctrl->fp) {
+		if (feof(ctrl->fp)) {
+			fclose(ctrl->fp);
+			ctrl->fp = NULL;
+			return 0;
+		}
+
+		DBG("ACK block %d, file still open ... ", block);
+		return !send_DATA(ctrl, 0);
 	}
 
 	return 0;
+}
+
+void tftp_command(ctrl_t *ctrl)
+{
+	int active = 1;
+
+	DBG("Entering %s() ...", __func__);
+
+	/* Default buffer and segment size */
+	ctrl->segsize = SEGSIZE;
+	ctrl->bufsz   = sizeof(tftp_t) + ctrl->segsize;
+
+	ctrl->buf = malloc(ctrl->bufsz);
+	if (!ctrl->buf) {
+		ERR(errno, "Failed allocating TFTP buffer memory");
+		return;
+	}
+	ctrl->th = (tftp_t *)ctrl->buf;
+
+	while (active) {
+		char      *file;
+		ssize_t    len;
+		int16_t    port, op, block;
+		socklen_t  addr_len = sizeof(ctrl->client_sa);
+		struct pollfd pfd = {
+			.fd     = ctrl->sd,
+			.events = POLLIN | POLLPRI
+		};
+
+		errno = 0;
+		if (poll(&pfd, 1, INACTIVITY_TIMER * 1000) <= 0) {
+			ERR(errno, "Error or timeout waiting for client");
+			break;
+		}
+
+		memset(ctrl->buf, 0, ctrl->bufsz);
+
+		DBG("Reading TFTP request ... ");
+		len = recvfrom(ctrl->sd, ctrl->buf, ctrl->bufsz, 0, (struct sockaddr *)&ctrl->client_sa, &addr_len);
+		if (-1 == len) {
+			if (errno == EINTR || errno == EAGAIN)
+				break;
+
+			ERR(errno, "Failed reading command/status from client");
+			break;
+		}
+
+		convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
+		port   = ntohs(((struct sockaddr_in *)&ctrl->client_sa)->sin_port);
+		op     = ntohs(ctrl->th->th_opcode);
+		block  = ntohs(ctrl->th->th_block);
+		file   = ctrl->th->th_stuff;
+
+		switch (op) {
+		case RRQ:
+			DBG("tftp RRQ %s from %s:%d", file, ctrl->clientaddr, port);
+			active = handle_RRQ(ctrl, file);
+			break;
+
+		case ERROR:
+			DBG("tftp ERROR: %hd", ntohs(ctrl->th->th_code));
+			active = 0;
+			break;
+
+		case ACK:
+			DBG("tftp ACK, block # %hu", block);
+			active = handle_ACK(ctrl, block);
+			break;
+
+		default:
+			DBG("tftp opcode: %hd", op);
+			DBG("tftp block#: %hu", block);
+			break;
+		}
+	}
+
+	DBG("Leaving %s() ...", __func__);
+}
+
+int tftp_session(int sd)
+{
+	int pid = 0;
+	ctrl_t *ctrl;
+
+	/* NULL can be error or parent process */
+	ctrl = new_session(sd, &pid);
+	if (!ctrl) {
+		int status = 0;
+
+		if (-1 == pid)
+			return -1;
+
+		waitpid(pid, &status, WUNTRACED | WCONTINUED);
+		return WEXITSTATUS(status);
+	}
+
+	tftp_command(ctrl);
+
+	DBG("Exiting ...");
+	del_session(ctrl);
+
+	exit(0);
 }
 
 

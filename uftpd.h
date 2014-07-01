@@ -1,7 +1,6 @@
-/* uftpd -- the small no nonsense FTP server
+/* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2013-2014  Xu Wang <wangxu.93@icloud.com>
- * Copyright (c)      2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,8 +18,9 @@
 #ifndef UFTPD_H_
 #define UFTPD_H_
 
-#include <arpa/ftp.h>
 #include <arpa/inet.h>
+#include <arpa/ftp.h>
+#include <arpa/tftp.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -48,9 +49,14 @@
 #include "string.h"
 
 #define FTP_DEFAULT_PORT  21
-#define FTP_DEFAULT_USER  "ftp"
 #define FTP_SERVICE_NAME  "ftp"
 #define FTP_PROTO_NAME    "tcp"
+
+#define TFTP_DEFAULT_PORT 69
+#define TFTP_SERVICE_NAME "tftp"
+#define TFTP_PROTO_NAME   "udp"
+
+#define FTP_DEFAULT_USER  "ftp"
 #define FTP_DEFAULT_HOME  "/srv/ftp"
 
 /* XXX: What's a "good" buffer size, 4096? */
@@ -79,7 +85,6 @@
 #define show_log(msg)            DBG(msg)
 
 extern char *__progname;
-extern int   port;              /* Server listening port            */
 extern char *home;		/* Server root/home directory       */
 extern char  inetd;             /* Bool: conflicts with daemonize   */
 extern char  background;	/* Bool: conflicts with inetd       */
@@ -87,13 +92,31 @@ extern int   chrooted;		/* Bool: are we chrooted?           */
 extern char  debug;             /* Level: 1-7, only 1 implemented   */
 extern char  verbose;           /* Bool: Enables extra logging info */
 extern char  do_log;            /* Bool: False at daemon start      */
-extern char  do_tftp;           /* Bool: Enable TFTP service        */
+extern char  do_ftp;            /* Port: FTP port, or disabled      */
+extern char  do_tftp;           /* Port: TFTP port, or disabled     */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
+
+typedef struct tftphdr tftp_t;
 
 typedef struct {
 	int sd;
 	int type;
+
+	char cwd[PATH_MAX];
+
+	struct sockaddr_storage server_sa;
+	struct sockaddr_storage client_sa;
+
+	char serveraddr[INET_ADDRSTRLEN];
+	char clientaddr[INET_ADDRSTRLEN];
+
+	/* TFTP */
+	FILE    *fp;		/* Current file in operation */
+	char    *buf;		/* Pointer to segment buffer */
+	size_t   bufsz;		/* Size of buf */
+	tftp_t  *th;		/* Same as buf, only as tftp_t */
+	size_t   segsize;	/* SEGSIZE, or per session negotiated */
 
 	/* User credentials */
 	char name[20];
@@ -106,23 +129,20 @@ typedef struct {
 	/* PORT */
 	char data_address[INET_ADDRSTRLEN];
 	int  data_port;
+} ctrl_t;
 
-	char cwd[PATH_MAX];
+ctrl_t *new_session(int sd, int *rc);
+int     del_session(ctrl_t *ctrl);
 
-	char ouraddr[INET_ADDRSTRLEN];
-	char hisaddr[INET_ADDRSTRLEN];
+int     ftp_session(int sd);
+int     tftp_session(int client);
 
-	int status;
-} ctx_t;
+char   *compose_path(ctrl_t *ctrl, char *path);
+int     open_socket(int port, int type, char *desc);
+void    convert_address(struct sockaddr_storage *ss, char *buf, size_t len);
 
-int  serve_files(void);
-int  ftp_session(int sd);
-void collect_sessions(void);
-void logit(int severity, int code, const char *fmt, ...);
-void ftp_command(ctx_t *ctrl);
-char *compose_path(ctx_t *ctrl, char *path);
-void sigalrm_handler(int signo, siginfo_t *info, void *ctx);
-int tftp_session(int client);
+void    logit(int severity, int code, const char *fmt, ...);
+void    sigalrm_handler(int signo, siginfo_t *info, void *ctx);
 
 #endif  /* UFTPD_H_ */
 

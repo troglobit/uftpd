@@ -17,7 +17,7 @@
 .PHONY: all install uninstall clean distclean dist
 
 #VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.2
+VERSION    ?= 1.3
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)
@@ -34,7 +34,7 @@ DEPS        = $(addprefix .,$(SRCS:.c=.d))
 TOPDIR      = $(shell pwd)
 prefix     ?= /usr
 sysconfdir ?= /etc
-sbindir    ?= /sbin
+sbindir    ?= $(prefix)/sbin
 datadir     = $(prefix)/share/doc/$(NAME)
 mandir      = $(prefix)/share/man/man8
 
@@ -108,6 +108,9 @@ distclean: clean
 
 check:
 	$(CHECK) *.c *.h
+
+package:
+	dpkg-buildpackage -b -uc -tc
 
 dist:
 	@echo "Building xz tarball of $(PKG) in parent dir..."

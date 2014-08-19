@@ -1,8 +1,9 @@
 *~
 *.o
-uftpd
 .*.d
-defs.h
 *.map
+TAGS
+defs.h
+uftpd
 debian/files
 debian/uftpd.*

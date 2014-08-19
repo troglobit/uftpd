@@ -1,23 +1,8 @@
 #!/bin/sh
-
 set -e
 
-if grep -q '[[:blank:]]/usr/sbin/uftpd.*-z' /etc/inetd.conf 2>/dev/null; then
-	update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
-fi
-
-if grep -q '[[:blank:]]/usr/sbin/uftpd\>' /etc/inetd.conf 2>/dev/null; then
-	if ! grep -q '^ftp\>' /etc/inetd.conf; then
-		update-inetd --pattern '/usr/sbin/uftpd' --multi --enable ftp
-	fi
-else
-	FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i"
-	if grep -q '^ftp\>' /etc/inetd.conf 2>/dev/null; then
-		update-inetd --group STANDARD --add "## $FTPENTRY"
-	else
-		update-inetd --group STANDARD --add "$FTPENTRY"
-	fi
-fi
+FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f"
+TFTPENTRY="tftp		dgram	udp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t"
 
 if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	cat <<-TEXT
@@ -28,9 +13,21 @@ if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	TEXT
 fi
 
+if grep -q '[[:blank:]]/usr/sbin/uftpd.*' /etc/inetd.conf 2>/dev/null; then
+	update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
+fi
+
+update-inetd --group STANDARD --add "$FTPENTRY"
+update-inetd --group STANDARD --add "$TFTPENTRY"
+
 if ! grep -q "^ftp:" /etc/passwd; then
 	addgroup --quiet --system ftp
 	adduser --quiet --system --disabled-login --home /srv/ftp --ingroup ftp ftp || true
 fi
 
-#DEBHELPER#
+# Adjust for any previous server, users wanting to share files with
+# TFTP/FTP should be in the ftp group
+chown --changes ftp:ftp /srv/ftp
+chmod --changes 0775 /srv/ftp
+
+update-inetd --pattern '/usr/sbin/uftpd' --enable ".*ftp"

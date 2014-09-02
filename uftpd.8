@@ -15,48 +15,55 @@
 .\"
 .Dd May 4, 2014
 .Dt UFTPD 8
-.Os "uFTPd (1.0)"
+.Os "uFTPd (1.3)"
 .Sh NAME
 .Nm uftpd
 .Nd
-No nonsense FTP Server
+No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
 .Nm uftpd
 .Op Fl dfivV
-.Op Fl l Ar logfile
-.Op Fl p Ar port
+.Op Fl l Ar LOGFILE
+.Op Fl f Ar PORT
+.Op Fl t Ar PORT
 .Sh DESCRIPTION
 .Nm uftpd
-is a very simple Anonymous File Transfer Protocol (FTP) server.  It uses
-the
-.Tn TCP
-protocol
-and listens at the port specified in the
-.Dq ftp
-service specification; see
+is a very simple TFTP and anonymous FTP server.  It listens on standard
+Internet ports for each protocol, as defined in the system service
+specification, unless other ports are given on the command line.  For
+details, see
 .Xr services 5 .
 .Pp
 Available options:
 .Bl -tag -width Ds
 .It Fl d
-Debugging information is written to the syslog using LOG_FTP.
-.It Fl f
-Run in foreground, do not detach from calling terminal.
+Enable developer debug messages.  When the syslog backend is usued, log
+messages are written to the syslog using
+.Nm LOG_FTP
+.It Fl n
+Run in foreground, do not detach from controlling terminal
 .It Fl i
-Inetd mode, take client connections from stdin.
+Inetd mode, take client connections from stdin
 .It Fl l
-Full path to
+Enable syslog backend, useful in combination with
+.Fl n.
+Use the optional
 .Ar LOGFILE
-otherwise syslog is used
-.It Fl p
-Use
+argument to redirect logging to a file
+.It Fl f
+Enable FTP service.  Use the optional
 .Ar PORT
-as server port to listen for connections on.
+argument to listen to a custom port
+.It Fl t
+Enable TFTP service.  Use the optional
+.Ar PORT
+argument to listen to a custom port
 .El
 .Pp
+.Sh FTP
 The file
 .Pa /etc/nologin
-can be used to disable ftp access.  If the file exists,
+can be used to disable FTP access.  If the file exists,
 .Nm
 displays it and exits.  If the file
 .Pa /etc/ftpwelcome
@@ -75,84 +82,57 @@ exists in a directory,
 .Nm
 prints it when that directory is entered.
 .Pp
-The ftp server currently supports the following ftp requests.
+The FTP server currently supports the following requests.
 The case of the requests is ignored.
 .Bl -column "Request" -offset indent
 .It Request Ta "Description"
-.It ABOR Ta "abort previous command"
-.It ACCT Ta "specify account (ignored)"
-.It ALLO Ta "allocate storage (vacuously)"
-.It APPE Ta "append to a file"
-.It CDUP Ta "change to parent of current working directory"
 .It CWD Ta "change working directory"
 .It DELE Ta "delete a file"
-.It EPRT Ta "specify data connection port, either IPv4 or IPv6"
-.It EPSV Ta "ask for a server port for fetching data"
-.It HELP Ta "give help information"
 .It LIST Ta "give list files in a directory" Pq Dq Li "ls -lgA"
 .It MKD Ta "make a directory"
-.It MDTM Ta "show last modification time of file"
-.It MODE Ta "specify data transfer" Em mode
-.It NLST Ta "give name list of files in directory"
 .It NOOP Ta "do nothing"
 .It PASS Ta "specify password"
 .It PASV Ta "prepare for server-to-server transfer"
 .It PORT Ta "specify data connection port"
 .It PWD Ta "print the current working directory"
 .It QUIT Ta "terminate session"
-.It REST Ta "restart incomplete transfer"
 .It RETR Ta "retrieve a file"
 .It RMD Ta "remove a directory"
 .It RNFR Ta "specify rename-from file name"
 .It RNTO Ta "specify rename-to file name"
-.It SITE Ta "non-standard commands (see next section)"
 .It SIZE Ta "return size of file"
-.It STAT Ta "return status of server"
 .It STOR Ta "store a file"
-.It STOU Ta "store a file with a unique name"
-.It STRU Ta "specify data transfer" Em structure
 .It SYST Ta "show operating system type of server system"
 .It TYPE Ta "specify data transfer" Em type
 .It USER Ta "specify user name"
-.It XCUP Ta "change to parent of current working directory (deprecated)"
-.It XCWD Ta "change working directory (deprecated)"
-.It XMKD Ta "make a directory (deprecated)"
-.It XPWD Ta "print the current working directory (deprecated)"
-.It XRMD Ta "remove a directory (deprecated)"
 .El
 .Pp
-The following non-standard or
-.Tn UNIX
-specific commands are supported
-by the
-SITE request.
+Remaining FTP requests, as specified in Internet RFC 959, are not
+recognized at the moment.  Patches are welcome!
 .Pp
-.Bl -column Request -offset indent
-.It Sy Request Ta Sy Description
-.It UMASK Ta change umask, e.g. ``SITE UMASK 002''
-.It IDLE Ta set idle-timer, e.g. ``SITE IDLE 60''
-.It CHMOD Ta change mode of a file, e.g. ``SITE CHMOD 755 filename''
-.It HELP Ta give help information.
+.Sh TFTP
+uftpd also supports TFTP, the Trivial File Transfer Protocol, which is
+often used for net booting diskless devices, e.g., BOOTP and PXEBOOT.
+.Pp
+The TFTP server currently supports the following requests.
+.Bl -column "Request" -offset indent
+.It RRQ
+.It ERROR
+.It ACK
 .El
 .Pp
-The remaining ftp requests specified in Internet RFC 959 are recognized,
-but not implemented.  MDTM and SIZE are not specified in RFC 959, but
-will appear in the next updated FTP RFC.
-.Pp
-The ftp server will abort an active file transfer only when the ABOR
-command is preceded by a Telnet "Interrupt Process" (IP) signal and a
-Telnet "Synch" signal in the command Telnet stream, as described in
-Internet RFC 959.  If a STAT command is received during a data transfer,
-preceded by a Telnet IP and Synch, transfer status will be returned.
+Support for WRQ and blocksize negotiation, according to RFC 2348, is
+planned but not yet implemented.
 .Pp
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact
 .It Pa /etc/ftpwelcome
-Welcome notice.
+FTP Welcome notice.
 .It Pa /etc/motd
-Welcome notice after login.
+Message of the day, presented after successful FTP login.
 .It Pa /etc/nologin
-Displayed and access refused.
+Displayed to user attempting to connect.  Access is refused if this
+file exists.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,

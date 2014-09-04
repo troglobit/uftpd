@@ -1,5 +1,6 @@
 uftpd -- the no nonsense (T)FTP server
 ======================================
+[![Build Status](https://travis-ci.org/troglobit/uftpd.png?branch=master)](https://travis-ci.org/troglobit/uftpd)
 
 uftpd is not for everyone ... it's for developers, home users, and
 really _not_ for Internet use!  It's a very simple daemon that likely

@@ -2,7 +2,7 @@
 set -e
 
 FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f"
-TFTPENTRY="tftp		dgram	udp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t"
+TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t"
 
 if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	cat <<-TEXT

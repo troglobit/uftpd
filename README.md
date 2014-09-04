@@ -22,7 +22,7 @@ It is recommended to run uftpd from the Internet super server, inetd.
 Use the following two lines for `/etc/inetd.conf`:
 
     ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f
-    tftp	dgram	udp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t
+    tftp	dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t
 
 Remember to reload inetd after adding these lines.  Alternatively you
 can build and install the .deb package to install uftpd, it will take

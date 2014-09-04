@@ -51,7 +51,7 @@ static int usage(void)
 	       "\n"
 	       "  -d         Enable developer debug logs\n"
 	       "  -i         Inetd mode, take client connections from stdin\n"
-	       "  -n         Run in foreground, do not detach from calling terminal\n"
+	       "  -n         Run in foreground, do not detach from controlling terminal\n"
 	       "  -l [PATH]  Log to stdout, an optional logfile, or default to syslog\n"
 	       "  -f [PORT]  Enable FTP service, on system defalt port, or PORT\n"
 	       "  -t [PORT]  Enable TFTP service, on system default port, or PORT\n"

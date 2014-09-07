@@ -3,4 +3,20 @@ language: c
 compiler:
   - gcc
 
-script: make
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "PQuj5u9r9J22UAgjeu0unfZewE48Y1PFmzD+o3QHpc/lPqFoDKvUY+pjAOsCXuV4DBORLGLKs+oZBFmb1yliBZBm6nO1Yj2JutlwyFRKUBTJkEi5Xn12adAYRI0THaQ5/b0kKPonxOuA/4ksoC2myqX7izz+Z6qKgSwJanKHrvA="
+
+addons:
+  coverity_scan:
+    project:
+      name: "troglobit/uftpd"
+      description: "uftpd -- the no nonsense (T)FTP server"
+    notification_email: troglobit@gmail.com
+    build_command_prepend: "make distclean"
+    build_command:   "make -j5"
+    branch_pattern: master
+
+script: make -j5

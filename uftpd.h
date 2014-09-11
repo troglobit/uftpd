@@ -34,6 +34,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>		/*  PRIu64/PRI64, etc. for stdint.h types */
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>

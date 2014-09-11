@@ -58,7 +58,8 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	/* Clear for every new command. */
 	memset(msg, 0, len);
 
-	while ((bytes = recv(sd, msg, len, 0))) {
+	/* Save one byte (-1) for NUL termination */
+	while ((bytes = recv(sd, msg, len - 1, 0))) {
 		if (bytes < 0) {
 			if (EINTR == errno)
 				return 1;
@@ -74,6 +75,9 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 
 		break;
 	}
+
+	/* NUL terminate for strpbrk() */
+	msg[bytes] = 0;
 
 	*cmd = msg;
 	ptr  = strpbrk(msg, " ");

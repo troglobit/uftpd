@@ -2,10 +2,14 @@ uftpd -- the no nonsense (T)FTP server
 ======================================
 [![Build Status](https://travis-ci.org/troglobit/uftpd.png?branch=master)](https://travis-ci.org/troglobit/uftpd)[![Coverity Scan Status](https://scan.coverity.com/projects/2947/badge.svg)](https://scan.coverity.com/projects/2947)
 
-uftpd is not for everyone ... it's for developers, home users, and
-really _not_ for Internet use!  It's a very simple daemon that likely
-works right out of the box for most, if not all, use-cases.  If it
-doesn't it's likely a bug!
+uftpd is a simple FTP/TFTP daemon that serves files, that's it.  It
+allows symlinks and a group writable FTP home directory -- it does not
+even need to be configured!  If there is no ftp user it defaults to the
+"standard" `/srv/ftp` directory.
+
+By default it uses the host system's ftp user's home directory to serve
+files from, and it finds the FTP and TFTP ports from `/etc/services`,
+so it's very UNIX like.
 
 Features:
 
@@ -19,8 +23,15 @@ Features:
 
 Patches are most welcome! :)
 
-It is recommended to run uftpd from the Internet super server, inetd.
-Use the following two lines for `/etc/inetd.conf`:
+Start uftpd by simply calling `sudo ./uftpd` after building it with
+make.  That will start uftpd as a TFTP server.  To enable both FTP and
+TFTP you need to call `sudo ./uftpd -f -t`, both `-f` and `-t` can be
+given an alternative port as extra argument for either service.  There
+is no way to configure the TFTP/FTP home directory though, just change
+the `ftp` user's `/etc/passwd` entry for that.
+
+It is however recommended to run uftpd from the Internet super server,
+inetd.  Use the following two lines for `/etc/inetd.conf`:
 
     ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f
     tftp	dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t

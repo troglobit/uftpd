@@ -105,13 +105,21 @@ static int open_data_connection(ctrl_t *ctrl)
 	/* Previous PORT command from client */
 	if (ctrl->data_address[0]) {
 		ctrl->data_sd = socket(AF_INET, SOCK_STREAM, 0);
+		if (-1 == ctrl->data_sd) {
+			perror("Failed creating data socket");
+			return -1;
+		}
 
+		memset(&sin, 0, sizeof(sin));
 		sin.sin_family = AF_INET;
 		sin.sin_port = htons(ctrl->data_port);
 		inet_aton(ctrl->data_address, &(sin.sin_addr));
 
 		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
-			perror("connect");
+			perror("Failed connecting data socket to client");
+			close(ctrl->data_sd);
+			ctrl->data_sd = -1;
+
 			return -1;
 		}
 
@@ -122,14 +130,19 @@ static int open_data_connection(ctrl_t *ctrl)
 	/* Previous PASV command, accept connect from client */
 	if (ctrl->data_listen_sd > 0) {
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
-
-		if (ctrl->data_sd < 0) {
-			perror("accept error");
+		if (-1 == ctrl->data_sd) {
+			perror("Failed accepting connection from client");
+			return -1;
 		} else {
 			char client_ip[100];
 
 			len = sizeof(struct sockaddr);
-			getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len);
+			if (-1 == getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len)) {
+				perror("Cannot determine client address");
+				close(ctrl->data_sd);
+				ctrl->data_sd = -1;
+				return -1;
+			}
 			inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
 			DBG("Client PASV data connection from %s", client_ip);
 		}
@@ -277,8 +290,11 @@ void handle_PORT(ctrl_t *ctrl, char *str)
 	if (ctrl->data_sd > 0)
 		close(ctrl->data_sd);
 
+	/* Convert PORT command's argument to IP address + port */
 	sscanf(str, "%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &e, &f);
 	sprintf(addr, "%d.%d.%d.%d", a, b, c, d);
+
+	/* Check IPv4 address using inet_aton(), throw away converted result */
 	if (!inet_aton(addr, &(sin.sin_addr))) {
 		ERR(0, "Invalid address '%s' given to PORT command", addr);
 		send_msg(ctrl->sd, "500 Illegal PORT command.\r\n");
@@ -412,12 +428,15 @@ void handle_PASV(ctrl_t *ctrl)
 		return;
 	}
 
+	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = inet_addr(ctrl->serveraddr);
 	server.sin_port        = htons(0);
 	if (bind(ctrl->data_listen_sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) < 0) {
 		ERR(errno, "Failed binding to client socket");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+		close(ctrl->data_listen_sd);
+		ctrl->data_listen_sd = -1;
 		return;
 	}
 
@@ -425,13 +444,23 @@ void handle_PASV(ctrl_t *ctrl)
 	if (listen(ctrl->data_listen_sd, 1) < 0) {
 		ERR(errno, "Client data connection failure");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+		close(ctrl->data_listen_sd);
+		ctrl->data_listen_sd = -1;
+		return;
 	}
 
-	getsockname(ctrl->data_listen_sd, (struct sockaddr *)&data, &len);
-	port = ntohs(data.sin_port);
+	memset(&data, 0, sizeof(data));
+	if (-1 == getsockname(ctrl->data_listen_sd, (struct sockaddr *)&data, &len)) {
+		ERR(errno, "Cannot determine our address, need it if client should connect to us");
+		close(ctrl->data_listen_sd);
+		ctrl->data_listen_sd = -1;
+		return;
+	}
 
+	port = ntohs(data.sin_port);
 	snprintf(buf, sizeof(buf), "Port %d\n", port);
 	show_log(buf);
+
 
 	/* Convert server IP address and port to comma separated list */
 	msg = strdup(ctrl->serveraddr);
@@ -718,11 +747,17 @@ int ftp_session(int sd)
 	}
 
 	len = sizeof(ctrl->server_sa);
-	getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len);
+	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
+		perror("Cannot determine our address");
+		return -1;
+	}
 	convert_address(&ctrl->server_sa, ctrl->serveraddr, sizeof(ctrl->serveraddr));
 
 	len = sizeof(ctrl->client_sa);
-	getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len);
+	if (-1 == getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len)) {
+		perror("Cannot determine client address");
+		return -1;
+	}
 	convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
 
 	ctrl->type = TYPE_A;

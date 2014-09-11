@@ -49,7 +49,10 @@ static int send_DATA(ctrl_t *ctrl, int block)
 		int pos = (block -1) * ctrl->segsize;
 
 		ctrl->th->th_block = htons(block);
-		fseek(ctrl->fp, pos, SEEK_SET);
+		if (-1 == fseek(ctrl->fp, pos, SEEK_SET)) {
+			ERR(errno, "Failed resending block");
+			return 1;
+		}
 	} else {
 		ctrl->th->th_block = htons((ftell(ctrl->fp) / ctrl->segsize) + 1);
 	}

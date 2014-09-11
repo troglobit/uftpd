@@ -86,6 +86,7 @@ int open_socket(int port, int type, char *desc)
 	if (err != 0)
 		WARN(errno, "Failed setting SO_REUSEADDR on TFTP socket");
 
+	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port        = htons(port);

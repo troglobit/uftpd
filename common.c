@@ -158,6 +158,7 @@ ctrl_t *new_session(int sd, int *rc)
 	if (!chrooted && geteuid() == 0) {
 		if (chroot(home) || chdir(".")) {
 			ERR(errno, "Failed chrooting to FTP root, %s, aborting", home);
+			free(ctrl);
 			*rc = -1;
 			return NULL;
 		}
@@ -165,6 +166,7 @@ ctrl_t *new_session(int sd, int *rc)
 	} else if (!chrooted) {
 		if (chdir(home)) {
 			WARN(errno, "Failed changing to FTP root, %s, aborting", home);
+			free(ctrl);
 			*rc = -1;
 			return NULL;
 		}

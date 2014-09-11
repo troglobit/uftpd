@@ -161,10 +161,10 @@ static void close_data_connection(ctrl_t *ctrl)
 
 static int check_user_pass(ctrl_t *ctrl)
 {
-	if (!ctrl->name)
+	if (!ctrl->name[0])
 		return -1;
 
-	if (strcmp("anonymous", ctrl->name) == 0)
+	if (!strcmp("anonymous", ctrl->name))
 		return 1;
 
 	return 0;
@@ -192,8 +192,8 @@ void handle_USER(ctrl_t *ctrl, char *name)
 
 void handle_PASS(ctrl_t *ctrl, char *pass)
 {
-	if (ctrl->name[0] == 0) {
-		send_msg(ctrl->sd, "503 Your haven't input your username\r\n");
+	if (!ctrl->name[0]) {
+		send_msg(ctrl->sd, "503 No username given.\r\n");
 		return;
 	}
 

@@ -38,6 +38,7 @@ sbindir    ?= $(prefix)/sbin
 datadir     = $(prefix)/share/doc/$(NAME)
 mandir      = $(prefix)/share/man/man8
 
+CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 CPPFLAGS   += -Ilibuev
 CFLAGS     += -O2 -W -Wall -g
 LDLIBS     += libuev/libuev.a
@@ -46,14 +47,8 @@ include common.mk
 
 all: $(LDLIBS) $(EXEC)
 
-defs.h: Makefile
-	@echo "#define VERSION \"$(VERSION)\"" >  $@
-	@echo "#define BUGADDR \"$(BUGADDR)\"" >> $@
-
 $(LDLIBS): Makefile
 	+@$(MAKE) -C libuev
-
-$(OBJS): defs.h
 
 $(EXEC): $(OBJS) $(LDLIBS)
 

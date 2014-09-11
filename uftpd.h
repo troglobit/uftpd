@@ -45,7 +45,6 @@
 #include <uev.h>
 #include <unistd.h>
 
-#include "defs.h"
 #include "string.h"
 
 #define FTP_DEFAULT_PORT  21

@@ -11,7 +11,6 @@ build:
 clean:
 	dh_testdir
 	dh_testroot
-	[ ! -f defs.h ] || $(MAKE) distclean
 	dh_clean
 
 install: build

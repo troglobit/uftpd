@@ -361,9 +361,9 @@ void handle_LIST(ctrl_t *ctrl)
 				continue;
 			}
 
-			snprintf(pos, len, "%s 1 %5d %5d %12td %s %s%s\n",
+			snprintf(pos, len, "%s 1 %5d %5d %12Ld %s %s%s\n",
 				 mode_to_str(st.st_mode),
-				 0, 0, st.st_size,
+				 0, 0, (uint64_t)st.st_size,
 				 time_to_str(st.st_mtime),
 				 name, ctrl->type == TYPE_A ? "\r" : "");
 
@@ -591,7 +591,7 @@ void handle_SIZE(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	sprintf(path, "213 %td\r\n", st.st_size);
+	sprintf(path, "213 %Ld\r\n", (uint64_t)st.st_size);
 	send_msg(ctrl->sd, path);
 }
 

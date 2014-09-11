@@ -540,7 +540,7 @@ void handle_STOR(ctrl_t *ctrl, char *file)
 
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 	while (1) {
-		int j = recv(ctrl->data_sd, buf, sizeof(buf), 0);
+		int j = recv(ctrl->data_sd, buf, len, 0);
 
 		if (j < 0) {
 			ERR(errno, "Failed receiving file %s/%s from client", ctrl->cwd, path);

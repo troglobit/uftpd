@@ -748,6 +748,7 @@ int ftp_session(int sd)
 
 	len = sizeof(ctrl->server_sa);
 	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
+		free(ctrl);
 		perror("Cannot determine our address");
 		return -1;
 	}
@@ -755,6 +756,7 @@ int ftp_session(int sd)
 
 	len = sizeof(ctrl->client_sa);
 	if (-1 == getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len)) {
+		free(ctrl);
 		perror("Cannot determine client address");
 		return -1;
 	}

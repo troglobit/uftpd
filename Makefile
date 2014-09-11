@@ -39,23 +39,23 @@ datadir     = $(prefix)/share/doc/$(NAME)
 mandir      = $(prefix)/share/man/man8
 
 CPPFLAGS   += -Ilibuev
-CFLAGS     += -O2 -W -Wall -Werror -g
-LDFLAGS    += -Llibuev
+CFLAGS     += -O2 -W -Wall -g
 LDLIBS     += libuev/libuev.a
 
 include common.mk
 
-all: defs.h $(LDLIBS) $(EXEC)
+all: $(LDLIBS) $(EXEC)
 
 defs.h: Makefile
 	@echo "#define VERSION \"$(VERSION)\"" >  $@
 	@echo "#define BUGADDR \"$(BUGADDR)\"" >> $@
 
-
 $(LDLIBS): Makefile
 	+@$(MAKE) -C libuev
 
-$(EXEC): $(OBJS)
+$(OBJS): defs.h
+
+$(EXEC): $(OBJS) $(LDLIBS)
 
 strip:
 	@strip $(EXEC)

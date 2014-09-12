@@ -17,12 +17,14 @@
 .PHONY: all install uninstall clean distclean dist
 
 #VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.5
+VERSION    ?= 1.6
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)
 DEV         = $(NAME)-dev
-ARCHIVE     = $(PKG).tar.xz
+ARCHTOOL    = `which git-archive-all`
+ARCHIVE     = $(PKG).tar
+ARCHIVEZ    = ../$(ARCHIVE).xz
 EXEC        = $(NAME)
 MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
@@ -108,16 +110,24 @@ package:
 	dpkg-buildpackage -b -uc -tc
 
 dist:
+	@if [ x"$(ARCHTOOL)" = x"" ]; then \
+		echo "Missing git-archive-all from https://github.com/Kentzo/git-archive-all"; \
+		exit 1; \
+	fi
+	@if [ -e $(ARCHIVEZ) ]; then \
+		echo "Distribution already exists."; \
+		exit 1; \
+	fi
 	@echo "Building xz tarball of $(PKG) in parent dir..."
-	git archive --format=tar --prefix=$(PKG)/ $(VERSION) | xz >../$(ARCHIVE)
-	@(cd ..; md5sum $(ARCHIVE) | tee $(ARCHIVE).md5)
+	@$(ARCHTOOL) ../$(ARCHIVE)
+	@xz ../$(ARCHIVE)
+	@md5sum $(ARCHIVEZ) | tee $(ARCHIVEZ).md5
 
 dev: distclean
 	@echo "Building unstable xz $(DEV) in parent dir..."
 	-@$(RM) -f ../$(DEV).tar.xz*
 	@(dir=`mktemp -d`; mkdir $$dir/$(DEV); cp -a . $$dir/$(DEV); \
-	  cd $$dir; tar --exclude=.git --exclude=contrib             \
-                        -c -J -f $(DEV).tar.xz $(DEV);               \
+	  cd $$dir; tar --exclude=.git -c -J -f $(DEV).tar.xz $(DEV);\
 	  cd - >/dev/null; mv $$dir/$(DEV).tar.xz ../; cd ..;        \
 	  rm -rf $$dir; md5sum $(DEV).tar.xz | tee $(DEV).tar.xz.md5)
 

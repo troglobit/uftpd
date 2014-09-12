@@ -1,3 +1,10 @@
+uftpd (1.6-1) unstable; urgency=low
+
+  * Repack of 1.5 due to missing content in new libuev subdirectory in
+    distributed tarball.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Fri, 12 Sep 2014 15:45:08 +0200
+
 uftpd (1.5-1) unstable; urgency=low
 
   * New upstream release, minor bug fixes only, found by Coverity Scan.

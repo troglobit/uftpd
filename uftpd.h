@@ -37,6 +37,7 @@
 #include <inttypes.h>		/*  PRIu64/PRI64, etc. for stdint.h types */
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>		/* isset(), setbit(), etc. */
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -64,6 +65,12 @@
 
 /* This is a stupid server, it doesn't expect >20 sec inactivity */
 #define INACTIVITY_TIMER  20
+
+/* TFTP Packet Types (New) */
+#define OACK              06	/* option acknowledgement */
+
+/* TFTP Minimum segment size, specific to uftpd */
+#define MIN_SEGSIZE       32
 
 #ifndef UNUSED
 #define UNUSED(arg) arg __attribute__ ((unused))
@@ -112,11 +119,13 @@ typedef struct {
 	char clientaddr[INET_ADDRSTRLEN];
 
 	/* TFTP */
+	char    *file;	        /* Current file name to fetch */
 	FILE    *fp;		/* Current file in operation */
 	char    *buf;		/* Pointer to segment buffer */
 	size_t   bufsz;		/* Size of buf */
 	tftp_t  *th;		/* Same as buf, only as tftp_t */
 	size_t   segsize;	/* SEGSIZE, or per session negotiated */
+	uint32_t tftp_options;	/* %1:blksize */
 
 	/* User credentials */
 	char name[20];

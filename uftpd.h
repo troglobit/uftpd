@@ -93,14 +93,14 @@
 
 extern char *__progname;
 extern char *home;		/* Server root/home directory       */
-extern char  inetd;             /* Bool: conflicts with daemonize   */
-extern char  background;	/* Bool: conflicts with inetd       */
+extern int   inetd;             /* Bool: conflicts with daemonize   */
+extern int   background;	/* Bool: conflicts with inetd       */
 extern int   chrooted;		/* Bool: are we chrooted?           */
-extern char  debug;             /* Level: 1-7, only 1 implemented   */
-extern char  verbose;           /* Bool: Enables extra logging info */
-extern char  do_log;            /* Bool: False at daemon start      */
-extern char  do_ftp;            /* Port: FTP port, or disabled      */
-extern char  do_tftp;           /* Port: TFTP port, or disabled     */
+extern int   debug;             /* Level: 1-7, only 1 implemented   */
+extern int   verbose;           /* Bool: Enables extra logging info */
+extern int   do_log;            /* Bool: False at daemon start      */
+extern int   do_ftp;            /* Port: FTP port, or disabled      */
+extern int   do_tftp;           /* Port: TFTP port, or disabled     */
 extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 

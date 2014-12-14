@@ -19,13 +19,13 @@
 
 /* Global daemon settings */
 char *home        = NULL;
-char  inetd       = 0;
-char  background  = 1;
-char  debug       = 0;
-char  verbose     = 0;
-char  do_log      = 0;
-char  do_ftp      = 0;
-char  do_tftp     = 0;
+int   inetd       = 0;
+int   background  = 1;
+int   debug       = 0;
+int   verbose     = 0;
+int   do_log      = 1;
+int   do_ftp      = 0;
+int   do_tftp     = 0;
 char *logfile     = NULL;
 struct passwd *pw = NULL;
 
@@ -84,26 +84,37 @@ static void tftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNU
         tftp_session(w->fd);
 }
 
-static void start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
+static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
 {
 	int sd;
 
 	if (!port)
-		return;
+		/* Disabled */
+		return 1;
 
 	sd = open_socket(port, type, desc);
 	if (sd < 0) {
 		WARN(errno, "Failed starting %s service", desc);
-	} else {
-		INFO("Starting %s server on port %d ...", desc, port);
-		uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
+		return 1;
 	}
+
+	INFO("Starting %s server on port %d ...", desc, port);
+	uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
+
+	return 0;
 }
 
 int serve_files(uev_ctx_t *ctx)
 {
-	start_service(ctx, &ftp_watcher, ftp_cb, do_ftp, SOCK_STREAM, "FTP");
-	start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
+	int ftp, tftp;
+
+	DBG("Starting services ...");
+	ftp  = start_service(ctx, &ftp_watcher,   ftp_cb, do_ftp, SOCK_STREAM, "FTP");
+	tftp = start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
+
+	/* Check if failed to start any service ... */
+	if (ftp && tftp)
+		return 1;
 
 	INFO("Serving files from %s ...", home);
 
@@ -242,13 +253,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* Default to syslog */
-	if (!do_log) {
-		do_log = 1;	/* Syslog */
+	/* Disable syslog() in foreground with debug enabled */
+	if (!background && debug)
+		do_log = 0;
+
+	if (do_log)
 		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
-	} else {
-		do_log = 0;	/* Stderr, or logfile if set */
-	}
 
 	/* Default to FTP for backwards compat */
 	if (!do_ftp && !do_tftp)

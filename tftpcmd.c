@@ -49,7 +49,7 @@ static int send_DATA(ctrl_t *ctrl, int block)
 	/* Create message */
 	ctrl->th->th_opcode = htons(DATA);
 	if (block) {
-		int pos = (block -1) * ctrl->segsize;
+		int pos = (block - 1) * ctrl->segsize;
 
 		ctrl->th->th_block = htons(block);
 		if (-1 == fseek(ctrl->fp, pos, SEEK_SET)) {

@@ -125,6 +125,7 @@ typedef struct {
 	size_t   bufsz;		/* Size of buf */
 	tftp_t  *th;		/* Same as buf, only as tftp_t */
 	size_t   segsize;	/* SEGSIZE, or per session negotiated */
+	int      timeout;	/* INACTIVITY_TIMER, or per session neg. */
 	uint32_t tftp_options;	/* %1:blksize */
 
 	/* User credentials */

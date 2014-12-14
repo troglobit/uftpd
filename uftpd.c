@@ -47,17 +47,18 @@ static int version(void)
 
 static int usage(void)
 {
-	printf("\nUsage: %s [-dinvV] [-l LOGFILE] [-f [PORT]] [-t [PORT]]\n"
+	printf("\nUsage: %s [-dinvV] [-hPATH] [-lLOGFILE] [-fPORT] [-tPORT]\n"
 	       "\n"
 	       "  -d         Enable developer debug logs\n"
 	       "  -i         Inetd mode, take client connections from stdin\n"
 	       "  -n         Run in foreground, do not detach from controlling terminal\n"
-	       "  -l [PATH]  Log to stdout, an optional logfile, or default to syslog\n"
-	       "  -f [PORT]  Enable FTP service, on system defalt port, or PORT\n"
-	       "  -t [PORT]  Enable TFTP service, on system default port, or PORT\n"
+	       "  -hPATH     Serve files from PATH, defaults to FTP user's $HOME\n"
+	       "  -l[PATH]   Log to stdout, an optional logfile, or default to syslog\n"
+	       "  -f[PORT]   Enable FTP service, on system defalt port, or custom PORT\n"
+	       "  -t[PORT]   Enable TFTP service, on system default port, or custom PORT\n"
 	       "  -v         Show program version\n"
 	       "  -V         Verbose logging\n"
-	       "  -? | -h    Show this help text\n"
+	       "  -?         Show this help text\n"
 	       "\n"
 	       "Bug report address: %-40s\n\n", __progname, BUGADDR);
 
@@ -176,13 +177,15 @@ static void init(uev_ctx_t *ctx)
 		do_tftp = find_port(TFTP_SERVICE_NAME, TFTP_PROTO_NAME, TFTP_DEFAULT_PORT); 
 
 	/* Figure out FTP home directory */
-	pw = getpwnam(FTP_DEFAULT_USER);
-	if (!pw) {
-		home = strdup(FTP_DEFAULT_HOME);
-		WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
-		     FTP_DEFAULT_USER, home);
-	} else {
-		home = strdup(pw->pw_dir);
+	if (!home) {
+		pw = getpwnam(FTP_DEFAULT_USER);
+		if (!pw) {
+			home = strdup(FTP_DEFAULT_HOME);
+			WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
+			     FTP_DEFAULT_USER, home);
+		} else {
+			home = strdup(pw->pw_dir);
+		}
 	}
 }
 
@@ -191,7 +194,7 @@ int main(int argc, char **argv)
 	int c;
 	uev_ctx_t ctx;
 
-	while ((c = getopt (argc, argv, "h?df::il::nt::vV")) != EOF) {
+	while ((c = getopt (argc, argv, "?df::h:il::nt::vV")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -201,6 +204,10 @@ int main(int argc, char **argv)
 			do_ftp = 1;
 			if (optarg)
 				do_ftp = atoi(optarg);
+			break;
+
+		case 'h':
+			home = strdup(optarg);
 			break;
 
 		case 'i':

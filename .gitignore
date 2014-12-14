@@ -7,3 +7,7 @@ defs.h
 uftpd
 debian/files
 debian/uftpd.*
+/GPATH
+/GRTAGS
+/GSYMS
+/GTAGS

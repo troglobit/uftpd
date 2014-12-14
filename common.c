@@ -139,7 +139,7 @@ ctrl_t *new_session(int sd, int *rc)
 		pid_t pid = fork();
 
 		if (pid) {
-			DBG("Forked off client session as PID %d", pid);
+			DBG("Created new client session as PID %d", pid);
 			*rc = pid;
 			return NULL;
 		}

@@ -13,16 +13,17 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd May 4, 2014
+.Dd Dec 14, 2014
 .Dt UFTPD 8
-.Os "uFTPd (1.3)"
+.Os "uFTPd (1.7)"
 .Sh NAME
 .Nm uftpd
 .Nd
 No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
 .Nm uftpd
-.Op Fl dfivV
+.Op Fl dinvV
+.Op Fl h Ar PATH
 .Op Fl l Ar LOGFILE
 .Op Fl f Ar PORT
 .Op Fl t Ar PORT
@@ -37,19 +38,24 @@ details, see
 Available options:
 .Bl -tag -width Ds
 .It Fl d
-Enable developer debug messages.  When the syslog backend is usued, log
-messages are written to the syslog using
+Enable developer debug messages.  With syslog backend, log messages are
+written to the syslog using
 .Nm LOG_FTP
-.It Fl n
-Run in foreground, do not detach from controlling terminal
 .It Fl i
 Inetd mode, take client connections from stdin
+.It Fl n
+Run in foreground, do not detach from controlling terminal
+.It Fl h
+Serve files from
+.Ar PATH .
+.Nm uftpd
+defaults to the FTP user's $HOME
 .It Fl l
 Enable syslog backend, useful in combination with
-.Fl n.
-Use the optional
+.Fl n .
+The optional
 .Ar LOGFILE
-argument to redirect logging to a file
+argument redirects logging to a file
 .It Fl f
 Enable FTP service.  Use the optional
 .Ar PORT
@@ -58,6 +64,12 @@ argument to listen to a custom port
 Enable TFTP service.  Use the optional
 .Ar PORT
 argument to listen to a custom port
+.It Fl v
+Show program version
+.It Fl V
+Verbose logging
+.It Fl ?
+Show built-in help text
 .El
 .Pp
 .Sh FTP
@@ -121,8 +133,8 @@ The TFTP server currently supports the following requests.
 .It ACK
 .El
 .Pp
-Support for WRQ and blocksize negotiation, according to RFC 2348, is
-planned but not yet implemented.
+uftpd supports TFTP blocksize negotiation, according to RFC 2348.
+Support for WRQ is not yet implemented, patches welcome!
 .Pp
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact

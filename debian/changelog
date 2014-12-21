@@ -1,3 +1,12 @@
+uftpd (1.7-1) unstable; urgency=low
+
+  * New upstream release:
+    - Support for TFTP blocksize negotiation.
+    - Support for custom FTP server directory.
+    - Log to stderr when in foreground AND debug mode.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 21 Dec 2014 19:35:29 +0100
+
 uftpd (1.6-1) unstable; urgency=low
 
   * Repack of 1.5 due to missing content in new libuev subdirectory in

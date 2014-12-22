@@ -287,8 +287,10 @@ void handle_PORT(ctrl_t *ctrl, char *str)
 	char addr[INET_ADDRSTRLEN];
 	struct sockaddr_in sin;
 
-	if (ctrl->data_sd > 0)
+	if (ctrl->data_sd > 0) {
 		close(ctrl->data_sd);
+		ctrl->data_sd = -1;
+	}
 
 	/* Convert PORT command's argument to IP address + port */
 	sscanf(str, "%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &e, &f);

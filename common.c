@@ -157,7 +157,7 @@ ctrl_t *new_session(int sd, int *rc)
 
 	/* Chroot to FTP root */
 	if (!chrooted && geteuid() == 0) {
-		if (chroot(home) || chdir(".")) {
+		if (chroot(home) || chdir("/")) {
 			ERR(errno, "Failed chrooting to FTP root, %s, aborting", home);
 			free(ctrl);
 			*rc = -1;

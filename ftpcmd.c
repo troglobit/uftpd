@@ -129,23 +129,23 @@ static int open_data_connection(ctrl_t *ctrl)
 
 	/* Previous PASV command, accept connect from client */
 	if (ctrl->data_listen_sd > 0) {
+		char client_ip[100];
+
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
 		if (-1 == ctrl->data_sd) {
 			perror("Failed accepting connection from client");
 			return -1;
-		} else {
-			char client_ip[100];
-
-			len = sizeof(struct sockaddr);
-			if (-1 == getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len)) {
-				perror("Cannot determine client address");
-				close(ctrl->data_sd);
-				ctrl->data_sd = -1;
-				return -1;
-			}
-			inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
-			DBG("Client PASV data connection from %s", client_ip);
 		}
+
+		len = sizeof(struct sockaddr);
+		if (-1 == getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len)) {
+			perror("Cannot determine client address");
+			close(ctrl->data_sd);
+			ctrl->data_sd = -1;
+			return -1;
+		}
+		inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
+		DBG("Client PASV data connection from %s", client_ip);
 	}
 
 	return 0;

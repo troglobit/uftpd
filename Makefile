@@ -30,7 +30,7 @@ MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
 OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o strlcpy.o strlcat.o log.o
 SRCS        = $(OBJS:.o=.c)
-DEPS        = $(addprefix .,$(SRCS:.c=.d))
+DEPS        = $(SRCS:.c=.d)
 
 # Installation paths, always prepended with DESTDIR if set
 TOPDIR      = $(shell pwd)

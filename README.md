@@ -44,9 +44,9 @@ installation.  If security is a concern for you, consider using a
 different server.
 
 That being said, a lot of care has been taken to lock down and secure
-uftpd by default.  So if you refain from symlinking stuff from your home
-directory and carefully setup more strict permissions on your FTP home,
-then uftpd is likely as secrure as any other TFTP/FTP server.
+uftpd by default.  So if you refrain from symlinking stuff from your
+home directory and carefully setup more strict permissions on your FTP
+home, then uftpd is likely as secrure as any other TFTP/FTP server.
 
 
 Running
@@ -56,8 +56,8 @@ Start uftpd by simply calling `sudo ./uftpd` after building it with
 make.  That will start uftpd as a TFTP server.  To enable both FTP and
 TFTP you need to call `sudo ./uftpd -f -t`, both `-f` and `-t` can be
 given an alternative port as extra argument for either service.  There
-is no way to configure the TFTP/FTP home directory though, just change
-the `ftp` user's entry in `/etc/passwd`.  Try <kdb>sudo vipw</kbd>
+are more command line options, e.g., for overriding the TFTP/FTP home
+directory.  See the man page or the <kdb>`uftpd --help`</kdb> output.
 
 It is however recommended to run uftpd from the Internet super server,
 inetd.  Use the following two lines for `/etc/inetd.conf`:

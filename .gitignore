@@ -1,6 +1,6 @@
 *~
 *.o
-.*.d
+*.d
 *.map
 TAGS
 defs.h

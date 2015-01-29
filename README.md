@@ -1,17 +1,14 @@
-uftpd -- the no nonsense (T)FTP server
-======================================
-[![Build Status](https://travis-ci.org/troglobit/uftpd.png?branch=master)](https://travis-ci.org/troglobit/uftpd)
-[![Coverity Scan Status](https://scan.coverity.com/projects/2947/badge.svg)](https://scan.coverity.com/projects/2947)
+No Nonsense FTP/TFTP Server
+===========================
+[![Travis Status]][Travis] | [![Coverity Status]][Coverity Scan]
 
-uftpd is a UNIX daemon in the true sense.  It does one thing, and it
-does it well -- it serves files -- and that's it!
+uftpd is a true UNIX daemon, it serves files, and nothing else.
 
-uftpd use the host system's ftp home directory, found in `/etc/passwd`,
-and the FTP and TFTP ports from `/etc/services`.  If there is no ftp
-user in the system, uftpd defaults to use `/srv/ftp`, and if FTP or TFTP
-services are unknown, it defaults to `21/tcp` and `69/udp`.
+If the host system has an `ftp` user, its `$HOME` is used to serve
+files.  The FTP and TFTP ports are read from `/etc/services`.  If
+anything is missing it falls back to a set of sane defaults.
 
-Simple, no hassle with config files, as it should be.
+It just works.
 
 
 Features
@@ -79,7 +76,12 @@ rewrite with TFTP support.
 
 uftpd is maintained by [Joachim Nilsson] at [GitHub].
 
-[.deb]:      http://ftp.troglobit.com/uftpd/uftpd_1.7-1_amd64.deb
-[Xu Wang]:   https://github.com/xu-wang11/
-[FtpServer]: https://github.com/xu-wang11/FtpServer
-[GitHub]:    https://github.com/troglobit/uftpd
+[.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.7-1_amd64.deb
+[Joachim Nilsson]: http://troglobit.com
+[Xu Wang]:         https://github.com/xu-wang11/
+[FtpServer]:       https://github.com/xu-wang11/FtpServer
+[GitHub]:          https://github.com/troglobit/uftpd
+[Travis]:          https://travis-ci.org/troglobit/uftpd
+[Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
+[Coverity Scan]:   https://scan.coverity.com/projects/2947
+[Coverity Status]: https://scan.coverity.com/projects/2947/badge.svg

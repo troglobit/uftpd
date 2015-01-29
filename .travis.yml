@@ -16,7 +16,7 @@ addons:
       description: "uftpd -- the no nonsense (T)FTP server"
     notification_email: troglobit@gmail.com
     build_command_prepend: "make distclean"
-    build_command:   "make -j5"
-    branch_pattern: master
+    build_command: "make -j5"
+    branch_pattern: dev
 
 script: make -j5

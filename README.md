@@ -1,12 +1,12 @@
 No Nonsense FTP/TFTP Server
 ===========================
-[![Travis Status]][Travis] | [![Coverity Status]][Coverity Scan]
+[![Travis Status]][Travis] [![Coverity Status]][Coverity Scan]
 
 uftpd is a true UNIX daemon, it serves files, and nothing else.
 
 If the host system has an `ftp` user, its `$HOME` is used to serve
 files.  The FTP and TFTP ports are read from `/etc/services`.  If
-anything is missing it falls back to a set of sane defaults.
+anything is missing uftpd falls back to a set of sane defaults.
 
 It just works.
 
@@ -14,16 +14,16 @@ It just works.
 Features
 --------
 
-  * FTP and/or TFTP
-  * No configuration file
-  * Runs from standard UNIX inetd, or standalone
-  * Listens to `ftp/tcp` and `tftp/udp` found in `/etc/services`
-  * Serves files from the ftp user's `$HOME`, found in `/etc/passwd`
-  * Privilege separation, drops root privileges before serving files
-  * Possible to use symlinks outside of the home directory (INSECURE,
-    but user friendly)
-  * Possible to use group writable home directory (INSECURE, but again
-    user friendly)
+* FTP and/or TFTP
+* No configuration file
+* Runs from standard UNIX inetd, or standalone
+* Listens to `ftp/tcp` and `tftp/udp` found in `/etc/services`
+* Serves files from the ftp user's `$HOME`, found in `/etc/passwd`
+* Privilege separation, drops root privileges before serving files
+* Possible to use symlinks outside of the home directory (INSECURE,
+  but user friendly)
+* Possible to use group writable home directory (INSECURE, but again
+  user friendly)
 
 
 Caveat

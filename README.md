@@ -2,7 +2,7 @@ No Nonsense FTP/TFTP Server
 ===========================
 [![Travis Status]][Travis] [![Coverity Status]][Coverity Scan]
 
-uftpd is a true UNIX daemon, it serves files, and nothing else.
+uftpd is a true UNIX FTP/TFTP daemon, it serves files, and nothing else.
 
 If the host system has an `ftp` user, its `$HOME` is used to serve
 files.  The FTP and TFTP ports are read from `/etc/services`.  If

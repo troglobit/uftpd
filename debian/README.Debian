@@ -1,9 +1,8 @@
-uftpd for Debian
-----------------
+uftpd for Debian/Ubuntu
+-----------------------
 
-uftpd is a combined TFTP/FTP server perfectly suited for Intranets and
-developer laptops.  It's however useless for Internet use, with security
-considerations and multiple users as obvious gotchas.  It is however
-really small, easy to setup, and just works right out of the box.
+uftpd is a true UNIX TFTP/FTP daemon, it serves files, and nothing more.
+It runs from inetd on ports specified in /etc/services, serving files
+from the ftp user's $HOME, /src/ftp -- it just works.
 
- -- Joachim Nilsson <troglobit@gmail.com>, Tue, 19 Aug 2014 23:45:56 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>, Sun,  2 Feb 2015 06:43:37 +0100

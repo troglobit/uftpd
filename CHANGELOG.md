@@ -3,8 +3,8 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
-[UNRELEASED]
-------------
+[v1.8] - 2015-02-02
+-------------------
 
 ### Changes
 - Updated [README.md]
@@ -139,7 +139,7 @@ Haunted zombie (¬°-°)¬ release.
 
 ### Fixes
 - Fix zombie problem.  Forked off FTP sessions did not exit properly and
-  were to `wait()`'ed for properly, so uftpd left a zombie processes
+  were not `wait()`'ed for properly, so uftpd left a zombie processes
   lingering after each session.
 - Fix ordering bug in security mechanism "drop privs"
 
@@ -184,7 +184,7 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.7...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.8...HEAD
 [v1.8]:          https://github.com/troglobit/uftpd/compare/v1.7...v1.8
 [v1.7]:          https://github.com/troglobit/uftpd/compare/v1.6...v1.7
 [v1.6]:          https://github.com/troglobit/uftpd/compare/v1.5...v1.6

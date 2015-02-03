@@ -10,8 +10,9 @@ All notable changes to the project are documented in this file.
 - Updated [README.md]
 - Add [TODO.md]
 - Add [CHANGELOG.md], attempt to align with http://keepachangelog.com
-- From now on Travis CI only runs when pushing to the dev branch,
+- From now on [Travis-CI] only runs when pushing to the dev branch,
   so all new development must be done there.
+- Upgrade to [libuEv] v1.0.4
 
 ### Fixes
 - Fix insecure `chroot()` reported in [Coverity Scan] CID #54523.

@@ -65,7 +65,7 @@ static int usage(void)
 	return 0;
 }
 
-static void ftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
+static void ftp_cb(uev_t *w, void UNUSED(*arg), int UNUSED(events))
 {
         int client;
 
@@ -78,7 +78,7 @@ static void ftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUS
         ftp_session(client);
 }
 
-static void tftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
+static void tftp_cb(uev_t *w, void UNUSED(*arg), int UNUSED(events))
 {
 	DBG("TFTP callback for socket %d!", w->fd);
         tftp_session(w->fd);
@@ -124,7 +124,7 @@ int serve_files(uev_ctx_t *ctx)
 /*
  * SIGCHLD: one of our children has died
  */
-static void sigchld_cb(uev_ctx_t *UNUSED(ctx), uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
+static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
 {
 	while (1) {
 		pid_t pid;
@@ -141,7 +141,7 @@ static void sigchld_cb(uev_ctx_t *UNUSED(ctx), uev_t *UNUSED(w), void *UNUSED(ar
 /*
  * SIGQUIT: request termination
  */
-static void sigquit_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void sigquit_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 {
 	INFO("Recieved signal %d, exiting ...", w->signo);
 	killpg(0, SIGTERM);

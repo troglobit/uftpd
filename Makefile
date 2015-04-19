@@ -1,6 +1,6 @@
-# uftpd -- the small no nonsense FTP server
+# uftpd -- the no nonsense FTP/TFTP server
 #
-# Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+# Copyright (c) 2014, 2015  Joachim Nilsson <troglobit@gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -13,11 +13,10 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
 .PHONY: all install uninstall clean distclean dist
 
 #VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.8
+VERSION    ?= 1.9-dev
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)
@@ -44,6 +43,8 @@ CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 CPPFLAGS   += -Ilibuev
 CFLAGS     += -O2 -W -Wall -g
 LDLIBS     += libuev/libuev.a
+STATIC      = 1
+export STATIC
 
 include common.mk
 
@@ -97,6 +98,7 @@ uninstall-data:
 uninstall: uninstall-exec uninstall-data
 
 clean:
+	+@$(MAKE) -C libuev $@
 	-@$(RM) $(OBJS) $(EXEC)
 
 distclean: clean

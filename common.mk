@@ -13,6 +13,8 @@ CHECK      := cppcheck $(CPPFLAGS) --quiet --enable=all
 INSTALL    := install --backup=off
 STRIPINST  := $(INSTALL) -s --strip-program=$(CROSS)strip -m 0755
 
+export ROOTDIR CPPFLAGS LDFLAGS LDLIBS
+
 # Pretty printing and GCC -M for auto dep files
 %.o: %.c
 	@printf "  CC      $(subst $(ROOTDIR)/,,$(shell pwd)/$@)\n"

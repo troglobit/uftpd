@@ -2,13 +2,7 @@ No Nonsense FTP/TFTP Server
 ===========================
 [![Travis Status]][Travis] [![Coverity Status]][Coverity Scan]
 
-uftpd is a true UNIX FTP/TFTP daemon, it serves files, and nothing else.
-
-If the host system has an `ftp` user, its `$HOME` is used to serve
-files.  The FTP and TFTP ports are read from `/etc/services`.  If
-anything is missing uftpd falls back to a set of sane defaults.
-
-It just works.
+uftpd is a UNIX daemon with sane built-in defaults.  It just works.
 
 
 Features
@@ -76,7 +70,7 @@ rewrite with TFTP support.
 
 uftpd is maintained by [Joachim Nilsson] at [GitHub].
 
-[.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.7-1_amd64.deb
+[.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
@@ -85,3 +79,9 @@ uftpd is maintained by [Joachim Nilsson] at [GitHub].
 [Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/2947
 [Coverity Status]: https://scan.coverity.com/projects/2947/badge.svg
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->

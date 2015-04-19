@@ -3,6 +3,14 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+
+[UNRELEASED]
+------------
+
+### Changes
+- Upgrade to [libuEv] v1.1.0 for improved error handling.
+
+
 [v1.8] - 2015-02-02
 -------------------
 
@@ -205,3 +213,9 @@ First official uftpd release! :-)
 [TODO.md]:       https://github.com/troglobit/uftpd/blob/master/TODO.md
 [README.md]:     https://github.com/troglobit/uftpd/blob/master/README.md
 [CHANGELOG.md]:  https://github.com/troglobit/uftpd/blob/master/CHANGELOG.md
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->

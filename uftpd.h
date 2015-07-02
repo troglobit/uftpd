@@ -47,7 +47,7 @@
 #include <uev.h>
 #include <unistd.h>
 
-#include "string.h"
+#include "libite/lite.h"
 
 #define FTP_DEFAULT_PORT  21
 #define FTP_SERVICE_NAME  "ftp"
@@ -71,10 +71,6 @@
 
 /* TFTP Minimum segment size, specific to uftpd */
 #define MIN_SEGSIZE       32
-
-#ifndef UNUSED
-#define UNUSED(arg) arg __attribute__ ((unused))
-#endif
 
 #define SETSIG(sa, sig, fun, flags)			\
 	do {						\

@@ -27,7 +27,7 @@ ARCHIVEZ    = ../$(ARCHIVE).xz
 EXEC        = $(NAME)
 MANUAL      = $(NAME).8
 DISTFILES   = LICENSE README
-OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o strlcpy.o strlcat.o log.o
+OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(SRCS:.c=.d)
 
@@ -42,16 +42,14 @@ mandir      = $(prefix)/share/man/man8
 CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 CPPFLAGS   += -Ilibuev
 CFLAGS     += -O2 -W -Wall -g
-LDLIBS     += libuev/libuev.a
-STATIC      = 1
-export STATIC
+LDLIBS     += libuev/libuev.a libite/libite.a
 
 include common.mk
 
 all: $(LDLIBS) $(EXEC)
 
 $(LDLIBS): Makefile
-	+@$(MAKE) -C libuev
+	+@$(MAKE) STATIC=1 -C `dirname $@` all
 
 $(EXEC): $(OBJS) $(LDLIBS)
 
@@ -99,10 +97,12 @@ uninstall: uninstall-exec uninstall-data
 
 clean:
 	+@$(MAKE) -C libuev $@
+	+@$(MAKE) -C libite $@
 	-@$(RM) $(OBJS) $(EXEC)
 
 distclean: clean
 	+@$(MAKE) -C libuev $@
+	+@$(MAKE) -C libite $@
 	-@$(RM) $(JUNK) unittest *.o .*.d
 
 check:

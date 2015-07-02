@@ -65,7 +65,7 @@ static int usage(void)
 	return 0;
 }
 
-static void ftp_cb(uev_t *w, void UNUSED(*arg), int UNUSED(events))
+static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 {
         int client;
 
@@ -78,7 +78,7 @@ static void ftp_cb(uev_t *w, void UNUSED(*arg), int UNUSED(events))
         ftp_session(client);
 }
 
-static void tftp_cb(uev_t *w, void UNUSED(*arg), int UNUSED(events))
+static void tftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 {
 	DBG("TFTP callback for socket %d!", w->fd);
         tftp_session(w->fd);

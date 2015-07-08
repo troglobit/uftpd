@@ -116,6 +116,9 @@ int serve_files(uev_ctx_t *ctx)
 	if (ftp && tftp)
 		return 1;
 
+	/* We're now up and running, save pid file. */
+	pidfile(NULL);
+
 	INFO("Serving files from %s ...", home);
 
 	return uev_run(ctx, 0);

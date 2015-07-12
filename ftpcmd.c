@@ -340,7 +340,7 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
-void handle_LIST(ctrl_t *ctrl)
+void do_list(ctrl_t *ctrl, int nlst)
 {
 	DIR *dir;
 	char *buf;
@@ -383,11 +383,19 @@ void handle_LIST(ctrl_t *ctrl)
 				continue;
 			}
 
-			snprintf(pos, len, "%s 1 %5d %5d %12"  PRIu64 " %s %s%s\n",
-				 mode_to_str(st.st_mode),
-				 0, 0, (uint64_t)st.st_size,
-				 time_to_str(st.st_mtime),
-				 name, ctrl->type == TYPE_A ? "\r" : "");
+			if (nlst)
+				snprintf(pos, len, "%s", name);
+			else
+				snprintf(pos, len,
+					 "%s 1 %5d %5d %12" PRIu64 " %s %s",
+					 mode_to_str(st.st_mode),
+					 0, 0, (uint64_t)st.st_size,
+					 time_to_str(st.st_mtime), name);
+
+			if (ctrl->type == TYPE_A)
+				strlcat(pos, "\r\n", len);
+			else
+				strlcat(pos, "\n", len);
 
 			DBG("LIST %s", pos);
 			len -= strlen(pos);
@@ -404,6 +412,16 @@ void handle_LIST(ctrl_t *ctrl)
 	free(buf);
 	close_data_connection(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+}
+
+void handle_LIST(ctrl_t *ctrl)
+{
+	do_list(ctrl, 0);
+}
+
+void handle_NLST(ctrl_t *ctrl)
+{
+	do_list(ctrl, 1);
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
@@ -709,6 +727,8 @@ void ftp_command(ctrl_t *ctrl)
 			break;
 		} else if (strcmp("LIST", cmd) == 0) {
 			handle_LIST(ctrl);
+		} else if (strcmp("NLST", cmd) == 0) {
+			handle_NLST(ctrl);
 		} else if (strcmp("CLNT", cmd) == 0) {
 			handle_CLNT(ctrl);
 		} else if (strcmp("OPTS", cmd) == 0) {

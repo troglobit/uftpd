@@ -147,9 +147,13 @@ static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
 static void sigquit_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 {
 	INFO("Recieved signal %d, exiting ...", w->signo);
+
+	/* Forward signal to any children in this process group. */
 	killpg(0, SIGTERM);
-	sleep(2);
-	killpg(0, SIGKILL);
+	sched_yield();		/* Give them time to exit gracefully. */
+
+	/* Leave main loop. */
+	uev_exit(w->ctx);
 }
 
 static void sig_init(uev_ctx_t *ctx)

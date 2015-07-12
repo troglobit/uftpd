@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+.\" Copyright (c) 2014-2015  Joachim Nilsson <troglobit@gmail.com>
 .\"
 .\" Permission to use, copy, modify, and/or distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -13,9 +13,9 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd Dec 14, 2014
+.Dd Jul 13, 2015
 .Dt UFTPD 8
-.Os "uFTPd (1.7)"
+.Os "uftpd (1.9)"
 .Sh NAME
 .Nm uftpd
 .Nd
@@ -34,6 +34,14 @@ Internet ports for each protocol, as defined in the system service
 specification, unless other ports are given on the command line.  For
 details, see
 .Xr services 5 .
+.Pp
+Without any command line arguments
+.Nm
+defaults to FTP mode and automatically backgrounds itself.  Usually
+.Nm
+will then listen to port 21 (FTP), serve files from
+.Pa /srv/ftp
+and log anything out of the ordinary to syslog.
 .Pp
 Available options:
 .Bl -tag -width Ds
@@ -101,8 +109,9 @@ The case of the requests is ignored.
 .It CWD Ta "change working directory"
 .It DELE Ta "delete a file"
 .It LIST Ta "give list files in a directory" Pq Dq Li "ls -lgA"
+.It NLST Ta "like LIST, but much less verbose"
 .It MKD Ta "make a directory"
-.It NOOP Ta "do nothing"
+.It NOOP Ta "do nothing, used for keep-alive"
 .It PASS Ta "specify password"
 .It PASV Ta "prepare for server-to-server transfer"
 .It PORT Ta "specify data connection port"

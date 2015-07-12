@@ -177,7 +177,7 @@ ctrl_t *new_session(int sd, int *rc)
 	if (!privs_dropped && pw && geteuid() == 0) {
 		int fail1, fail2;
 
-		initgroups (pw->pw_name, pw->pw_gid);
+		initgroups(pw->pw_name, pw->pw_gid);
 		if ((fail1 = setegid(pw->pw_gid)))
 			WARN(errno, "Failed dropping group privileges to gid %d", pw->pw_gid);
 		if ((fail2 = seteuid(pw->pw_uid)))

@@ -1,3 +1,15 @@
+uftpd (1.9-1) unstable; urgency=low
+
+  * New upstream release:
+    - Add support for NLST FTP command.
+    - Fix problem with 2 seconds before exiting on SIGTERM/SIGINT.
+    - Fix zombie problem when backgrounding.
+    - Add support for automatically creating a PID file.
+    - Fix problem with LIST (and NLST) ignoring path argument.
+    - Fix problem with FTP client simply closing connection (no QUIT)
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Mon, 13 Jul 2015 01:25:26 +0200
+
 uftpd (1.8-1) unstable; urgency=low
 
   * New upstream release:

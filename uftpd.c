@@ -60,7 +60,8 @@ static int usage(void)
 	       "  -V         Verbose logging\n"
 	       "  -?         Show this help text\n"
 	       "\n"
-	       "Bug report address: %-40s\n\n", __progname, BUGADDR);
+	       "Without -f and -t arguments, %s starts in FTP mode by default.\n"
+	       "Bug report address: %-40s\n\n", __progname, __progname, BUGADDR);
 
 	return 0;
 }

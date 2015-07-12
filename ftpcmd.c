@@ -68,12 +68,12 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 			return 1;
 		}
 
-		if (!bytes) {
-			show_log("Client disconnected.");
-			return 1;
-		}
-
 		break;
+	}
+
+	if (!bytes) {
+		show_log("Client disconnected.");
+		return 1;
 	}
 
 	/* NUL terminate for strpbrk() */
@@ -746,7 +746,7 @@ void ftp_command(ctrl_t *ctrl)
 		} else {
 			char buf[100];
 
-			snprintf(buf, sizeof(buf), "500 %s command not recognized by server\r\n", cmd);
+			snprintf(buf, sizeof(buf), "500 command '%s' not recognized by server.\r\n", cmd);
 			send_msg(ctrl->sd, buf);
 		}
 	}
@@ -794,7 +794,7 @@ int ftp_session(int sd)
 	INFO("Client connection from %s", ctrl->clientaddr);
 	ftp_command(ctrl);
 
-	DBG("Exiting ...");
+	DBG("Client session ended.");
 	del_session(ctrl);
 
 	exit(0);

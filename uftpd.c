@@ -38,6 +38,8 @@ static uev_t sigint_watcher;
 static uev_t sighup_watcher;
 static uev_t sigquit_watcher;
 
+static void sig_init(uev_ctx_t *ctx);
+
 
 static int version(void)
 {
@@ -116,6 +118,9 @@ int serve_files(uev_ctx_t *ctx)
 	if (ftp && tftp)
 		return 1;
 
+	/* Setup signal callbacks */
+	sig_init(ctx);
+
 	/* We're now up and running, save pid file. */
 	pidfile(NULL);
 
@@ -184,9 +189,6 @@ static int find_port(char *service, char *proto, int fallback)
 static void init(uev_ctx_t *ctx)
 {
 	uev_init(ctx);
-
-	/* Setup signal callbacks */
-	sig_init(ctx);
 
 	/* Figure out FTP/TFTP ports */
 	if (do_ftp == 1)

@@ -4,21 +4,30 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[UNRELEASED]
-------------
+[v1.9][] - 2015-07-13
+---------------------
 
 ### Changes
-- Upgrade to [libuEv] v1.2.1 for improved error handling and a much
+- Upgrade to [libuEv][] v1.2.1+ for improved error handling and a much
   cleaner API.
-- Move to use [libite] v1.0.0 for `strlcpy()`, `strlcat()`, `pidfile()`
+- Move to use [libite][] v1.0.0 for `strlcpy()`, `strlcat()`, `pidfile()`
   and more.
-- Add support for NLST FTP command, needed for multiple get operations.
+- Add support for `NLST` FTP command, needed for multiple get operations.
   This fixes issue #2, thanks to @oz123 on GitHub for pointing this out!
 
 ### Fixes
+- Fix issue #3: do not sleep 2 sec before exiting.  Simply forward the
+  `SIGTERM` to any FTP/TFTP session in progress, yield the CPU to let
+  the child sessions handle the signal, and then exit.  Much quicker!
+- Fix issue #4: due to an ordering bug between the main process calling
+  `daemon()` and `sig_init()`, we never got the `SIGCHILD` to be able to
+  reap any exiting FTP/TFTP sessions.  This resulted in zombies(!) when
+  *not* being called as `uftpd -n`
+- Fix issue #5: `LIST` and `NLST` ignores path argument sent by client.
+- Fix problem with [libuEv][] not being properly cleaned on `distclean`.
 - Fix problem with uftpd not exiting client session properly when client
   simply closes the connection.
-  
+
 
 [v1.8] - 2015-02-02
 -------------------
@@ -202,7 +211,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.8...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.9...HEAD
+[v1.9]:          https://github.com/troglobit/uftpd/compare/v1.8...v1.9
 [v1.8]:          https://github.com/troglobit/uftpd/compare/v1.7...v1.8
 [v1.7]:          https://github.com/troglobit/uftpd/compare/v1.6...v1.7
 [v1.6]:          https://github.com/troglobit/uftpd/compare/v1.5...v1.6

@@ -31,7 +31,8 @@ void handle_CWD(ctrl_t *ctrl, char *dir);
 void handle_XPWD(ctrl_t *ctrl);
 
 void handle_PORT(ctrl_t *ctrl, char *str);
-void handle_LIST(ctrl_t *ctrl);
+void handle_LIST(ctrl_t *ctrl, char *arg);
+void handle_NLST(ctrl_t *ctrl, char *arg);
 
 void handle_PASV(ctrl_t *ctrl);
 

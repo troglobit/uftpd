@@ -340,11 +340,11 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
-void do_list(ctrl_t *ctrl, int nlst)
+void do_list(ctrl_t *ctrl, char *arg, int nlst)
 {
 	DIR *dir;
 	char *buf;
-	char *path = compose_path(ctrl, NULL);
+	char *path = compose_path(ctrl, arg);
 	size_t sz = BUFFER_SIZE * sizeof(char);
 
 	buf = malloc(sz);
@@ -414,14 +414,14 @@ void do_list(ctrl_t *ctrl, int nlst)
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
 
-void handle_LIST(ctrl_t *ctrl)
+void handle_LIST(ctrl_t *ctrl, char *arg)
 {
-	do_list(ctrl, 0);
+	do_list(ctrl, arg, 0);
 }
 
-void handle_NLST(ctrl_t *ctrl)
+void handle_NLST(ctrl_t *ctrl, char *arg)
 {
-	do_list(ctrl, 1);
+	do_list(ctrl, arg, 1);
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
@@ -726,9 +726,9 @@ void ftp_command(ctrl_t *ctrl)
 			handle_QUIT(ctrl);
 			break;
 		} else if (strcmp("LIST", cmd) == 0) {
-			handle_LIST(ctrl);
+			handle_LIST(ctrl, argument);
 		} else if (strcmp("NLST", cmd) == 0) {
-			handle_NLST(ctrl);
+			handle_NLST(ctrl, argument);
 		} else if (strcmp("CLNT", cmd) == 0) {
 			handle_CLNT(ctrl);
 		} else if (strcmp("OPTS", cmd) == 0) {

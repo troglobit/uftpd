@@ -10,7 +10,15 @@ All notable changes to the project are documented in this file.
 ### Changes
 - Upgrade to [libuEv] v1.2.1 for improved error handling and a much
   cleaner API.
+- Move to use [libite] v1.0.0 for `strlcpy()`, `strlcat()`, `pidfile()`
+  and more.
+- Add support for NLST FTP command, needed for multiple get operations.
+  This fixes issue #2, thanks to @oz123 on GitHub for pointing this out!
 
+### Fixes
+- Fix problem with uftpd not exiting client session properly when client
+  simply closes the connection.
+  
 
 [v1.8] - 2015-02-02
 -------------------
@@ -203,7 +211,8 @@ First official uftpd release! :-)
 [v1.3]:          https://github.com/troglobit/uftpd/compare/v1.2...v1.3
 [v1.2]:          https://github.com/troglobit/uftpd/compare/v1.1...v1.2
 [v1.1]:          https://github.com/troglobit/uftpd/compare/v1.0...v1.1
-[libuEv]:        http://github.com/troglobit/libuev
+[libuEv]:        https://github.com/troglobit/libuev
+[libite]:        https://github.com/troglobit/libite
 [ISC license]:   http://en.wikipedia.org/wiki/ISC_license
 [RFC 1350]:      http://tools.ietf.org/html/rfc1350
 [RFC 2348]:      http://tools.ietf.org/html/rfc2348

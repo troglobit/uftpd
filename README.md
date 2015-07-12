@@ -1,6 +1,6 @@
 No Nonsense FTP/TFTP Server
 ===========================
-[![Travis Status]][Travis] [![Coverity Status]][Coverity Scan]
+[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 uftpd is a UNIX daemon with sane built-in defaults.  It just works.
 
@@ -23,32 +23,40 @@ Features
 Caveat
 ------
 
-uftpd is not made for secure installations, it's made for home users and
-developers.  This will always be the primary goal of uftpd.  As such it
-allows symlinks outside the FTP home as well as a group writable FTP
-home directory -- user-friendly features that can easily cause security
-breaches, but also very useful for people who do not care and just wants
-their FTP server to work.
+uftpd is not made for secure installations, it is primarily targeted at
+home users and developers in need of a simple TFTP/FTP server.  As such
+it allows symlinks outside the FTP home, as well as a group writable FTP
+home directory &mdash; i.e, user-friendly features that can easily cause
+security breaches, but also very useful for people who do not care and
+just want their FTP server to work.
 
 Seriously, we do not advise you to ignore any security aspect of your
 installation.  If security is a concern for you, consider using a
 different server.
 
 That being said, a lot of care has been taken to lock down and secure
-uftpd by default.  So if you refrain from symlinking stuff from your
-home directory and carefully setup more strict permissions on your FTP
-home, then uftpd is likely as secrure as any other TFTP/FTP server.
+uftpd by default.  So, if you refrain from symlinking stuff from your
+home directory and carefully set up strict permissions on that
+directory, then uftpd is likely as secrure as any other TFTP/FTP server.
 
 
 Running
 -------
 
-Start uftpd by simply calling `sudo ./uftpd` after building it with
-make.  That will start uftpd as a TFTP server.  To enable both FTP and
-TFTP you need to call `sudo ./uftpd -f -t`, both `-f` and `-t` can be
-given an alternative port as extra argument for either service.  There
-are more command line options, e.g., for overriding the TFTP/FTP home
-directory.  See the man page or the <kdb>`uftpd --help`</kdb> output.
+To start uftpd in the background as an FTP-only server, simply call
+
+    sudo ./uftpd
+
+To enable both FTP and TFTP, call
+
+    sudo ./uftpd -f -t
+
+The `-f` and `-t` can be given an alternative port as extra argument for
+either service, e.g, `-f2121` to start listening for FTP on port 2121.
+
+There are more command line options, e.g., for overriding the TFTP/FTP
+home directory.  For details, see the man page or the output from the
+command: <kdb>`uftpd --help`</kdb>
 
 It is however recommended to run uftpd from the Internet super server,
 inetd.  Use the following two lines for `/etc/inetd.conf`:
@@ -56,25 +64,31 @@ inetd.  Use the following two lines for `/etc/inetd.conf`:
     ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f
     tftp	dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t
 
+Maybe you use a different Inetd server, like [Finit][] which has an
+Inetd server built-in.  In which case the syntax above may very well be
+different.
+
 Remember to activate your changes to inetd by reloading the service or
-sending SIGHUP.  Alternatively, you can build and install the [.deb]
-package to install uftpd, it will take care of installing and setting up
-inetd for you.  Use `make package` to build your own .deb file.
+sending `SIGHUP` to it.  Alternatively, you can download and install the
+[latest pre-built package][.deb] &mdash; or build and install your own
+package.  Installing the package takes care of setting up inetd for you.
+Use `make package` to build the `.deb` pacakge file.
 
 
 Origin & References
 -------------------
 
-Originally based on [FtpServer] by [Xu Wang], uftpd is a complete
+Originally based on [FtpServer][] by [Xu Wang][], uftpd is a complete
 rewrite with TFTP support.
 
-uftpd is maintained by [Joachim Nilsson] at [GitHub].
+uftpd is maintained by [Joachim Nilsson][] at [GitHub][].
 
 [.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
 [GitHub]:          https://github.com/troglobit/uftpd
+[Finit]:           https://github.com/troglobit/finit
 [Travis]:          https://travis-ci.org/troglobit/uftpd
 [Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/2947

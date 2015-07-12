@@ -38,8 +38,6 @@ static uev_t sigint_watcher;
 static uev_t sighup_watcher;
 static uev_t sigquit_watcher;
 
-static void sig_init(uev_ctx_t *ctx);
-
 
 static int version(void)
 {
@@ -65,68 +63,6 @@ static int usage(void)
 	       "Bug report address: %-40s\n\n", __progname, BUGADDR);
 
 	return 0;
-}
-
-static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
-{
-        int client;
-
-        client = accept(w->fd, NULL, NULL);
-        if (client < 0) {
-                perror("Failed accepting incoming FTP client connection");
-                return;
-        }
-
-        ftp_session(client);
-}
-
-static void tftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
-{
-	DBG("TFTP callback for socket %d!", w->fd);
-        tftp_session(w->fd);
-}
-
-static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
-{
-	int sd;
-
-	if (!port)
-		/* Disabled */
-		return 1;
-
-	sd = open_socket(port, type, desc);
-	if (sd < 0) {
-		WARN(errno, "Failed starting %s service", desc);
-		return 1;
-	}
-
-	INFO("Starting %s server on port %d ...", desc, port);
-	uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
-
-	return 0;
-}
-
-int serve_files(uev_ctx_t *ctx)
-{
-	int ftp, tftp;
-
-	DBG("Starting services ...");
-	ftp  = start_service(ctx, &ftp_watcher,   ftp_cb, do_ftp, SOCK_STREAM, "FTP");
-	tftp = start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
-
-	/* Check if failed to start any service ... */
-	if (ftp && tftp)
-		return 1;
-
-	/* Setup signal callbacks */
-	sig_init(ctx);
-
-	/* We're now up and running, save pid file. */
-	pidfile(NULL);
-
-	INFO("Serving files from %s ...", home);
-
-	return uev_run(ctx, 0);
 }
 
 /*
@@ -207,6 +143,68 @@ static void init(uev_ctx_t *ctx)
 			home = strdup(pw->pw_dir);
 		}
 	}
+}
+
+static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+{
+        int client;
+
+        client = accept(w->fd, NULL, NULL);
+        if (client < 0) {
+                perror("Failed accepting incoming FTP client connection");
+                return;
+        }
+
+        ftp_session(client);
+}
+
+static void tftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+{
+	DBG("TFTP callback for socket %d!", w->fd);
+        tftp_session(w->fd);
+}
+
+static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
+{
+	int sd;
+
+	if (!port)
+		/* Disabled */
+		return 1;
+
+	sd = open_socket(port, type, desc);
+	if (sd < 0) {
+		WARN(errno, "Failed starting %s service", desc);
+		return 1;
+	}
+
+	INFO("Starting %s server on port %d ...", desc, port);
+	uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
+
+	return 0;
+}
+
+int serve_files(uev_ctx_t *ctx)
+{
+	int ftp, tftp;
+
+	DBG("Starting services ...");
+	ftp  = start_service(ctx, &ftp_watcher,   ftp_cb, do_ftp, SOCK_STREAM, "FTP");
+	tftp = start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
+
+	/* Check if failed to start any service ... */
+	if (ftp && tftp)
+		return 1;
+
+	/* Setup signal callbacks */
+	sig_init(ctx);
+
+	/* We're now up and running, save pid file. */
+	pidfile(NULL);
+
+	INFO("Serving files from %s ...", home);
+
+	return uev_run(ctx, 0);
 }
 
 int main(int argc, char **argv)

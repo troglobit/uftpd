@@ -84,8 +84,8 @@
 #define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
 #define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
 #define LOG(fmt, args...)        logit(LOG_NOTICE, 0, fmt, ##args)
-#define INFO(fmt, args...)       do { if (verbose) logit(LOG_INFO, 0, fmt, ##args);  } while(0)
-#define DBG(fmt, args...)        do { if (debug)   logit(LOG_DEBUG, 0, fmt, ##args); } while(0)
+#define INFO(fmt, args...)       do { if (debug || verbose) logit(LOG_INFO, 0, fmt, ##args);  } while(0)
+#define DBG(fmt, args...)        do { if (debug)            logit(LOG_DEBUG, 0, fmt, ##args); } while(0)
 #define show_log(msg)            DBG(msg)
 
 extern char *__progname;

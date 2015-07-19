@@ -45,7 +45,7 @@ char *compose_path(ctrl_t *ctrl, char *path)
 
 	strlcpy(dir, ctrl->cwd, sizeof(dir));
 
-	DBG("Compose path from cwd: %s, arg: %s", ctrl->cwd, path);
+	DBG("Compose path from cwd: %s, arg: %s", ctrl->cwd, path ?: "");
 	if (!path || path[0] != '/') {
 		if (path && path[0] != 0) {
 			if (dir[strlen(dir) - 1] != '/')

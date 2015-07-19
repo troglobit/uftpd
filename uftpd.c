@@ -152,7 +152,7 @@ static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 
         client = accept(w->fd, NULL, NULL);
         if (client < 0) {
-                perror("Failed accepting incoming FTP client connection");
+                WARN(errno, "Failed accepting FTP client connection");
                 return;
         }
 

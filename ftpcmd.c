@@ -344,8 +344,24 @@ void do_list(ctrl_t *ctrl, char *arg, int nlst)
 {
 	DIR *dir;
 	char *buf;
-	char *path = compose_path(ctrl, arg);
+	char *path;
 	size_t sz = BUFFER_SIZE * sizeof(char);
+
+	if (string_valid(arg)) {
+		char *ptr = arg;
+
+		/* Check if client sends ls arguments ... */
+		while (*ptr) {
+			if (*ptr == ' ')
+				ptr++;
+			if (string_match(ptr, "-l"))
+				ptr += 2;
+			else
+				break;
+		}
+
+		arg = ptr;
+	}
 
 	buf = malloc(sz);
 	if (!buf) {
@@ -362,6 +378,7 @@ void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	show_log("Established TCP socket for data communication.");
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
+	path = compose_path(ctrl, arg);
 	dir = opendir(path);
 	while (dir) {
 		char *pos = buf;

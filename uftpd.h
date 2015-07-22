@@ -31,7 +31,6 @@
 #include <netinet/in.h>
 #include <pwd.h>
 #include <sched.h>
-#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -65,21 +64,13 @@
 #define BUFFER_SIZE       1000
 
 /* This is a stupid server, it doesn't expect >20 sec inactivity */
-#define INACTIVITY_TIMER  20
+#define INACTIVITY_TIMER  20 * 1000
 
 /* TFTP Packet Types (New) */
 #define OACK              06	/* option acknowledgement */
 
 /* TFTP Minimum segment size, specific to uftpd */
 #define MIN_SEGSIZE       32
-
-#define SETSIG(sa, sig, fun, flags)			\
-	do {						\
-		sa.sa_sigaction = fun;			\
-		sa.sa_flags = SA_SIGINFO | flags;	\
-		sigemptyset(&sa.sa_mask);		\
-		sigaction(sig, &sa, NULL);		\
-	} while (0)
 
 #define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
 #define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
@@ -115,11 +106,17 @@ typedef struct {
 	char serveraddr[INET_ADDRSTRLEN];
 	char clientaddr[INET_ADDRSTRLEN];
 
+	/* Event loop context and session watchers */
+	uev_t      io_watcher, timeout_watcher;
+	uev_ctx_t *ctx;
+
+	/* Session buffer */
+	char    *buf;		/* Pointer to segment buffer */
+	size_t   bufsz;		/* Size of buf */
+
 	/* TFTP */
 	char    *file;	        /* Current file name to fetch */
 	FILE    *fp;		/* Current file in operation */
-	char    *buf;		/* Pointer to segment buffer */
-	size_t   bufsz;		/* Size of buf */
 	tftp_t  *th;		/* Same as buf, only as tftp_t */
 	size_t   segsize;	/* SEGSIZE, or per session negotiated */
 	int      timeout;	/* INACTIVITY_TIMER, or per session neg. */
@@ -138,18 +135,17 @@ typedef struct {
 	int  data_port;
 } ctrl_t;
 
-ctrl_t *new_session(int sd, int *rc);
-int     del_session(ctrl_t *ctrl);
+ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc);
+int     del_session(ctrl_t *ctrl, int isftp);
 
-int     ftp_session(int sd);
-int     tftp_session(int client);
+int     ftp_session(uev_ctx_t *ctx, int client);
+int     tftp_session(uev_ctx_t *ctx, int client);
 
 char   *compose_path(ctrl_t *ctrl, char *path);
 int     open_socket(int port, int type, char *desc);
 void    convert_address(struct sockaddr_storage *ss, char *buf, size_t len);
 
 void    logit(int severity, int code, const char *fmt, ...);
-void    sigalrm_handler(int signo, siginfo_t *info, void *ctx);
 
 #endif  /* UFTPD_H_ */
 

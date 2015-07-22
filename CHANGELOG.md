@@ -10,10 +10,13 @@ All notable changes to the project are documented in this file.
 ### Changes
 - Upgrade to [libuEv][] v1.2.1+ for improved error handling and a much
   cleaner API.
+- Major refactor of both FTP and TFTP servers to use libuEv better.
 - Move to use [libite][] v1.0.0 for `strlcpy()`, `strlcat()`, `pidfile()`
   and more.
+- Add proper session timout to TFTP, like what FTP already has.
 - Add support for `NLST` FTP command, needed for multiple get operations.
   This fixes issue #2, thanks to @oz123 on GitHub for pointing this out!
+- Add support for `FEAT` and `HELP` FTP commands used by some clients.
 
 ### Fixes
 - Fix issue #3: do not sleep 2 sec before exiting.  Simply forward the
@@ -27,6 +30,8 @@ All notable changes to the project are documented in this file.
 - Fix problem with [libuEv][] not being properly cleaned on `distclean`.
 - Fix problem with uftpd not exiting client session properly when client
   simply closes the connection.
+- Fix clients not detecting session timeout, uftpd was not performing
+  a proper `shutdown()` on the client socket(s) before doing `close()`.
 
 
 [v1.8][] - 2015-02-02

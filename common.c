@@ -123,14 +123,15 @@ void convert_address(struct sockaddr_storage *ss, char *buf, size_t len)
 }
 
 /* Inactivity timer, bye bye */
-void sigalrm_handler(int UNUSED(signo), siginfo_t *UNUSED(info), void *UNUSED(ctx))
+static void inactivity_cb(uev_t *UNUSED(w), void *arg, int UNUSED(events))
 {
+	uev_ctx_t *ctx = (uev_ctx_t *)arg;
+
 	INFO("Inactivity timer, exiting ...");
-	exit(0);
+	uev_exit(ctx);
 }
 
-
-ctrl_t *new_session(int sd, int *rc)
+ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 {
 	ctrl_t *ctrl;
 	static int privs_dropped = 0;
@@ -143,6 +144,15 @@ ctrl_t *new_session(int sd, int *rc)
 			*rc = pid;
 			return NULL;
 		}
+
+		/* Create new uEv context for the child. */
+		ctx = calloc(1, sizeof(uev_ctx_t));
+		if (!ctx) {
+			ERR(errno, "Failed allocating session event context");
+			exit(1);
+		}
+
+		uev_init(ctx);
 	}
 
 	ctrl = calloc(1, sizeof(ctrl_t));
@@ -153,6 +163,7 @@ ctrl_t *new_session(int sd, int *rc)
 	}
 
 	ctrl->sd = sd;
+	ctrl->ctx = ctx;
 	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
 
 	/* Chroot to FTP root */
@@ -192,15 +203,23 @@ ctrl_t *new_session(int sd, int *rc)
 		privs_dropped = 1;
 	}
 
+	/* Session timeout handler */
+	uev_timer_init(ctrl->ctx, &ctrl->timeout_watcher, inactivity_cb, ctrl->ctx, INACTIVITY_TIMER, 0);
+
 	return ctrl;
 }
 
-int del_session(ctrl_t *ctrl)
+int del_session(ctrl_t *ctrl, int isftp)
 {
+	uev_ctx_t *ctx;
+
+	DBG("%sFTP Client session ended.", isftp ? "": "T" );
+
 	if (!ctrl)
 		return -1;
+	ctx = ctrl->ctx;
 
-	if (ctrl->sd > 0)
+	if (isftp && ctrl->sd > 0)
 		close(ctrl->sd);
 
 	if (ctrl->data_listen_sd > 0)
@@ -209,7 +228,15 @@ int del_session(ctrl_t *ctrl)
 	if (ctrl->data_sd > 0)
 		close(ctrl->data_sd);
 
+	if (ctrl->buf)
+		free(ctrl->buf);
+
+	if (!inetd && ctrl->ctx)
+		free(ctrl->ctx);
 	free(ctrl);
+
+	if (!inetd)
+		return uev_exit(ctx);
 
 	return 0;
 }

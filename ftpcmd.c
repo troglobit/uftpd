@@ -15,7 +15,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "ftpcmd.h"
+#include "uftpd.h"
+
+typedef struct {
+	char *command;
+	void (*cb)(ctrl_t *ctr, char *arg);
+} ftp_cmd_t;
+
+static ftp_cmd_t supported[];
 
 
 static void send_msg(int sd, char *msg)
@@ -183,7 +190,7 @@ static int check_user_pass(ctrl_t *ctrl)
 	return 0;
 }
 
-void handle_USER(ctrl_t *ctrl, char *name)
+static void handle_USER(ctrl_t *ctrl, char *name)
 {
 	if (ctrl->name[0]) {
 		ctrl->name[0] = 0;
@@ -203,7 +210,7 @@ void handle_USER(ctrl_t *ctrl, char *name)
 	}
 }
 
-void handle_PASS(ctrl_t *ctrl, char *pass)
+static void handle_PASS(ctrl_t *ctrl, char *pass)
 {
 	if (!ctrl->name[0]) {
 		send_msg(ctrl->sd, "503 No username given.\r\n");
@@ -221,14 +228,14 @@ void handle_PASS(ctrl_t *ctrl, char *pass)
 	send_msg(ctrl->sd, "230 Guest login OK, access restrictions apply.\r\n");
 }
 
-void handle_SYST(ctrl_t *ctrl)
+static void handle_SYST(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	char system[] = "215 UNIX Type: L8\r\n";
 
 	send_msg(ctrl->sd, system);
 }
 
-void handle_TYPE(ctrl_t *ctrl, char *argument)
+static void handle_TYPE(ctrl_t *ctrl, char *argument)
 {
 	char type[24]  = "200 Type set to I.\r\n";
 	char unknown[] = "501 Invalid argument to TYPE.\r\n";
@@ -254,7 +261,7 @@ void handle_TYPE(ctrl_t *ctrl, char *argument)
 	send_msg(ctrl->sd, type);
 }
 
-void handle_PWD(ctrl_t *ctrl)
+static void handle_PWD(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	char buf[300];
 
@@ -262,7 +269,7 @@ void handle_PWD(ctrl_t *ctrl)
 	send_msg(ctrl->sd, buf);
 }
 
-void handle_CWD(ctrl_t *ctrl, char *path)
+static void handle_CWD(ctrl_t *ctrl, char *path)
 {
 	char *dir = compose_path(ctrl, path);
 
@@ -281,7 +288,7 @@ void handle_CWD(ctrl_t *ctrl, char *path)
 	send_msg(ctrl->sd, "250 OK\r\n");
 }
 
-void handle_PORT(ctrl_t *ctrl, char *str)
+static void handle_PORT(ctrl_t *ctrl, char *str)
 {
 	int a, b, c, d, e, f;
 	char addr[INET_ADDRSTRLEN];
@@ -340,7 +347,7 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
-void do_list(ctrl_t *ctrl, char *arg, int nlst)
+static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 {
 	DIR *dir;
 	char *buf;
@@ -431,18 +438,18 @@ void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
 
-void handle_LIST(ctrl_t *ctrl, char *arg)
+static void handle_LIST(ctrl_t *ctrl, char *arg)
 {
 	do_list(ctrl, arg, 0);
 }
 
-void handle_NLST(ctrl_t *ctrl, char *arg)
+static void handle_NLST(ctrl_t *ctrl, char *arg)
 {
 	do_list(ctrl, arg, 1);
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
-void handle_PASV(ctrl_t *ctrl)
+static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	int port;
 	char *msg, *p, buf[200];
@@ -516,7 +523,7 @@ void handle_PASV(ctrl_t *ctrl)
 	free(msg);
 }
 
-void handle_RETR(ctrl_t *ctrl, char *file)
+static void handle_RETR(ctrl_t *ctrl, char *file)
 {
 	int result = 0;
 	FILE *fp = NULL;
@@ -575,7 +582,7 @@ void handle_RETR(ctrl_t *ctrl, char *file)
 	free(buf);
 }
 
-void handle_STOR(ctrl_t *ctrl, char *file)
+static void handle_STOR(ctrl_t *ctrl, char *file)
 {
 	int result = 0;
 	FILE *fp = NULL;
@@ -631,25 +638,21 @@ void handle_STOR(ctrl_t *ctrl, char *file)
 	free(buf);
 }
 
-void handle_DELE(ctrl_t *UNUSED(ctrl), char *UNUSED(file))
+#if 0
+static void handle_DELE(ctrl_t *UNUSED(ctrl), char *UNUSED(file))
 {
-
 }
 
-//
-void handle_MKD(ctrl_t *UNUSED(ctrl))
+static void handle_MKD(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
 {
-
 }
 
-//
-void handle_RMD(ctrl_t *UNUSED(ctrl))
+static void handle_RMD(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
 {
-
 }
+#endif
 
-//
-void handle_SIZE(ctrl_t *ctrl, char *file)
+static void handle_SIZE(ctrl_t *ctrl, char *file)
 {
 	char *path = compose_path(ctrl, file);
 	struct stat st;
@@ -665,125 +668,157 @@ void handle_SIZE(ctrl_t *ctrl, char *file)
 	send_msg(ctrl->sd, path);
 }
 
-//
-void handle_RNFR(ctrl_t *UNUSED(ctrl))
+/* No operation - used as session keepalive by clients. */
+static void handle_NOOP(ctrl_t *ctrl, char *UNUSED(arg))
 {
-
+	send_msg(ctrl->sd, "200 NOOP OK.\r\n");
 }
 
-//
-void handle_RNTO(ctrl_t *UNUSED(ctrl))
+#if 0
+static void handle_RNFR(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
 {
-
 }
 
-//
-void handle_QUIT(ctrl_t *ctrl)
+static void handle_RNTO(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
+{
+}
+#endif
+
+static void handle_QUIT(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	send_msg(ctrl->sd, "221 Goodbye.\r\n");
+	uev_exit(ctrl->ctx);
 }
 
-//
-void handle_CLNT(ctrl_t *ctrl)
+static void handle_CLNT(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	send_msg(ctrl->sd, "200 CLNT\r\n");
 }
 
-//
-void handle_OPTS(ctrl_t *ctrl)
+static void handle_OPTS(ctrl_t *ctrl, char *UNUSED(arg))
 {
 	send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
 }
 
-
-void ftp_command(ctrl_t *ctrl)
+static void handle_HELP(ctrl_t *ctrl, char *arg)
 {
-	size_t len = BUFFER_SIZE * sizeof(char);
-	char *buffer;
-	char *cmd;
-	char *argument;
-	struct sigaction sa;
+	int i = 0;
+	char buf[80];
+	ftp_cmd_t *cmd;
 
-	buffer = malloc(len);
-	if (!buffer) {
-                perror("Out of memory");
-                exit(1);
+	if (string_valid(arg) && !string_compare(arg, "SITE")) {
+		send_msg(ctrl->sd, "500 command HELP does not take any arguments on this server.\r\n");
+		return;
 	}
 
-	snprintf(buffer, len, "220 %s (%s) ready.\r\n", __progname, VERSION);
-	send_msg(ctrl->sd, buffer);
+	snprintf(ctrl->buf, ctrl->bufsz, "214-The following commands are recognized.");
+	for (cmd = &supported[0]; cmd->command; cmd++, i++) {
+		if (i % 14 == 0)
+			strlcat(ctrl->buf, "\r\n", ctrl->bufsz);
+		snprintf(buf, sizeof(buf), " %s", cmd->command);
+		strlcat(ctrl->buf, buf, ctrl->bufsz);
+	}
+	snprintf(buf, sizeof(buf), "\r\n214 Help OK.\r\n");
+	strlcat(ctrl->buf, buf, ctrl->bufsz);
 
-	SETSIG(sa, SIGALRM, sigalrm_handler, SA_RESTART);
+	send_msg(ctrl->sd, ctrl->buf);
+}
 
-	while (1) {
-		alarm(INACTIVITY_TIMER);
+static void handle_FEAT(ctrl_t *ctrl, char *UNUSED(arg))
+{
+	snprintf(ctrl->buf, ctrl->bufsz, "211-Features:\r\n"
+		" PASV\r\n"
+		" SIZE\r\n"
+		" UTF8\r\n"
+		"211 End\r\n");
+	send_msg(ctrl->sd, ctrl->buf);
+}
 
-		if (recv_msg(ctrl->sd, buffer, len, &cmd, &argument))
-			break;
+static void handle_UNKNOWN(ctrl_t *ctrl, char *command)
+{
+	char buf[128];
 
-		alarm(0);
+	snprintf(buf, sizeof(buf), "500 command '%s' not recognized by server.\r\n", command);
+	send_msg(ctrl->sd, buf);
+}
 
-		show_log(cmd);
-		show_log(argument);
-		if (strcmp("USER", cmd) == 0) {
-			handle_USER(ctrl, argument);
-		} else if (strcmp("PASS", cmd) == 0) {
-			handle_PASS(ctrl, argument);
-		} else if (strcmp("SYST", cmd) == 0) {
-			handle_SYST(ctrl);
-		} else if (strcmp("TYPE", cmd) == 0) {
-			handle_TYPE(ctrl, argument);
-		} else if (strcmp("PORT", cmd) == 0) {
-			handle_PORT(ctrl, argument);
-		} else if (strcmp("RETR", cmd) == 0) {
-			handle_RETR(ctrl, argument);
-		} else if (strcmp("PASV", cmd) == 0) {
-			handle_PASV(ctrl);
-		} else if (strcmp("QUIT", cmd) == 0) {
-			handle_QUIT(ctrl);
-			break;
-		} else if (strcmp("LIST", cmd) == 0) {
-			handle_LIST(ctrl, argument);
-		} else if (strcmp("NLST", cmd) == 0) {
-			handle_NLST(ctrl, argument);
-		} else if (strcmp("CLNT", cmd) == 0) {
-			handle_CLNT(ctrl);
-		} else if (strcmp("OPTS", cmd) == 0) {
-			handle_OPTS(ctrl);
-		} else if (strcmp("PWD", cmd) == 0) {
-			handle_PWD(ctrl);
-		} else if (strcmp("STOR", cmd) == 0) {
-			handle_STOR(ctrl, argument);
-		} else if (strcmp("CWD", cmd) == 0) {
-			handle_CWD(ctrl, argument);
-		} else if (strcmp("SIZE", cmd) == 0) {
-			handle_SIZE(ctrl, argument);
-		} else if (strcmp("NOOP", cmd) == 0) {
-			send_msg(ctrl->sd, "200 NOOP OK.\r\n");
-		} else {
-			char buf[100];
+#define COMMAND(NAME) { #NAME, handle_ ## NAME }
 
-			snprintf(buf, sizeof(buf), "500 command '%s' not recognized by server.\r\n", cmd);
-			send_msg(ctrl->sd, buf);
+static ftp_cmd_t supported[] = {
+	COMMAND(USER),
+	COMMAND(PASS),
+	COMMAND(SYST),
+	COMMAND(TYPE),
+	COMMAND(PORT),
+	COMMAND(RETR),
+	COMMAND(PASV),
+	COMMAND(QUIT),
+	COMMAND(LIST),
+	COMMAND(NLST),
+	COMMAND(CLNT),
+	COMMAND(OPTS),
+	COMMAND(PWD),
+	COMMAND(STOR),
+	COMMAND(CWD),
+	COMMAND(SIZE),
+	COMMAND(NOOP),
+	COMMAND(HELP),
+	COMMAND(FEAT),
+	{ NULL, NULL }
+};
+
+static void read_client_command(uev_t *w, void *arg, int UNUSED(events))
+{
+	char *command, *argument;
+	ctrl_t *ctrl = (ctrl_t *)arg;
+	ftp_cmd_t *cmd;
+
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
+
+	if (recv_msg(w->fd, ctrl->buf, ctrl->bufsz, &command, &argument)) {
+		uev_exit(ctrl->ctx);
+		return;
+	}
+
+	if (!string_valid(command))
+		return;
+
+	for (cmd = &supported[0]; cmd->command; cmd++) {
+		if (string_compare(command, cmd->command)) {
+			cmd->cb(ctrl, argument);
+			return;
 		}
 	}
 
-	free(buffer);
-	close(ctrl->sd);
+	handle_UNKNOWN(ctrl, command);
 }
 
-int ftp_session(int sd)
+static void ftp_command(ctrl_t *ctrl)
+{
+	ctrl->bufsz = BUFFER_SIZE * sizeof(char);
+	ctrl->buf   = malloc(ctrl->bufsz);
+	if (!ctrl->buf) {
+                WARN(errno, "FTP session failed allocating buffer");
+                exit(1);
+	}
+
+	snprintf(ctrl->buf, ctrl->bufsz, "220 %s (%s) ready.\r\n", __progname, VERSION);
+	send_msg(ctrl->sd, ctrl->buf);
+
+	uev_io_init(ctrl->ctx, &ctrl->io_watcher, read_client_command, ctrl, ctrl->sd, UEV_READ);
+	uev_run(ctrl->ctx, 0);
+}
+
+int ftp_session(uev_ctx_t *ctx, int sd)
 {
 	int pid = 0;
 	ctrl_t *ctrl;
 	socklen_t len;
 
-	ctrl = new_session(sd, &pid);
-	if (!ctrl) {
-		if (-1 == pid)
-			return -1;
-		return 0;
-	}
+	ctrl = new_session(ctx, sd, &pid);
+	if (!ctrl)
+		return pid;
 
 	len = sizeof(ctrl->server_sa);
 	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
@@ -811,10 +846,7 @@ int ftp_session(int sd)
 	INFO("Client connection from %s", ctrl->clientaddr);
 	ftp_command(ctrl);
 
-	DBG("Client session ended.");
-	del_session(ctrl);
-
-	exit(0);
+	exit(del_session(ctrl, 1));
 }
 
 /**

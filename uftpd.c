@@ -26,6 +26,7 @@ int   verbose     = 0;
 int   do_log      = 1;
 int   do_ftp      = 0;
 int   do_tftp     = 0;
+pid_t tftp_pid    = 0;
 char *logfile     = NULL;
 struct passwd *pw = NULL;
 
@@ -80,6 +81,13 @@ static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
 
 		if (-1 == pid)
 			break;
+
+		/* TFTP client disconnected, we can now serve TFTP again! */
+		if (pid == tftp_pid) {
+			DBG("Previousl TFTP session ended, restarting TFTP watcher ...");
+			tftp_pid = 0;
+			uev_io_start(&tftp_watcher);
+		}
 	}
 }
 
@@ -146,7 +154,7 @@ static void init(uev_ctx_t *ctx)
 	}
 }
 
-static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void ftp_cb(uev_t *w, void *arg, int UNUSED(events))
 {
         int client;
 
@@ -156,13 +164,18 @@ static void ftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
                 return;
         }
 
-        ftp_session(client);
+        ftp_session(arg, client);
 }
 
-static void tftp_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void tftp_cb(uev_t *w, void *arg, int UNUSED(events))
 {
-	DBG("TFTP callback for socket %d!", w->fd);
-        tftp_session(w->fd);
+	uev_io_stop(w);
+
+        tftp_pid = tftp_session(arg, w->fd);
+	if (tftp_pid < 0) {
+		tftp_pid = 0;
+		uev_io_start(w);
+	}
 }
 
 static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
@@ -180,7 +193,7 @@ static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int t
 	}
 
 	INFO("Starting %s server on port %d ...", desc, port);
-	uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
+	uev_io_init(ctx, w, cb, ctx, sd, UEV_READ);
 
 	return 0;
 }
@@ -276,11 +289,17 @@ int main(int argc, char **argv)
 	init(&ctx);
 
 	if (inetd) {
+		pid_t pid;
+
 		INFO("Started from inetd, serving files from %s ...", home);
 		if (do_tftp)
-			return tftp_session(STDIN_FILENO);
+			pid = tftp_session(&ctx, STDIN_FILENO);
+		else
+			pid = ftp_session(&ctx, STDIN_FILENO);
 
-		return ftp_session(STDIN_FILENO);
+		if (-1 == pid)
+			return 1;
+		return 0;
 	}
 
 	if (background) {

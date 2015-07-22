@@ -51,7 +51,7 @@ static void send_msg(int sd, char *msg)
 		n += result;
 	}
 
-	DBG("%s\n", msg);
+	DBG("Sent: %s", msg);
 }
 
 /*
@@ -100,6 +100,8 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	ptr = strpbrk(ptr, "\r\n");
 	if (ptr)
 		*ptr = 0;
+
+	DBG("Recv: %s %s", *cmd, *argument ?: "");
 
 	return 0;
 }

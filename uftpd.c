@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	DBG("Serving files ...");
+	DBG("Serving files as PID %d ...", getpid());
 	return serve_files(&ctx);
 }
 

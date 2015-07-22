@@ -84,7 +84,7 @@ int open_socket(int port, int type, char *desc)
 
 	err = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
 	if (err != 0)
-		WARN(errno, "Failed setting SO_REUSEADDR on TFTP socket");
+		WARN(errno, "Failed setting SO_REUSEADDR on %s socket", type == SOCK_DGRAM ? "TFTP" : "FTP");
 
 	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;

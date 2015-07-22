@@ -166,12 +166,14 @@ static void close_data_connection(ctrl_t *ctrl)
 {
 	/* PASV server listening socket */
 	if (ctrl->data_listen_sd > 0) {
+		shutdown(ctrl->data_listen_sd, SHUT_RDWR);
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
 	}
 
 	/* PASV client socket */
 	if (ctrl->data_sd > 0) {
+		shutdown(ctrl->data_sd, SHUT_RDWR);
 		close(ctrl->data_sd);
 		ctrl->data_sd = -1;
 	}
@@ -821,22 +823,26 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 	socklen_t len;
 
 	ctrl = new_session(ctx, sd, &pid);
-	if (!ctrl)
+	if (!ctrl) {
+		if (pid < 0) {
+			shutdown(sd, SHUT_RDWR);
+			close(sd);
+		}
+
 		return pid;
+	}
 
 	len = sizeof(ctrl->server_sa);
 	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
-		free(ctrl);
 		perror("Cannot determine our address");
-		return -1;
+		goto fail;
 	}
 	convert_address(&ctrl->server_sa, ctrl->serveraddr, sizeof(ctrl->serveraddr));
 
 	len = sizeof(ctrl->client_sa);
 	if (-1 == getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len)) {
-		free(ctrl);
 		perror("Cannot determine client address");
-		return -1;
+		goto fail;
 	}
 	convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
 
@@ -851,6 +857,12 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 	ftp_command(ctrl);
 
 	exit(del_session(ctrl, 1));
+fail:
+	free(ctrl);
+	shutdown(sd, SHUT_RDWR);
+	close(sd);
+
+	return -1;
 }
 
 /**

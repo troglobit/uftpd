@@ -222,14 +222,20 @@ int del_session(ctrl_t *ctrl, int isftp)
 		return -1;
 	ctx = ctrl->ctx;
 
-	if (isftp && ctrl->sd > 0)
+	if (isftp && ctrl->sd > 0) {
+		shutdown(ctrl->sd, SHUT_RDWR);
 		close(ctrl->sd);
+	}
 
-	if (ctrl->data_listen_sd > 0)
+	if (ctrl->data_listen_sd > 0) {
+		shutdown(ctrl->data_listen_sd, SHUT_RDWR);
 		close(ctrl->data_listen_sd);
+	}
 
-	if (ctrl->data_sd > 0)
+	if (ctrl->data_sd > 0) {
+		shutdown(ctrl->data_sd, SHUT_RDWR);
 		close(ctrl->data_sd);
+	}
 
 	if (ctrl->buf)
 		free(ctrl->buf);

@@ -11,3 +11,7 @@ debian/uftpd.*
 /GRTAGS
 /GSYMS
 /GTAGS
+/CHANGELOG.html
+/README.html
+/tok
+/uftp

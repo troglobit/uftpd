@@ -133,7 +133,7 @@ static void inactivity_cb(uev_t *UNUSED(w), void *arg, int UNUSED(events))
 
 ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 {
-	ctrl_t *ctrl;
+	ctrl_t *ctrl = NULL;
 	static int privs_dropped = 0;
 
 	if (!inetd) {
@@ -158,8 +158,7 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 	ctrl = calloc(1, sizeof(ctrl_t));
 	if (!ctrl) {
 		ERR(errno, "Failed allocating session context");
-		*rc = -1;
-		return NULL;
+		goto fail;
 	}
 
 	ctrl->sd = sd;
@@ -170,17 +169,13 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 	if (!chrooted && geteuid() == 0) {
 		if (chroot(home) || chdir("/")) {
 			ERR(errno, "Failed chrooting to FTP root, %s, aborting", home);
-			free(ctrl);
-			*rc = -1;
-			return NULL;
+			goto fail;
 		}
 		chrooted = 1;
 	} else if (!chrooted) {
 		if (chdir(home)) {
 			WARN(errno, "Failed changing to FTP root, %s, aborting", home);
-			free(ctrl);
-			*rc = -1;
-			return NULL;
+			goto fail;
 		}
 	}
 
@@ -207,6 +202,14 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 	uev_timer_init(ctrl->ctx, &ctrl->timeout_watcher, inactivity_cb, ctrl->ctx, INACTIVITY_TIMER, 0);
 
 	return ctrl;
+fail:
+	if (ctrl)
+		free(ctrl);
+	if (!inetd)
+		free(ctx);
+	*rc = -1;
+
+	return NULL;
 }
 
 int del_session(ctrl_t *ctrl, int isftp)

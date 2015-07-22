@@ -25,7 +25,7 @@ typedef struct {
 static ftp_cmd_t supported[];
 
 
-static void send_msg(int sd, char *msg)
+static int send_msg(int sd, char *msg)
 {
 	int n = 0;
 	int l;
@@ -33,7 +33,7 @@ static void send_msg(int sd, char *msg)
 	if (!msg) {
 	err:
 		ERR(EINVAL, "Missing argument to send_msg()");
-		return;
+		return 1;
 	}
 
 	l = strlen(msg);
@@ -45,13 +45,15 @@ static void send_msg(int sd, char *msg)
 
 		if (result < 0) {
 			perror("Failed sending message to client");
-			return;
+			return 1;
 		}
 
 		n += result;
 	}
 
 	DBG("Sent: %s", msg);
+
+	return 0;
 }
 
 /*

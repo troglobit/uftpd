@@ -4,8 +4,12 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v1.9][] - 2015-07-13
+[v1.9][] - 2015-07-23
 ---------------------
+
+Bug fix release.  FTP and TFTP sessions can now run fully in parallel,
+independent of each other.  Also improved compatibility with Firefox
+built-in FTP client and wget.
 
 ### Changes
 - Upgrade to [libuEv][] v1.2.1+ for improved error handling and a much
@@ -27,11 +31,12 @@ All notable changes to the project are documented in this file.
   reap any exiting FTP/TFTP sessions.  This resulted in zombies(!) when
   *not* being called as `uftpd -n`
 - Fix issue #5: `LIST` and `NLST` ignores path argument sent by client.
+- Fix issue #6: FTP clients not detecting session timeout.  Caused by
+  uftpd not performing a proper `shutdown()` on the client socket(s)
+  before `close()`.
 - Fix problem with [libuEv][] not being properly cleaned on `distclean`.
 - Fix problem with uftpd not exiting client session properly when client
   simply closes the connection.
-- Fix clients not detecting session timeout, uftpd was not performing
-  a proper `shutdown()` on the client socket(s) before doing `close()`.
 
 
 [v1.8][] - 2015-02-02

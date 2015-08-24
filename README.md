@@ -30,14 +30,34 @@ home directory &mdash; i.e, user-friendly features that can easily cause
 security breaches, but also very useful for people who do not care and
 just want their FTP server to work.
 
-Seriously, we do not advise you to ignore any security aspect of your
-installation.  If security is a concern for you, consider using a
-different server.
+*Seriously*, we do not advise you to ignore any security aspect of your
+installation.  If security is a concern for you, consider using another
+TFTP/FTP server!
 
 That being said, a lot of care has been taken to lock down and secure
 uftpd by default.  So, if you refrain from symlinking stuff from your
 home directory and carefully set up strict permissions on that
 directory, then uftpd is likely as secrure as any other TFTP/FTP server.
+
+
+Download
+--------
+
+Although the project makes heavy use of GitHub, do *not* use the ZIP
+file links GitHub provides.  Instead, use [the FTP][] from the author's
+site, or the GitHub [releases page][] to download tarballs:
+
+If you want to [contribute][contrib], check out the code from GitHub
+like this, including the submodules.  Remember to update the submodules
+whenever you do a `git pull`.
+
+	git clone https://github.com/troglobit/uftpd
+	cd uftpd
+	git submodule update --init
+
+The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
+do not include the files from the GIT submodules, unfortunately.  This
+has been reported to GitHub but has not yet been fixed by them.
 
 
 Running
@@ -64,9 +84,8 @@ inetd.  Use the following two lines for `/etc/inetd.conf`:
     ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f
     tftp	dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t
 
-Maybe you use a different Inetd server, like [Finit][] which has an
-Inetd server built-in.  In which case the syntax above may very well be
-different.
+Maybe you use a different Inetd super server, like [Finit][] which has
+an Inetd server built-in.  In which case the syntax may be different.
 
 Remember to activate your changes to inetd by reloading the service or
 sending `SIGHUP` to it.  Alternatively, you can download and install the
@@ -85,6 +104,8 @@ uftpd is maintained by [Joachim Nilsson][] at [GitHub][].
 
 [.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com
+[the FTP]:         http://ftp.troglobit.com/uftpd/
+[releases page]:   https://github.com/troglobit/uftpd/releases
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
 [GitHub]:          https://github.com/troglobit/uftpd

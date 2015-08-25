@@ -43,9 +43,9 @@ directory, then uftpd is likely as secrure as any other TFTP/FTP server.
 Download
 --------
 
-Although the project makes heavy use of GitHub, do *not* use the ZIP
-file links GitHub provides.  Instead, use [the FTP][] from the author's
-site, or the GitHub [releases page][] to download tarballs:
+Although the project makes heavy use of GitHub, it is *not* recommended
+to use the ZIP file links GitHub provides.  Instead, we recommend using
+proper tarball releases from [the FTP][], or the [releases page][]:
 
 If you want to [contribute][contrib], check out the code from GitHub
 like this, including the submodules.  Remember to update the submodules
@@ -53,11 +53,11 @@ whenever you do a `git pull`.
 
 	git clone https://github.com/troglobit/uftpd
 	cd uftpd
-	git submodule update --init
+	make submodules
 
 The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
-do not include the files from the GIT submodules, unfortunately.  This
-has been reported to GitHub but has not yet been fixed by them.
+do not include files from the GIT submodules.  The Makefile makes up for
+this, but is not 100% foolproof.
 
 
 Running

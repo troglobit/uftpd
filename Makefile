@@ -13,7 +13,7 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-.PHONY: all install uninstall clean distclean dist
+.PHONY: all install uninstall clean distclean dist submodules
 
 #VERSION   ?= $(shell git tag -l | tail -1)
 VERSION    ?= 1.9
@@ -48,10 +48,15 @@ include common.mk
 
 all: $(LDLIBS) $(EXEC)
 
-$(LDLIBS): Makefile
+$(LDLIBS): submodules Makefile
 	+@$(MAKE) STATIC=1 -C `dirname $@` all
 
 $(EXEC): $(OBJS) $(LDLIBS)
+
+submodules:
+	@if [ ! -e libuev/Makefile -o ! -e libite/Makefile ]; then	\
+		git submodule update --init;				\
+	fi
 
 strip:
 	@strip $(EXEC)

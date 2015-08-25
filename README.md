@@ -45,19 +45,13 @@ Download
 
 Although the project makes heavy use of GitHub, it is *not* recommended
 to use the ZIP file links GitHub provides.  Instead, we recommend using
-proper tarball releases from [the FTP][], or the [releases page][]:
-
-If you want to [contribute][contrib], check out the code from GitHub
-like this, including the submodules.  Remember to update the submodules
-whenever you do a `git pull`.
-
-	git clone https://github.com/troglobit/uftpd
-	cd uftpd
-	make submodules
+proper tarball releases from [the FTP][], or the [releases page][].
 
 The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
 do not include files from the GIT submodules.  The Makefile makes up for
 this, but is not 100% foolproof.
+
+See below if you want to contribute.
 
 
 Running
@@ -100,7 +94,17 @@ Origin & References
 Originally based on [FtpServer][] by [Xu Wang][], uftpd is a complete
 rewrite with TFTP support.
 
-uftpd is maintained by [Joachim Nilsson][] at [GitHub][].
+uftpd is maintained by [Joachim Nilsson][] at [GitHub][].  If you want
+to [contribute][contrib], check out the code from GitHub, including the
+submodules:
+
+	git clone https://github.com/troglobit/uftpd
+	cd uftpd
+	make submodules
+
+When you pull from upstream, remember to also update the submodules
+using `git submodule update`.
+
 
 [.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com

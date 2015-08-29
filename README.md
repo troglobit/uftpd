@@ -94,6 +94,10 @@ Origin & References
 Originally based on [FtpServer][] by [Xu Wang][], uftpd is a complete
 rewrite with TFTP support.
 
+
+Contributing
+------------
+
 uftpd is maintained by [Joachim Nilsson][] at [GitHub][].  If you want
 to [contribute][contrib], check out the code from GitHub, including the
 submodules:

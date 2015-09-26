@@ -1,6 +1,6 @@
 /* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014-2015  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,10 +44,10 @@
 #include <sys/wait.h>
 #include <syslog.h>
 #include <time.h>
-#include <uev.h>
 #include <unistd.h>
 
-#include "libite/lite.h"
+#include <libuev/uev.h>
+#include <libite/lite.h>
 
 #define FTP_DEFAULT_PORT  21
 #define FTP_SERVICE_NAME  "ftp"

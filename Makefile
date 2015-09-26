@@ -31,27 +31,22 @@ OBJS        = uftpd.o common.o ftpcmd.o tftpcmd.o log.o
 SRCS        = $(OBJS:.o=.c)
 DEPS        = $(SRCS:.c=.d)
 
-# Installation paths, always prepended with DESTDIR if set
-TOPDIR      = $(shell pwd)
-prefix     ?= /usr
-sysconfdir ?= /etc
-sbindir    ?= $(prefix)/sbin
-datadir     = $(prefix)/share/doc/$(NAME)
-mandir      = $(prefix)/share/man/man8
+DEPLIBS    :=
+TOPDIR     := $(shell pwd)
+-include config.mk
 
+CFLAGS     += -W -Wall
 CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
-CPPFLAGS   += -Ilibuev
-CFLAGS     += -O2 -W -Wall -g
-LDLIBS     += libuev/libuev.a libite/libite.a
 
 include common.mk
 
-all: $(LDLIBS) $(EXEC)
 
-$(LDLIBS): submodules Makefile
+all: $(EXEC)
+
+$(DEPLIBS): submodules Makefile
 	+@$(MAKE) STATIC=1 -C `dirname $@` all
 
-$(EXEC): $(OBJS) $(LDLIBS)
+$(EXEC): $(OBJS) $(DEPLIBS)
 
 submodules:
 	@if [ ! -e libuev/Makefile -o ! -e libite/Makefile ]; then	\
@@ -108,7 +103,7 @@ clean:
 distclean: clean
 	+@$(MAKE) -C libuev $@
 	+@$(MAKE) -C libite $@
-	-@$(RM) $(JUNK) unittest *.o .*.d
+	-@$(RM) $(JUNK) config.mk *.o .*.d
 
 check:
 	$(CHECK) *.c *.h

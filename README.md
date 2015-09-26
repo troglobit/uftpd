@@ -51,6 +51,11 @@ The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
 do not include files from the GIT submodules.  The Makefile makes up for
 this, but is not 100% foolproof.
 
+Alternatively, instead of building the sources, you can install the
+latest [pre-built package][.deb] &mdash; or build and install your own
+package.  Installing the package takes care of setting up inetd for you.
+Use `make package` to build the `.deb` package file.
+
 See below if you want to contribute.
 
 
@@ -65,42 +70,32 @@ To enable both FTP and TFTP, call
 
     sudo ./uftpd -f -t
 
-The `-f` and `-t` can be given an alternative port as extra argument for
-either service, e.g, `-f2121` to start listening for FTP on port 2121.
+The `-f` and `-t` can be given alternative Internet port arguments, e.g.
+`-f2121` to start FTP on port 2121.  For other command line options and
+more details, see the man page or the output from the command:
+<kdb>`uftpd --help`</kdb>
 
-There are more command line options, e.g., for overriding the TFTP/FTP
-home directory.  For details, see the man page or the output from the
-command: <kdb>`uftpd --help`</kdb>
+To run uftpd from the Internet super server, inetd, use the following
+two lines in `/etc/inetd.conf`:
 
-It is however recommended to run uftpd from the Internet super server,
-inetd.  Use the following two lines for `/etc/inetd.conf`:
-
-    ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f
-    tftp	dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t
-
-Maybe you use a different Inetd super server, like [Finit][] which has
-an Inetd server built-in.  In which case the syntax may be different.
+    ftp		stream	tcp	nowait	root	/usr/sbin/uftpd -i -f
+    tftp	dgram	udp	wait	root	/usr/sbin/uftpd -i -t
 
 Remember to activate your changes to inetd by reloading the service or
-sending `SIGHUP` to it.  Alternatively, you can download and install the
-[latest pre-built package][.deb] &mdash; or build and install your own
-package.  Installing the package takes care of setting up inetd for you.
-Use `make package` to build the `.deb` pacakge file.
+sending `SIGHUP` to it.  Another inetd server may use different syntax.
+Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
+
+    inetd ftp/tcp   nowait /usr/sbin/uftpd -i -f -- The uftpd FTP server
+    inetd tftp/udp    wait /usr/sbin/uftpd -i -t -- The uftpd TFTP server
 
 
 Origin & References
 -------------------
 
 Originally based on [FtpServer][] by [Xu Wang][], uftpd is a complete
-rewrite with TFTP support.
-
-
-Contributing
-------------
-
-uftpd is maintained by [Joachim Nilsson][] at [GitHub][].  If you want
-to [contribute][contrib], check out the code from GitHub, including the
-submodules:
+rewrite with TFTP support by [Joachim Nilsson][], maintained at
+[GitHub][].  If you want to contribute, check out the code, including
+the submodules:
 
 	git clone https://github.com/troglobit/uftpd
 	cd uftpd

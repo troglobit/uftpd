@@ -1,3 +1,11 @@
+uftpd (1.9.1-1) unstable; urgency=medium
+
+  * Minor fix release
+  * Added support for building with external libite and libuEv
+  * Rebuild for Ubuntu 15.10
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 27 Sep 2015 10:14:31 +0200
+
 uftpd (1.9-1) unstable; urgency=low
 
   * New upstream release:

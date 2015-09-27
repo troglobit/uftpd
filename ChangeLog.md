@@ -4,6 +4,21 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v1.9.1][] - 2015-09-27
+-----------------------
+
+Minor fix release.
+
+### Changes
+- Upgrade to [libuEv][] v1.2.3 (bug fixes)
+- Upgrade to [libite][] v1.1.1 (bug fixes)
+- Add support for linking against external libuEv and libite
+
+### Fixes
+- Misc. README updates
+- Check if libite or libuEv are missing as submodules
+
+
 [v1.9][] - 2015-07-23
 ---------------------
 
@@ -221,7 +236,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.9...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.9.1...HEAD
+[v1.9.1]:        https://github.com/troglobit/uftpd/compare/v1.9...v1.9.1
 [v1.9]:          https://github.com/troglobit/uftpd/compare/v1.8...v1.9
 [v1.8]:          https://github.com/troglobit/uftpd/compare/v1.7...v1.8
 [v1.7]:          https://github.com/troglobit/uftpd/compare/v1.6...v1.7

@@ -15,8 +15,8 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .PHONY: all install uninstall clean distclean dist submodules
 
-#VERSION   ?= $(shell git tag -l | tail -1)
-VERSION    ?= 1.9.1
+#VERSION     = $(shell git tag -l | tail -1)
+VERSION     = 1.9.1
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
 PKG         = $(NAME)-$(VERSION)

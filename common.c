@@ -19,7 +19,17 @@
 
 int chrooted = 0;
 
-/* Check for /some/path/../new/path => /some/new/path */
+/* Protect against common directory traversal attacks, for details see
+ * https://en.wikipedia.org/wiki/Directory_traversal_attack
+ *
+ * Example:            /srv/ftp/ ../../etc => /etc
+ *                    .~~~~~~~~ .~~~~~~~~~
+ *                   /         /
+ * Server dir ------'         /
+ * User input ---------------'
+ *
+ * Forced dir ------> /srv/ftp/etc
+ */
 static void squash_dots(char *path)
 {
 	char *dots, *ptr;
@@ -56,6 +66,7 @@ char *compose_path(ctrl_t *ctrl, char *path)
 		strlcpy(dir, path, sizeof(dir));
 	}
 
+	/* Protect against directory traversal attacks */
 	squash_dots(dir);
 
 	if (!chrooted) {

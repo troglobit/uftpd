@@ -34,7 +34,7 @@ DEPS        = $(SRCS:.c=.d)
 DEPLIBS    :=
 TOPDIR     := $(shell pwd)
 
-CFLAGS     += -W -Wall -Wextra -flto
+CFLAGS     += -W -Wall -Wextra
 CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 
 ifneq ($(MAKECMDGOALS),distclean)

@@ -120,7 +120,7 @@ echo                                                              >> config.mk
 if [ $debug -eq 1 ]; then
         echo "CFLAGS     += -O0 -g"                               >> config.mk
 else
-        echo "CFLAGS     += -Os"                                  >> config.mk
+        echo "CFLAGS     += -O2"                                  >> config.mk
 fi
 
 if [ x"$libite" != x"" ]; then

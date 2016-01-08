@@ -37,7 +37,9 @@ TOPDIR     := $(shell pwd)
 CFLAGS     += -W -Wall -Wextra -flto
 CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 
-include config.mk
+ifneq ($(MAKECMDGOALS),distclean)
+-include config.mk
+endif
 include common.mk
 
 

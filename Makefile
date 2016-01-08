@@ -33,11 +33,11 @@ DEPS        = $(SRCS:.c=.d)
 
 DEPLIBS    :=
 TOPDIR     := $(shell pwd)
--include config.mk
 
-CFLAGS     += -W -Wall
+CFLAGS     += -W -Wall -Wextra -flto
 CPPFLAGS   += -DVERSION='"$(VERSION)"' -DBUGADDR='"$(BUGADDR)"'
 
+include config.mk
 include common.mk
 
 

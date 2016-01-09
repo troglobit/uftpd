@@ -224,24 +224,24 @@ int main(int argc, char **argv)
 	int c;
 	uev_ctx_t ctx;
 
-	while ((c = getopt(argc, argv, "dhl:nsvV")) != EOF) {
+	while ((c = getopt(argc, argv, "hl:nsv")) != EOF) {
 		switch (c) {
+		case 'h':
+			return usage(0);
+
 		case 'l':
 			loglevel = loglvl(optarg);
 			if (-1 == loglevel)
 				return usage(1);
 			break;
 
-		case 'h':
-			return usage(0);
-
-		case 's':
-			do_syslog++;
-			break;
-
 		case 'n':
 			background = 0;
 			do_syslog--;
+			break;
+
+		case 's':
+			do_syslog++;
 			break;
 
 		case 'v':

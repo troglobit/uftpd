@@ -21,8 +21,6 @@
 char *home        = NULL;
 int   inetd       = 0;
 int   background  = 1;
-int   debug       = 0;
-int   verbose     = 0;
 int   do_syslog   = 1;
 int   do_ftp      = 0;
 int   do_tftp     = 0;
@@ -47,19 +45,21 @@ static int version(void)
 
 static int usage(int code)
 {
-	if (string_match(__progname, "in."))
-		printf("\nUsage: %s [-dnsvV] [PATH]\n\n", __progname);
-	else
-		printf("\nUsage: %s [-dnsvV] [PATH]\n\n"
-		       "  -n         Run in foreground, do not detach from controlling terminal\n"
-		       "  -s         Use syslog, even if running in foreground, default w/o -n\n", __progname);
+	int is_inetd = string_match(__progname, "in.");
 
-	printf("  -d         Enable developer debug logs\n"
-	       "  -v         Show program version\n"
-	       "  -V         Verbose logging\n"
-	       "  -h         Show this help text\n"
-	       "\n"
-	       "The optional FTP/TFTP 'PATH' defaults to the FTP user's $HOME\n"
+	if (is_inetd)
+		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", __progname);
+	else
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [PATH]\n\n", __progname);
+
+	printf("  -h         Show this help text\n"
+	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");
+	if (!is_inetd)
+		printf("  -n         Run in foreground, do not detach from controlling terminal\n"
+		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
+
+	printf("  -v         Show program version\n\n");
+	printf("The optional FTP/TFTP 'PATH' defaults to the FTP user's $HOME\n"
 	       "Bug report address: %-40s\n\n", BUGADDR);
 
 	return code;
@@ -196,7 +196,7 @@ static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int t
 	return 0;
 }
 
-int serve_files(uev_ctx_t *ctx)
+static int serve_files(uev_ctx_t *ctx)
 {
 	int ftp, tftp;
 
@@ -224,10 +224,12 @@ int main(int argc, char **argv)
 	int c;
 	uev_ctx_t ctx;
 
-	while ((c = getopt(argc, argv, "dhnsvV")) != EOF) {
+	while ((c = getopt(argc, argv, "dhl:nsvV")) != EOF) {
 		switch (c) {
-		case 'd':
-			debug = 1;
+		case 'l':
+			loglevel = loglvl(optarg);
+			if (-1 == loglevel)
+				return usage(1);
 			break;
 
 		case 'h':
@@ -244,10 +246,6 @@ int main(int argc, char **argv)
 
 		case 'v':
 			return version();
-
-		case 'V':
-			verbose = 1;
-			break;
 
 		default:
 			return usage(1);
@@ -273,8 +271,10 @@ int main(int argc, char **argv)
 		do_tftp    = 1;
 	}
 
-	if (do_syslog)
+	if (do_syslog) {
 		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
+		setlogmask(LOG_UPTO(loglevel));
+	}
 
 	DBG("Initializing ...");
 	init(&ctx);

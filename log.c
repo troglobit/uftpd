@@ -15,20 +15,39 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define SYSLOG_NAMES
 #include "uftpd.h"
+
+int loglevel = LOG_NOTICE;
+
+
+int loglvl(char *level)
+{
+	for (int i = 0; prioritynames[i].c_name; i++) {
+		if (string_match(prioritynames[i].c_name, level))
+			return prioritynames[i].c_val;
+	}
+
+	return -1;
+}
 
 void logit(int severity, const char *fmt, ...)
 {
-	FILE *file = stderr;
+	FILE *file;
         va_list args;
+
+	if (loglevel == INTERNAL_NOPRI)
+		return;
 
 	if (severity > LOG_WARNING)
 		file = stdout;
+	else
+		file = stderr;
 
         va_start(args, fmt);
 	if (do_syslog)
 		vsyslog(severity, fmt, args);
-	else
+	else if (severity <= loglevel)
 		vfprintf(file, fmt, args);
         va_end(args);
 }

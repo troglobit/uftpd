@@ -21,11 +21,12 @@
 .Nd
 No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
-.Nm uftpd
-.Op Fl dinsvV
+.Nm
+.Op Fl hnsv
+.Op Fl l Ar LVL
 .Op Ar PATH
 .Sh DESCRIPTION
-.Nm uftpd
+.Nm
 is a very simple TFTP and anonymous FTP server with inetd support.  It
 listens on standard Internet ports for each protocol, as defined in the
 system service specification,
@@ -44,28 +45,24 @@ the syslog using the
 .Nm LOG_FTP
 facility.
 .Pp
-Available options:
+Available command line options:
 .Bl -tag -width Ds
-.It Fl d
-Enable developer debug messages.
+.It Fl h
+Show built-in help text
+.It Fl l Ar LVL
+Set log level: none, err, info,
+.Ar notice ,
+debug
 .It Fl n
 Run in foreground, do not detach from controlling terminal
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
-background.
+background
 .It Fl v
 Show program version
-.It Fl V
-Verbose logging
-.It Fl h
-Show built-in help text
+.It Ar PATH
+Root directory. The default is to serve files from the FTP user's $HOME
 .El
-.Pp
-.Nm
-defaults to serve files from the FTP user's $HOME, unless a different
-non-option
-.Ar PATH
-is given on the command line.
 .Pp
 .Sh Inetd
 .Nm
@@ -76,7 +73,10 @@ takes client connections from stdin.  To enable inetd mode
 must be called as either
 .Nm in.tftpd
 or
-.Nm in.ftpd
+.Nm in.ftpd .
+In inetd mode
+.Nm
+always runs in the foreground with syslog for messages.
 .Pp
 .Sh FTP
 The file
@@ -126,11 +126,12 @@ The case of the requests is ignored.
 .It USER Ta "specify user name"
 .El
 .Pp
-Remaining FTP requests, as specified in Internet RFC 959, are not
+Remaining FTP requests, as specified in Internet RFC959, are not
 recognized at the moment.  Patches are welcome!
 .Pp
 .Sh TFTP
-uftpd also supports TFTP, the Trivial File Transfer Protocol, which is
+.Nm
+also supports TFTP, the Trivial File Transfer Protocol, which is
 often used for net booting diskless devices, e.g., BOOTP and PXEBOOT.
 .Pp
 The TFTP server currently supports the following requests.
@@ -140,7 +141,8 @@ The TFTP server currently supports the following requests.
 .It ACK
 .El
 .Pp
-uftpd supports TFTP blocksize negotiation, according to RFC 2348.
+.Nm
+supports TFTP blocksize negotiation, according to RFC2348.
 Support for WRQ is not yet implemented, patches welcome!
 .Pp
 .Sh FILES
@@ -155,6 +157,13 @@ file exists.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,
+.Xr tftp 1 ,
 .Xr syslogd 8
+.Sh AUTHORS
+.Nm
+was written by Joachim Nilsson
+.Aq mailto:troglobit@gmail.com
+and is maintained at
+.Aq https://github.com/troglobit/uftpd
 .Sh BUGS
 Here be dragons.

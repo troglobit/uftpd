@@ -85,16 +85,15 @@
 #define ERR(code, fmt, args...)  LOGIT(LOG_ERR, code, fmt, ##args)
 #define WARN(code, fmt, args...) LOGIT(LOG_WARNING, code, fmt, ##args)
 #define LOG(fmt, args...)        LOGIT(LOG_NOTICE, 0, fmt, ##args)
-#define INFO(fmt, args...)       do { if (debug || verbose) LOGIT(LOG_INFO, 0, fmt, ##args);  } while(0)
-#define DBG(fmt, args...)        do { if (debug)            LOGIT(LOG_DEBUG, 0, fmt, ##args); } while(0)
+#define INFO(fmt, args...)       LOGIT(LOG_INFO, 0, fmt, ##args)
+#define DBG(fmt, args...)        LOGIT(LOG_DEBUG, 0, fmt, ##args)
 
 extern char *__progname;
 extern char *home;		/* Server root/home directory       */
 extern int   inetd;             /* Bool: conflicts with daemonize   */
 extern int   background;	/* Bool: conflicts with inetd       */
 extern int   chrooted;		/* Bool: are we chrooted?           */
-extern int   debug;             /* Level: 1-7, only 1 implemented   */
-extern int   verbose;           /* Bool: Enables extra logging info */
+extern int   loglevel;
 extern int   do_syslog;         /* Bool: False at daemon start      */
 extern int   do_ftp;            /* Port: FTP port, or disabled      */
 extern int   do_tftp;           /* Port: TFTP port, or disabled     */
@@ -153,6 +152,7 @@ char   *compose_path(ctrl_t *ctrl, char *path);
 int     open_socket(int port, int type, char *desc);
 void    convert_address(struct sockaddr_storage *ss, char *buf, size_t len);
 
+int     loglvl(char *level);
 void    logit(int severity, const char *fmt, ...);
 
 #endif  /* UFTPD_H_ */

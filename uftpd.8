@@ -55,16 +55,16 @@ Run in foreground, do not detach from controlling terminal
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
 background.
-.It Fl h
+.It Fl h Ar PATH
 Serve files from
 .Ar PATH .
 .Nm uftpd
 defaults to the FTP user's $HOME
-.It Fl f
+.It Fl f Ar PORT
 Enable FTP service.  Use the optional
 .Ar PORT
 argument to listen to a custom port
-.It Fl t
+.It Fl t Ar PORT
 Enable TFTP service.  Use the optional
 .Ar PORT
 argument to listen to a custom port

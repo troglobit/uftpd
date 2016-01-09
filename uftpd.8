@@ -23,22 +23,26 @@ No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
 .Nm uftpd
 .Op Fl dinsvV
-.Op Fl h Ar PATH
+.Op Ar PATH
 .Sh DESCRIPTION
 .Nm uftpd
-is a very simple TFTP and anonymous FTP server.  It listens on standard
-Internet ports for each protocol, as defined in the system service
-specification, unless other ports are given on the command line.  For
-details, see
+is a very simple TFTP and anonymous FTP server with inetd support.  It
+listens on standard Internet ports for each protocol, as defined in the
+system service specification,
+.Pa /etc/services ,
+unless other ports are given on the command line.  For details, see
 .Xr services 5 .
 .Pp
 Without any command line arguments
 .Nm
-defaults to FTP mode and automatically backgrounds itself.  Usually
+serves both FTP and TFTP and automatically backgrounds itself.  Usually
 .Nm
-will then listen to port 21 (FTP), serve files from
-.Pa /srv/ftp
-and log anything out of the ordinary to syslog.
+this means listen to port 21 (FTP) and port 69 (TFTP), serve files from
+.Pa /srv/ftp ,
+and log anything out of the ordinary to syslog.  Messages are written to
+the syslog using the
+.Nm LOG_FTP
+facility.
 .Pp
 Available options:
 .Bl -tag -width Ds
@@ -48,27 +52,26 @@ Enable developer debug messages.
 Run in foreground, do not detach from controlling terminal
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
-background.  Messages are written to the syslog using the
-.Nm LOG_FTP
-facility.
-.It Fl h Ar PATH
-Serve files from
-.Ar PATH .
-.Nm uftpd
-defaults to the FTP user's $HOME
+background.
 .It Fl v
 Show program version
 .It Fl V
 Verbose logging
-.It Fl ?
+.It Fl h
 Show built-in help text
 .El
+.Pp
+.Nm
+defaults to serve files from the FTP user's $HOME, unless a different
+non-option
+.Ar PATH
+is given on the command line.
 .Pp
 .Sh Inetd
 .Nm
 can also be used with an Internet superserver, like the traditional
-inetd or finit.  In inetd mode the server takes client connections
-from stdin.  To enable inetd mode
+inetd or modern init replacements like finit.  In inetd mode the server
+takes client connections from stdin.  To enable inetd mode
 .Nm
 must be called as either
 .Nm in.tftpd

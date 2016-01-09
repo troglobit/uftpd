@@ -45,24 +45,24 @@ static int version(void)
 	return 0;
 }
 
-static int usage(void)
+static int usage(int code)
 {
 	if (string_match(__progname, "in."))
-		printf("\nUsage: %s [-dnsvV] [-hPATH]\n\n", __progname);
+		printf("\nUsage: %s [-dnsvV] [PATH]\n\n", __progname);
 	else
-		printf("\nUsage: %s [-dnsvV] [-hPATH]\n\n"
+		printf("\nUsage: %s [-dnsvV] [PATH]\n\n"
 		       "  -n         Run in foreground, do not detach from controlling terminal\n"
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n", __progname);
 
 	printf("  -d         Enable developer debug logs\n"
-	       "  -hPATH     Serve files from PATH, defaults to FTP user's $HOME\n"
 	       "  -v         Show program version\n"
 	       "  -V         Verbose logging\n"
-	       "  -?         Show this help text\n"
+	       "  -h         Show this help text\n"
 	       "\n"
+	       "The optional FTP/TFTP 'PATH' defaults to the FTP user's $HOME\n"
 	       "Bug report address: %-40s\n\n", BUGADDR);
 
-	return 0;
+	return code;
 }
 
 /*
@@ -224,15 +224,14 @@ int main(int argc, char **argv)
 	int c;
 	uev_ctx_t ctx;
 
-	while ((c = getopt(argc, argv, "?dh:nsvV")) != EOF) {
+	while ((c = getopt(argc, argv, "dhnsvV")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
 			break;
 
 		case 'h':
-			home = strdup(optarg);
-			break;
+			return usage(0);
 
 		case 's':
 			do_syslog++;
@@ -251,9 +250,12 @@ int main(int argc, char **argv)
 			break;
 
 		default:
-			return usage();
+			return usage(1);
 		}
 	}
+
+	if (optind < argc)
+		home = strdup(argv[optind]);
 
 	if (string_compare(__progname, "in.tftpd")) {
 		inetd      = 1;

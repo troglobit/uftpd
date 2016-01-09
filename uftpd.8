@@ -24,8 +24,6 @@ No nonsense TFTP/FTP Server
 .Nm uftpd
 .Op Fl dinsvV
 .Op Fl h Ar PATH
-.Op Fl f Ar PORT
-.Op Fl t Ar PORT
 .Sh DESCRIPTION
 .Nm uftpd
 is a very simple TFTP and anonymous FTP server.  It listens on standard
@@ -45,29 +43,19 @@ and log anything out of the ordinary to syslog.
 Available options:
 .Bl -tag -width Ds
 .It Fl d
-Enable developer debug messages.  With syslog backend, log messages are
-written to the syslog using
-.Nm LOG_FTP
-.It Fl i
-Inetd mode, take client connections from stdin
+Enable developer debug messages.
 .It Fl n
 Run in foreground, do not detach from controlling terminal
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
-background.
+background.  Messages are written to the syslog using the
+.Nm LOG_FTP
+facility.
 .It Fl h Ar PATH
 Serve files from
 .Ar PATH .
 .Nm uftpd
 defaults to the FTP user's $HOME
-.It Fl f Ar PORT
-Enable FTP service.  Use the optional
-.Ar PORT
-argument to listen to a custom port
-.It Fl t Ar PORT
-Enable TFTP service.  Use the optional
-.Ar PORT
-argument to listen to a custom port
 .It Fl v
 Show program version
 .It Fl V
@@ -75,6 +63,17 @@ Verbose logging
 .It Fl ?
 Show built-in help text
 .El
+.Pp
+.Sh Inetd
+.Nm
+can also be used with an Internet superserver, like the traditional
+inetd or finit.  In inetd mode the server takes client connections
+from stdin.  To enable inetd mode
+.Nm
+must be called as either
+.Nm in.tftpd
+or
+.Nm in.ftpd
 .Pp
 .Sh FTP
 The file

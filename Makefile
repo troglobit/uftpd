@@ -19,6 +19,7 @@
 VERSION     = 2.0-dev
 BUGADDR     = https://github.com/troglobit/uftpd/issues
 NAME        = uftpd
+SYMLINKS    = in.ftpd in.tftpd
 PKG         = $(NAME)-$(VERSION)
 DEV         = $(NAME)-dev
 ARCHTOOL    = `which git-archive-all`
@@ -61,9 +62,11 @@ strip:
 
 install-exec: all
 	@$(INSTALL) -d $(DESTDIR)$(sbindir)
-	@for file in $(EXEC); do                                        \
-		printf "  INSTALL $(DESTDIR)$(sbindir)/$$file\n";   	\
-		$(STRIPINST) $$file $(DESTDIR)$(sbindir)/$$file; 	\
+	@printf "  INSTALL $(DESTDIR)$(sbindir)/$(EXEC)\n"
+	@$(STRIPINST) $(EXEC) $(DESTDIR)$(sbindir)/$(EXEC)
+	@for file in $(SYMLINKS); do					\
+		printf "  INSTALL $(DESTDIR)$(sbindir)/$$file\n";	\
+		ln -sf $(EXEC) $(DESTDIR)$(sbindir)/$$file;		\
 	done
 
 install-data:
@@ -79,7 +82,8 @@ install-data:
 install: install-exec install-data
 
 uninstall-exec:
-	-@for file in $(EXEC); do 					\
+	-@rm $(DESTDIR)$(sbindir)/$(EXEC)
+	-@for file in $(SYMLINKS); do 					\
 		printf "  REMOVE  $(DESTDIR)$(sbindir)/$$file\n";   	\
 		rm $(DESTDIR)$(sbindir)/$$file 2>/dev/null; 		\
 	done

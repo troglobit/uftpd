@@ -47,21 +47,20 @@ static int version(void)
 
 static int usage(void)
 {
-	printf("\nUsage: %s [-dinsvV] [-hPATH] [-fPORT] [-tPORT]\n"
-	       "\n"
-	       "  -d         Enable developer debug logs\n"
-	       "  -i         Inetd mode, take client connections from stdin\n"
-	       "  -n         Run in foreground, do not detach from controlling terminal\n"
-	       "  -s         Use syslog, even if running in foreground, default w/o -n\n"
+	if (string_match(__progname, "in."))
+		printf("\nUsage: %s [-dnsvV] [-hPATH]\n\n", __progname);
+	else
+		printf("\nUsage: %s [-dnsvV] [-hPATH]\n\n"
+		       "  -n         Run in foreground, do not detach from controlling terminal\n"
+		       "  -s         Use syslog, even if running in foreground, default w/o -n\n", __progname);
+
+	printf("  -d         Enable developer debug logs\n"
 	       "  -hPATH     Serve files from PATH, defaults to FTP user's $HOME\n"
-	       "  -f[PORT]   Enable FTP service, on system defalt port, or custom PORT\n"
-	       "  -t[PORT]   Enable TFTP service, on system default port, or custom PORT\n"
 	       "  -v         Show program version\n"
 	       "  -V         Verbose logging\n"
 	       "  -?         Show this help text\n"
 	       "\n"
-	       "Without -f and -t arguments, %s starts in FTP mode by default.\n"
-	       "Bug report address: %-40s\n\n", __progname, __progname, BUGADDR);
+	       "Bug report address: %-40s\n\n", BUGADDR);
 
 	return 0;
 }
@@ -225,24 +224,14 @@ int main(int argc, char **argv)
 	int c;
 	uev_ctx_t ctx;
 
-	while ((c = getopt (argc, argv, "?df::h:il::nt::vV")) != EOF) {
+	while ((c = getopt(argc, argv, "?dh:nsvV")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
 			break;
 
-		case 'f':
-			do_ftp = 1;
-			if (optarg)
-				do_ftp = atoi(optarg);
-			break;
-
 		case 'h':
 			home = strdup(optarg);
-			break;
-
-		case 'i':
-			inetd = 1;
 			break;
 
 		case 's':
@@ -252,12 +241,6 @@ int main(int argc, char **argv)
 		case 'n':
 			background = 0;
 			do_syslog--;
-			break;
-
-		case 't':
-			do_tftp = 1;
-			if (optarg)
-				do_tftp = atoi(optarg);
 			break;
 
 		case 'v':
@@ -272,12 +255,24 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (string_compare(__progname, "in.tftpd")) {
+		inetd      = 1;
+		do_tftp    = 1;
+		background = 0;
+		do_syslog  = 1;
+	} else if (string_compare(__progname, "in.ftpd")) {
+		inetd      = 1;
+		do_ftp     = 1;
+		background = 0;
+		do_syslog  = 1;
+	} else {
+		inetd      = 0;
+		do_ftp     = 1;
+		do_tftp    = 1;
+	}
+
 	if (do_syslog)
 		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
-
-	/* Default to FTP for backwards compat */
-	if (!do_ftp && !do_tftp)
-		do_ftp = 1;
 
 	DBG("Initializing ...");
 	init(&ctx);

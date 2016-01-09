@@ -72,12 +72,21 @@
 /* TFTP Minimum segment size, specific to uftpd */
 #define MIN_SEGSIZE       32
 
-#define ERR(code, fmt, args...)  logit(LOG_ERR, code, fmt, ##args)
-#define WARN(code, fmt, args...) logit(LOG_WARNING, code, fmt, ##args)
-#define LOG(fmt, args...)        logit(LOG_NOTICE, 0, fmt, ##args)
-#define INFO(fmt, args...)       do { if (debug || verbose) logit(LOG_INFO, 0, fmt, ##args);  } while(0)
-#define DBG(fmt, args...)        do { if (debug)            logit(LOG_DEBUG, 0, fmt, ##args); } while(0)
-#define show_log(msg)            DBG(msg)
+#define LOGIT(severity, code, fmt, args...)				\
+	do {								\
+		if (code)						\
+			logit(severity, fmt ". Error %d: %s%s",		\
+			      ##args, code, strerror(code),		\
+			      do_syslog ? "" : "\n");			\
+		else							\
+			logit(severity, fmt "%s", ##args,		\
+			      do_syslog ? "" : "\n");			\
+	} while (0)
+#define ERR(code, fmt, args...)  LOGIT(LOG_ERR, code, fmt, ##args)
+#define WARN(code, fmt, args...) LOGIT(LOG_WARNING, code, fmt, ##args)
+#define LOG(fmt, args...)        LOGIT(LOG_NOTICE, 0, fmt, ##args)
+#define INFO(fmt, args...)       do { if (debug || verbose) LOGIT(LOG_INFO, 0, fmt, ##args);  } while(0)
+#define DBG(fmt, args...)        do { if (debug)            LOGIT(LOG_DEBUG, 0, fmt, ##args); } while(0)
 
 extern char *__progname;
 extern char *home;		/* Server root/home directory       */
@@ -86,10 +95,9 @@ extern int   background;	/* Bool: conflicts with inetd       */
 extern int   chrooted;		/* Bool: are we chrooted?           */
 extern int   debug;             /* Level: 1-7, only 1 implemented   */
 extern int   verbose;           /* Bool: Enables extra logging info */
-extern int   do_log;            /* Bool: False at daemon start      */
+extern int   do_syslog;         /* Bool: False at daemon start      */
 extern int   do_ftp;            /* Port: FTP port, or disabled      */
 extern int   do_tftp;           /* Port: TFTP port, or disabled     */
-extern char *logfile;           /* Logfile, when NULL --> syslog    */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 
 typedef struct tftphdr tftp_t;
@@ -145,7 +153,7 @@ char   *compose_path(ctrl_t *ctrl, char *path);
 int     open_socket(int port, int type, char *desc);
 void    convert_address(struct sockaddr_storage *ss, char *buf, size_t len);
 
-void    logit(int severity, int code, const char *fmt, ...);
+void    logit(int severity, const char *fmt, ...);
 
 #endif  /* UFTPD_H_ */
 

@@ -23,11 +23,10 @@ int   inetd       = 0;
 int   background  = 1;
 int   debug       = 0;
 int   verbose     = 0;
-int   do_log      = 1;
+int   do_syslog   = 1;
 int   do_ftp      = 0;
 int   do_tftp     = 0;
 pid_t tftp_pid    = 0;
-char *logfile     = NULL;
 struct passwd *pw = NULL;
 
 /* Event contexts */
@@ -48,13 +47,13 @@ static int version(void)
 
 static int usage(void)
 {
-	printf("\nUsage: %s [-dinvV] [-hPATH] [-lLOGFILE] [-fPORT] [-tPORT]\n"
+	printf("\nUsage: %s [-dinsvV] [-hPATH] [-fPORT] [-tPORT]\n"
 	       "\n"
 	       "  -d         Enable developer debug logs\n"
 	       "  -i         Inetd mode, take client connections from stdin\n"
 	       "  -n         Run in foreground, do not detach from controlling terminal\n"
+	       "  -s         Use syslog, even if running in foreground, default w/o -n\n"
 	       "  -hPATH     Serve files from PATH, defaults to FTP user's $HOME\n"
-	       "  -l[PATH]   Log to stdout, an optional logfile, or default to syslog\n"
 	       "  -f[PORT]   Enable FTP service, on system defalt port, or custom PORT\n"
 	       "  -t[PORT]   Enable TFTP service, on system default port, or custom PORT\n"
 	       "  -v         Show program version\n"
@@ -84,7 +83,7 @@ static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
 
 		/* TFTP client disconnected, we can now serve TFTP again! */
 		if (pid == tftp_pid) {
-			DBG("Previousl TFTP session ended, restarting TFTP watcher ...");
+			DBG("Previous TFTP session ended, restarting TFTP watcher ...");
 			tftp_pid = 0;
 			uev_io_start(&tftp_watcher);
 		}
@@ -246,14 +245,13 @@ int main(int argc, char **argv)
 			inetd = 1;
 			break;
 
-		case 'l':
-			do_log = 1;
-			if (optarg)
-				logfile = strdup(optarg);
+		case 's':
+			do_syslog++;
 			break;
 
 		case 'n':
 			background = 0;
+			do_syslog--;
 			break;
 
 		case 't':
@@ -274,11 +272,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* Disable syslog() in foreground with debug enabled */
-	if (!background && debug)
-		do_log = 0;
-
-	if (do_log)
+	if (do_syslog)
 		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
 
 	/* Default to FTP for backwards compat */

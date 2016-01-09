@@ -17,32 +17,20 @@
 
 #include "uftpd.h"
 
-static char log_msg[300];
-
-void logit(int level, int code, const char *fmt, ...)
+void logit(int severity, const char *fmt, ...)
 {
-        int len;
-	FILE *fp = stderr;
+	FILE *file = stderr;
         va_list args;
 
+	if (severity > LOG_WARNING)
+		file = stdout;
+
         va_start(args, fmt);
-        len = vsnprintf(log_msg, sizeof(log_msg), fmt, args);
+	if (do_syslog)
+		vsyslog(severity, fmt, args);
+	else
+		vfprintf(file, fmt, args);
         va_end(args);
-        if (code)
-                snprintf(log_msg + len, sizeof(log_msg) - len, ". Error %d: %s", code, strerror(code));
-
-	if (do_log) {
-		syslog(level, "%s", log_msg);
-		return;
-	}
-
-	if (logfile)
-		fp = fopen(logfile, "a");
-
-	fprintf(fp, "%s%s", log_msg, log_msg[strlen(log_msg)] != '\n' ? "\n" : "");
-
-	if (logfile)
-		fclose(fp);
 }
 
 /**

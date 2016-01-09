@@ -13,7 +13,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd Jul 13, 2015
+.Dd Jan 09, 2016
 .Dt UFTPD 8
 .Os "uftpd (1.9)"
 .Sh NAME
@@ -22,9 +22,8 @@
 No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
 .Nm uftpd
-.Op Fl dinvV
+.Op Fl dinsvV
 .Op Fl h Ar PATH
-.Op Fl l Ar LOGFILE
 .Op Fl f Ar PORT
 .Op Fl t Ar PORT
 .Sh DESCRIPTION
@@ -53,17 +52,14 @@ written to the syslog using
 Inetd mode, take client connections from stdin
 .It Fl n
 Run in foreground, do not detach from controlling terminal
+.It Fl s
+Use syslog, even if running in foreground, default when running in the
+background.
 .It Fl h
 Serve files from
 .Ar PATH .
 .Nm uftpd
 defaults to the FTP user's $HOME
-.It Fl l
-Enable syslog backend, useful in combination with
-.Fl n .
-The optional
-.Ar LOGFILE
-argument redirects logging to a file
 .It Fl f
 Enable FTP service.  Use the optional
 .Ar PORT

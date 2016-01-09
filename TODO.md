@@ -7,8 +7,6 @@ TODO
     to serve both FTP and TFTP
   - Use -p, in in.[t]ftpd mode, to denote -p PORT
   - Add -s LEVEL to setlogmask(), or let -d control this?
-* Remove log to file
-* Remove log to STDOUT option, should log to stdout if -n and ! -s
 * Setup signed .deb repository on deb.troglobit.com
 * Port to *BSD (Free/Net/Open) -- requires kqueue support in libuEv
 * Add TFTP retransmit support and inactivity timer, see

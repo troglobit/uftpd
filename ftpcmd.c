@@ -81,7 +81,7 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	}
 
 	if (!bytes) {
-		show_log("Client disconnected.");
+		INFO("Client disconnected.");
 		return 1;
 	}
 
@@ -388,7 +388,7 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 		return;
 	}
 
-	show_log("Established TCP socket for data communication.");
+	INFO("Established TCP socket for data communication.");
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
 	path = compose_path(ctrl, arg);
@@ -490,7 +490,7 @@ static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
 		return;
 	}
 
-	show_log("Data server port estabished.  Waiting for client connnect ...");
+	INFO("Data server port estabished.  Waiting for client connnect ...");
 	if (listen(ctrl->data_listen_sd, 1) < 0) {
 		ERR(errno, "Client data connection failure");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
@@ -507,11 +507,6 @@ static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
 		return;
 	}
 
-	port = ntohs(data.sin_port);
-	snprintf(buf, sizeof(buf), "Port %d\n", port);
-	show_log(buf);
-
-
 	/* Convert server IP address and port to comma separated list */
 	msg = strdup(ctrl->serveraddr);
 	if (!msg) {
@@ -522,6 +517,7 @@ static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
 	while ((p = strchr(p, '.')))
 		*p++ = ',';
 
+	port = ntohs(data.sin_port);
 	snprintf(buf, sizeof(buf), "227 Entering Passive Mode (%s,%d,%d)\r\n",
 		 msg, port / 256, port % 256);
 	send_msg(ctrl->sd, buf);

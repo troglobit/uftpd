@@ -24,6 +24,7 @@ No nonsense TFTP/FTP Server
 .Nm
 .Op Fl hnsv
 .Op Fl l Ar LVL
+.Op Fl o Ar ftp=PORT,tftp=PORT
 .Op Ar PATH
 .Sh DESCRIPTION
 .Nm
@@ -55,6 +56,20 @@ Set log level: none, err, info,
 debug
 .It Fl n
 Run in foreground, do not detach from controlling terminal
+.It Fl o
+Set
+.Nm
+option:
+.Bl -tag
+.It Ar ftp=PORT
+.It Ar tftp=PORT
+.El
+.Pp
+Override Internet ports otherwise derived from
+.Xr services 5 .
+Set the
+.Ar PORT
+to zero (0) to disable a service.
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
 background

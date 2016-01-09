@@ -22,8 +22,8 @@ char *home        = NULL;
 int   inetd       = 0;
 int   background  = 1;
 int   do_syslog   = 1;
-int   do_ftp      = 0;
-int   do_tftp     = 0;
+int   do_ftp      = FTP_DEFAULT_PORT;
+int   do_tftp     = TFTP_DEFAULT_PORT;
 pid_t tftp_pid    = 0;
 struct passwd *pw = NULL;
 
@@ -50,12 +50,15 @@ static int usage(int code)
 	if (is_inetd)
 		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", __progname);
 	else
-		printf("\nUsage: %s [-hnsv] [-l LEVEL] [PATH]\n\n", __progname);
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]\n\n", __progname);
 
 	printf("  -h         Show this help text\n"
 	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");
 	if (!is_inetd)
 		printf("  -n         Run in foreground, do not detach from controlling terminal\n"
+		       "  -o OPT     Options:\n"
+		       "                      ftp=PORT\n"
+		       "                      tftp=PORT\n"
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
 
 	printf("  -v         Show program version\n\n");
@@ -222,9 +225,19 @@ static int serve_files(uev_ctx_t *ctx)
 int main(int argc, char **argv)
 {
 	int c;
+	enum {
+		FTP_OPT = 0,
+		TFTP_OPT,
+	};
+	char *subopts;
+	char *const token[] = {
+		[FTP_OPT]   = "ftp",
+		[TFTP_OPT]  = "tftp",
+		NULL
+	};
 	uev_ctx_t ctx;
 
-	while ((c = getopt(argc, argv, "hl:nsv")) != EOF) {
+	while ((c = getopt(argc, argv, "hl:no:sv")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -238,6 +251,35 @@ int main(int argc, char **argv)
 		case 'n':
 			background = 0;
 			do_syslog--;
+			break;
+
+		case 'o':
+			subopts = optarg;
+			while (*subopts != '\0') {
+				char *value;
+
+				switch (getsubopt(&subopts, token, &value)) {
+				case FTP_OPT:
+					if (!value) {
+						fprintf(stderr, "Missing port argument to -o ftp=PORT\n");
+						return usage(1);
+					}
+					do_ftp = atoi(value);
+					break;
+
+				case TFTP_OPT:
+					if (!value) {
+						fprintf(stderr, "Missing port argument to -o tftp=PORT\n");
+						return usage(1);
+					}
+					do_tftp = atoi(value);
+					break;
+
+				default:
+					fprintf(stderr, "Unrecognized option '%s'\n", value);
+					return usage(1);
+				}
+			}
 			break;
 
 		case 's':
@@ -255,20 +297,19 @@ int main(int argc, char **argv)
 	if (optind < argc)
 		home = strdup(argv[optind]);
 
+	/* Inetd mode enforces foreground and syslog */
 	if (string_compare(__progname, "in.tftpd")) {
 		inetd      = 1;
+		do_ftp     = 0;
 		do_tftp    = 1;
 		background = 0;
 		do_syslog  = 1;
 	} else if (string_compare(__progname, "in.ftpd")) {
 		inetd      = 1;
 		do_ftp     = 1;
+		do_tftp    = 0;
 		background = 0;
 		do_syslog  = 1;
-	} else {
-		inetd      = 0;
-		do_ftp     = 1;
-		do_tftp    = 1;
 	}
 
 	if (do_syslog) {

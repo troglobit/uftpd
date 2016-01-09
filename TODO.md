@@ -1,8 +1,6 @@
 TODO
 ====
 
-* Simplify command line arguments
-  - Use -p, in in.[t]ftpd mode, to denote -p PORT
 * Setup signed .deb repository on deb.troglobit.com
 * Port to *BSD (Free/Net/Open) -- requires kqueue support in libuEv
 * Add TFTP retransmit support and inactivity timer, see

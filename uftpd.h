@@ -18,6 +18,8 @@
 #ifndef UFTPD_H_
 #define UFTPD_H_
 
+#include "config.h"
+
 #include <arpa/inet.h>
 #include <arpa/ftp.h>
 #include <arpa/tftp.h>

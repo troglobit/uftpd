@@ -39,7 +39,7 @@ static uev_t sigquit_watcher;
 
 static int version(void)
 {
-	printf("Version %s\n", VERSION);
+	printf("Version %s\n", PACKAGE_VERSION);
 	return 0;
 }
 
@@ -63,7 +63,7 @@ static int usage(int code)
 
 	printf("  -v         Show program version\n\n");
 	printf("The optional FTP/TFTP 'PATH' defaults to the FTP user's $HOME\n"
-	       "Bug report address: %-40s\n\n", BUGADDR);
+	       "Bug report address: %-40s\n\n", PACKAGE_BUGREPORT);
 
 	return code;
 }

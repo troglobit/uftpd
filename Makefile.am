@@ -9,7 +9,7 @@ uftpd_DEPENDENCIES = libite/libite.a libuev/libuev.a
 SYMLINK            = in.ftpd in.tftpd
 EXTRA_DIST         = configure ChangeLog.md README.md LICENSE
 DIST_SUBDIRS       = libite libuev
-#doc_DATA           = README.md LICENSE
+doc_DATA           = ChangeLog.md README.md LICENSE
 
 # Slightly ugly hacks to prevent the build system from installing
 # libuev/libite, which it does if we use the more plain SUBDIRS.

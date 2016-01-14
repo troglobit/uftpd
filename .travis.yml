@@ -17,6 +17,9 @@ env:
    - secure: "PQuj5u9r9J22UAgjeu0unfZewE48Y1PFmzD+o3QHpc/lPqFoDKvUY+pjAOsCXuV4DBORLGLKs+oZBFmb1yliBZBm6nO1Yj2JutlwyFRKUBTJkEi5Xn12adAYRI0THaQ5/b0kKPonxOuA/4ksoC2myqX7izz+Z6qKgSwJanKHrvA="
 
 addons:
+  apt:
+    packages:
+      - tree
   coverity_scan:
     project:
       name: "troglobit/uftpd"
@@ -28,6 +31,9 @@ addons:
 
 script:
   - ./autogen.sh
-  - ./configure --disable-silent-rules
+  - ./configure --disable-silent-rules --prefix=
   - make clean
   - make -j5
+  - DESTDIR=~/tmp make install
+  - tree ~/tmp
+  - ldd ~/tmp/sbin/uftpd

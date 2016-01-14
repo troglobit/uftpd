@@ -11,10 +11,15 @@ EXTRA_DIST         = configure ChangeLog.md README.md LICENSE
 DIST_SUBDIRS       = libite libuev
 #doc_DATA           = README.md LICENSE
 
-# Slightly ugly hack to prevent the build system from installing
+# Slightly ugly hacks to prevent the build system from installing
 # libuev/libite, which it does if we use the more plain SUBDIRS.
 $(uftpd_DEPENDENCIES):
 	@$(MAKE) -C `dirname $@` all
+
+clean-local:
+	@for dep in $(uftpd_DEPENDENCIES); do		\
+		$(MAKE) -C `dirname $$dep` clean;	\
+	done
 
 # Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
 install-exec-hook:

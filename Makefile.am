@@ -1,13 +1,20 @@
-SYMLINK         = in.ftpd in.tftpd
-EXTRA_DIST      = configure ChangeLog.md README.md LICENSE
-doc_DATA        = README.md LICENSE
-dist_man8_MANS  = uftpd.8
-sbin_PROGRAMS   = uftpd
-SUBDIRS         = libite libuev
-uftpd_SOURCES   = uftpd.c common.c ftpcmd.c tftpcmd.c log.c
-uftpd_CPPFLAGS  = -I.
-uftpd_LDFLAGS   = -Llibite -Llibuev
-uftpd_LDADD     = -lite -luev
+sbin_PROGRAMS      = uftpd
+dist_man8_MANS     = uftpd.8
+uftpd_SOURCES      = uftpd.c common.c ftpcmd.c tftpcmd.c log.c
+uftpd_CFLAGS       = -W -Wall -Wextra -std=gnu99
+uftpd_CPPFLAGS     =
+uftpd_LDFLAGS      = -Llibite -Llibuev
+uftpd_LDADD        = -lite -luev
+uftpd_DEPENDENCIES = libite/libite.a libuev/libuev.a
+SYMLINK            = in.ftpd in.tftpd
+EXTRA_DIST         = configure ChangeLog.md README.md LICENSE
+DIST_SUBDIRS       = libite libuev
+#doc_DATA           = README.md LICENSE
+
+# Slightly ugly hack to prevent the build system from installing
+# libuev/libite, which it does if we use the more plain SUBDIRS.
+$(uftpd_DEPENDENCIES):
+	@$(MAKE) -C `dirname $@` all
 
 # Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
 install-exec-hook:

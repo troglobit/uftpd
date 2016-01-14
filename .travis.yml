@@ -37,3 +37,4 @@ script:
   - DESTDIR=~/tmp make install
   - tree ~/tmp
   - ldd ~/tmp/sbin/uftpd
+  - ~/tmp/sbin/uftpd -h

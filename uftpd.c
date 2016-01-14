@@ -62,7 +62,7 @@ static int usage(int code)
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
 
 	printf("  -v         Show program version\n\n");
-	printf("The optional FTP/TFTP 'PATH' defaults to the FTP user's $HOME\n"
+	printf("The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'\n"
 	       "Bug report address: %-40s\n\n", PACKAGE_BUGREPORT);
 
 	return code;

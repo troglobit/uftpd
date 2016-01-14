@@ -28,7 +28,7 @@ int loglvl(char *level)
 			return prioritynames[i].c_val;
 	}
 
-	return -1;
+	return atoi(level);
 }
 
 void logit(int severity, const char *fmt, ...)

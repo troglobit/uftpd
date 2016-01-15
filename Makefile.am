@@ -27,6 +27,12 @@ install-exec-hook:
 		$(LN_S) $(sbin_PROGRAMS) $(DESTDIR)$(sbindir)/$$file;		\
 	done
 
+uninstall-hook:
+	@for file in $(SYMLINK); do				\
+		$(RM) $(DESTDIR)$(sbindir)/$$file;		\
+	done
+
+
 build-deb:
 	gbp buildpackage --git-ignore-new --git-ignore-branch			 \
 			 --git-no-create-orig --git-upstream-branch=master

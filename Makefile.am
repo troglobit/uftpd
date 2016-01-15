@@ -4,8 +4,8 @@ uftpd_SOURCES      = uftpd.c common.c ftpcmd.c tftpcmd.c log.c
 uftpd_CFLAGS       = -W -Wall -Wextra -std=gnu99
 uftpd_CPPFLAGS     =
 uftpd_LDFLAGS      = -Llibite -Llibuev
-uftpd_LDADD        = -lite -luev
-uftpd_DEPENDENCIES = libite/libite.a libuev/libuev.a
+uftpd_LDADD        = libite/.libs/libite.a libuev/.libs/libuev.a
+uftpd_DEPENDENCIES = libite/libite.la libuev/libuev.la
 SYMLINK            = in.ftpd in.tftpd
 EXTRA_DIST         = configure ChangeLog.md README.md LICENSE
 DIST_SUBDIRS       = libite libuev

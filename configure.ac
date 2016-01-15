@@ -23,7 +23,7 @@ AC_TYPE_UINT32_T
 
 # Needed for the libraries
 AM_PROG_AR
-LT_INIT
+LT_INIT([disable-shared static])
 AM_CONDITIONAL([ENABLE_EXAMPLES], [test "$enable_examples" = yes])
 
 # Check if user has downloaded a GitHub ZIP file and attempt to fix it.

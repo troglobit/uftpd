@@ -62,31 +62,29 @@ See below if you want to contribute.
 Running
 -------
 
-To start uftpd in the background as an FTP-only server, simply call
+To start uftpd in the background as an FTP/TFTP server, simply call
 
     sudo ./uftpd
 
-To enable both FTP and TFTP, call
+To change port on either FTP or TFTP, use
 
-    sudo ./uftpd -f -t
+    sudo ./uftpd -o ftp=PORT,tftp=PORT
 
-The `-f` and `-t` can be given alternative Internet port arguments, e.g.
-`-f2121` to start FTP on port 2121.  For other command line options and
-more details, see the man page or the output from the command:
-<kdb>`uftpd --help`</kdb>
+Set PORT to zero (0) to disable either service.
 
 To run uftpd from the Internet super server, inetd, use the following
-two lines in `/etc/inetd.conf`:
+two lines in `/etc/inetd.conf`, notice how `in.ftpd` and `in.tftpd` are
+symlinks to the `uftpd` binary:
 
-    ftp		stream	tcp	nowait	root	/usr/sbin/uftpd -i -f
-    tftp	dgram	udp	wait	root	/usr/sbin/uftpd -i -t
+    ftp		stream	tcp	nowait	root	/usr/sbin/in.ftpd
+    tftp	dgram	udp	wait	root	/usr/sbin/in.tftpd
 
 Remember to activate your changes to inetd by reloading the service or
 sending `SIGHUP` to it.  Another inetd server may use different syntax.
 Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 
-    inetd ftp/tcp   nowait /usr/sbin/uftpd -i -f -- The uftpd FTP server
-    inetd tftp/udp    wait /usr/sbin/uftpd -i -t -- The uftpd TFTP server
+    inetd ftp/tcp   nowait /usr/sbin/in.ftpd  -- The uftpd FTP server
+    inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
 
 
 Origin & References

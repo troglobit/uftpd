@@ -5,6 +5,8 @@ set -e
 if [ "$1" = purge ]; then
 	if command -v update-inetd >/dev/null 2>&1; then
 		update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
+		update-inetd --pattern '/usr/sbin/in.ftpd' --remove ftp
+		update-inetd --pattern '/usr/sbin/in.tftpd' --remove tftp
 	fi
 fi
 

@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -f"
-TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/uftpd -i -t"
+FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/in.ftpd"
+TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/in.tftpd"
 
 if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	cat <<-TEXT
@@ -30,4 +30,4 @@ fi
 chown --changes ftp:ftp /srv/ftp
 chmod --changes 0775 /srv/ftp
 
-update-inetd --pattern '/usr/sbin/uftpd' --enable ".*ftp"
+update-inetd --pattern '/usr/sbin/in.*ftpd' --enable ".*ftp"

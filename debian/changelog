@@ -1,3 +1,11 @@
+uftpd (2.0-rc1-1) unstable; urgency=low
+
+  * New upstream release, v2.0-rc1
+    - Completely changed command line syntax
+    - New binaries (symlinks) for inetd usage
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 17 Jan 2016 23:16:58 +0100
+
 uftpd (1.9.1-1) unstable; urgency=medium
 
   * Minor fix release

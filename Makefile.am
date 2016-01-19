@@ -33,7 +33,7 @@ uninstall-hook:
 	done
 
 
-build-deb:
+package build-deb:
 	gbp buildpackage --git-ignore-new --git-ignore-branch			 \
 			 --git-no-create-orig --git-upstream-branch=master
 

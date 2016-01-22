@@ -104,7 +104,9 @@ int open_socket(int port, int type, char *desc)
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port        = htons(port);
 	if (bind(sd, (struct sockaddr *)&server, len) < 0) {
-		WARN(errno, "Failed binding to port %d, maybe another %s server is already running", port, desc);
+		if (EACCES != errno) {
+			WARN(errno, "Failed binding to port %d, maybe another %s server is already running", port, desc);
+		}
 		close(sd);
 
 		return -1;

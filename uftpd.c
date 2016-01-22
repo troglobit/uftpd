@@ -189,7 +189,9 @@ static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int t
 
 	sd = open_socket(port, type, desc);
 	if (sd < 0) {
-		WARN(errno, "Failed starting %s service", desc);
+		if (EACCES == errno)
+			WARN(0, "Not allowed to start %s service.%s",
+			     desc, port < 1024 ? "  Privileged port." : "");
 		return 1;
 	}
 

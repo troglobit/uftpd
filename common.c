@@ -73,6 +73,8 @@ char *compose_path(ctrl_t *ctrl, char *path)
 		size_t len = strlen(home);
 
 		DBG("Server path from CWD: %s", dir);
+		if (len > 0 && home[len - 1] == '/')
+			len--;
 		memmove(dir + len, dir, strlen(dir) + 1);
 		memcpy(dir, home, len);
 		DBG("Resulting non-chroot path: %s", dir);

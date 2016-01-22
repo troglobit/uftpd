@@ -1,3 +1,10 @@
+uftpd (2.0-1) stable; urgency=low
+
+  * New upstream release, v2.0
+    - Completely changed command line syntax
+    - New binaries (symlinks) for inetd usage, in.tftpd and in.ftpd
+    - Updated man page
+
 uftpd (2.0-rc1-1) unstable; urgency=low
 
   * New upstream release, v2.0-rc1

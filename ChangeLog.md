@@ -4,7 +4,7 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.0][] - 2016-01-20
+[v2.0][] - 2016-01-22
 ---------------------
 
 Sleak, smart, simple ... UNIX
@@ -12,13 +12,16 @@ Sleak, smart, simple ... UNIX
 ### Changes
 - Greatly simplified command line syntax
 - Run inetd services by calling `in.ftpd` and `in.tftpd` symlinks
-- Use GNU configure and build system
+- Migrate to GNU configure and build system
 - Update and simplify man page
-- Build statically against local versions of libite (LITE) and libuEv
+- Build statically against bundled versions of libite (LITE) and libuEv
+- Update bundled libuEv to v1.3.0
+- Update bundled libite to v1.4.1
 
 ### Fixes
 - Do not allow VERSION to be overloaded by build system
 - Do not enforce any optimization in Makefile, this is up to the user
+- Minor fixes to redundant error messages when running as a regular user
 
 
 [v1.9.1][] - 2015-09-27
@@ -253,8 +256,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v1.9.1...HEAD
-[v2.0]:          https://github.com/troglobit/uftpd/compare/v1.9.1...v2.0-rc1
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.0...HEAD
+[v2.0]:          https://github.com/troglobit/uftpd/compare/v1.9.1...v2.0
 [v1.9.1]:        https://github.com/troglobit/uftpd/compare/v1.9...v1.9.1
 [v1.9]:          https://github.com/troglobit/uftpd/compare/v1.8...v1.9
 [v1.8]:          https://github.com/troglobit/uftpd/compare/v1.7...v1.8

@@ -21,8 +21,6 @@
 #include "config.h"
 
 #include <arpa/inet.h>
-#include <arpa/ftp.h>
-#include <arpa/tftp.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>

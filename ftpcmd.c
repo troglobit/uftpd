@@ -16,6 +16,7 @@
  */
 
 #include "uftpd.h"
+#include <arpa/ftp.h>
 
 typedef struct {
 	char *command;

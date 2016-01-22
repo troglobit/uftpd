@@ -15,8 +15,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <poll.h>
 #include "uftpd.h"
+#include <poll.h>
+#include <arpa/tftp.h>
 
 /* Send @len bytes data in @ctrl->buf */
 static int do_send(ctrl_t *ctrl, size_t len)

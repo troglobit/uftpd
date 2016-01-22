@@ -281,7 +281,10 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	char *dir = compose_path(ctrl, path);
 
 	if (chdir(dir)) {
-		WARN(errno, "Client from %s tried to change to non existing dir %s", ctrl->clientaddr, dir);
+		if (!fexist(dir))
+			WARN(errno, "Client from %s tried to change to non existing dir %s", ctrl->clientaddr, dir);
+		else
+			DBG("Client from %s tried to CWD to a file %s", ctrl->clientaddr, dir);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}

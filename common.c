@@ -132,7 +132,7 @@ void convert_address(struct sockaddr_storage *ss, char *buf, size_t len)
 
 	case AF_INET6:
 		inet_ntop(ss->ss_family,
-			  &((struct sockaddr_in6 *)&ss)->sin6_addr, buf, len);
+			  &((struct sockaddr_in6 *)ss)->sin6_addr, buf, len);
 		break;
 	}
 }

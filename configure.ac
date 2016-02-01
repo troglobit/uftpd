@@ -1,6 +1,6 @@
 # Use v2.61 for backwards compat with Ubuntu 12.04 LTS
 AC_PREREQ([2.61])
-AC_INIT([uftpd],[2.0],[https://github.com/troglobit/uftpd/issues])
+AC_INIT([uftpd],[2.0.1],[https://github.com/troglobit/uftpd/issues])
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 AM_SILENT_RULES([yes])
 

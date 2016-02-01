@@ -4,6 +4,21 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.0.1][] - 2016-02-02
+-----------------------
+
+Minor fix release.
+
+### Changes
+- Upgrade to [libite][] v1.4.2 (GCC 6 bug fixes)
+
+### Fixes
+- IPv6 address conversion error, found by GCC 6
+- Make install of symlinks for `in.tftpd` & `in.ftpd` idempotent. Check
+  any existing `in.ftpd` and `in.tftpd` symlinks before bugging out.
+  Fixes problem of uftpd install failing on already existing symlinks.
+
+
 [v2.0][] - 2016-01-22
 ---------------------
 

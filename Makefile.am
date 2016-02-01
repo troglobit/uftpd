@@ -23,7 +23,9 @@ clean-local:
 # Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
 install-exec-hook:
 	@for file in $(SYMLINK); do						\
-		$(LN_S) $(sbin_PROGRAMS) $(DESTDIR)$(sbindir)/$$file;		\
+		link=$(DESTDIR)$(sbindir)/$$file;				\
+		test `readlink $$link` = "$(sbin_PROGRAMS)" && continue;	\
+		$(LN_S) $(sbin_PROGRAMS) $$link;				\
 	done
 
 uninstall-hook:

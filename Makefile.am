@@ -1,14 +1,14 @@
 sbin_PROGRAMS      = uftpd
 dist_man8_MANS     = uftpd.8
-uftpd_SOURCES      = uftpd.c common.c ftpcmd.c tftpcmd.c log.c
+uftpd_SOURCES      = uftpd.c uftpd.h common.c ftpcmd.c tftpcmd.c log.c
 uftpd_CFLAGS       = -W -Wall -Wextra -std=gnu99
 uftpd_CPPFLAGS     =
 uftpd_LDADD        = libite/.libs/libite.a libuev/.libs/libuev.a
 uftpd_DEPENDENCIES = libite/libite.la libuev/libuev.la
 SYMLINK            = in.ftpd in.tftpd
-EXTRA_DIST         = configure ChangeLog.md README.md LICENSE
 DIST_SUBDIRS       = libite libuev
-doc_DATA           = ChangeLog.md README.md LICENSE
+doc_DATA           = README.md LICENSE
+EXTRA_DIST         = README.md LICENSE ChangeLog.md
 
 # Slightly ugly hacks to prevent the build system from installing
 # libuev/libite, which it does if we use the more plain SUBDIRS.

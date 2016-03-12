@@ -6,7 +6,7 @@ AM_SILENT_RULES([yes])
 
 AC_CONFIG_SRCDIR([uftpd.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile libite/Makefile libuev/Makefile libuev/examples/Makefile])
+AC_CONFIG_FILES([Makefile libite/Makefile libite/libite.pc libuev/Makefile libuev/examples/Makefile])
 
 AC_PROG_CC
 AC_PROG_LN_S

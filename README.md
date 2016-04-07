@@ -86,17 +86,9 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 Origin & References
 -------------------
 
-Originally based on [FtpServer][] by [Xu Wang][], uftpd is a complete
-rewrite with TFTP support by [Joachim Nilsson][], maintained at
-[GitHub][].  If you want to contribute, check out the code, including
-the submodules:
-
-	git clone https://github.com/troglobit/uftpd
-	cd uftpd
-	make submodules
-
-When you pull from upstream, remember to also update the submodules
-using `git submodule update`.
+uftpd was originally based on [FtpServer][] by [Xu Wang][], but is now a
+complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
+[GitHub][].
 
 
 [.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb

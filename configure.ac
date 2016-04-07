@@ -6,7 +6,7 @@ AM_SILENT_RULES([yes])
 
 AC_CONFIG_SRCDIR([uftpd.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile libite/Makefile libite/libite.pc libuev/Makefile libuev/examples/Makefile])
+AC_CONFIG_FILES([Makefile])
 
 AC_PROG_CC
 AC_PROG_LN_S
@@ -24,10 +24,5 @@ AC_TYPE_UINT32_T
 # Check for required libraries
 PKG_CHECK_MODULES([libuEv], [libuev >= 1.4.0])
 PKG_CHECK_MODULES([lite], [libite >= 1.5.0])
-
-# Needed for the libraries
-AM_PROG_AR
-LT_INIT([disable-shared static])
-AM_CONDITIONAL([ENABLE_EXAMPLES], [test "$enable_examples" = yes])
 
 AC_OUTPUT

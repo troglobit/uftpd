@@ -43,18 +43,14 @@ directory, then uftpd is likely as secrure as any other TFTP/FTP server.
 Download
 --------
 
-Although the project makes heavy use of GitHub, it is *not* recommended
-to use the ZIP file links GitHub provides.  Instead, we recommend using
-proper tarball releases from [the FTP][], or the [releases page][].
+uftpd depends on two other projects to build from source, [libuEv][] and
+[lite][].  See their respective README's for details, but there should
+be no real surprises, both are configure + make and make install ...
 
-The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
-do not include files from the GIT submodules.  The Makefile makes up for
-this, but is not 100% foolproof.
-
-Alternatively, instead of building the sources, you can install the
-latest [pre-built package][.deb] &mdash; or build and install your own
-package.  Installing the package takes care of setting up inetd for you.
-Use `make package` to build the `.deb` package file.
+Alternatively, instead of building from source, you can try the latest
+[pre-built package][.deb] from [the FTP][] &mdash; or build and install
+your own package.  Installing the package takes care of setting up inetd
+for you.  Use `make package` to build the `.deb` package file.
 
 See below if you want to contribute.
 
@@ -106,7 +102,6 @@ using `git submodule update`.
 [.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com
 [the FTP]:         http://ftp.troglobit.com/uftpd/
-[releases page]:   https://github.com/troglobit/uftpd/releases
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
 [GitHub]:          https://github.com/troglobit/uftpd

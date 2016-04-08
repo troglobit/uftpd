@@ -98,6 +98,8 @@ complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
 [GitHub]:          https://github.com/troglobit/uftpd
 [Finit]:           https://github.com/troglobit/finit
+[lite]:            https://github.com/troglobit/libite
+[libuEv]:          https://github.com/troglobit/libuev
 [Travis]:          https://travis-ci.org/troglobit/uftpd
 [Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/2947

@@ -3,7 +3,10 @@
 language: c
 
 # Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
-sudo: false
+#sudo: false
+
+# Use non-docker builds atm. to install libuEv and libite from source
+sudo: true
 
 # Test build with both GCC and Clang (LLVM)
 compiler:

@@ -60,13 +60,15 @@ Running
 
 To start uftpd in the background as an FTP/TFTP server, simply call
 
-    sudo ./uftpd
+    $ uftpd
 
 To change port on either FTP or TFTP, use
 
-    sudo ./uftpd -o ftp=PORT,tftp=PORT
+    $ uftpd -o ftp=PORT,tftp=PORT
 
-Set PORT to zero (0) to disable either service.
+Set `PORT` to zero (0) to disable either service.  Use `sudo`, or set
+`CAP_NET_ADMIN` capabilities, on `uftpd` to use privileged (standard)
+ports, `< 1024`.
 
 To run uftpd from the Internet super server, inetd, use the following
 two lines in `/etc/inetd.conf`, notice how `in.ftpd` and `in.tftpd` are

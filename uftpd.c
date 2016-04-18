@@ -39,7 +39,7 @@ static uev_t sigquit_watcher;
 
 static int version(void)
 {
-	printf("Version %s\n", PACKAGE_VERSION);
+	printf("%s\n", PACKAGE_VERSION);
 	return 0;
 }
 

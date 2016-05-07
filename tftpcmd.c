@@ -291,10 +291,8 @@ int tftp_session(uev_ctx_t *ctx, int sd)
 	exit(del_session(ctrl, 0));
 }
 
-
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

@@ -267,7 +267,6 @@ int del_session(ctrl_t *ctrl, int isftp)
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

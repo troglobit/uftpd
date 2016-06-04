@@ -28,7 +28,6 @@ binary-indep: build install
 binary-arch: build install
 	dh_strip
 	rm -f debian/uftpd/usr/share/doc/uftpd/LICENSE
-	rm -f debian/uftpd/usr/share/doc/uftpd/README
 	rm -f debian/uftpd/usr/share/doc/uftpd/ChangeLog.md
 	dh_compress
 	dh_fixperms

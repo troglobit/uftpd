@@ -1,9 +1,19 @@
+uftpd (2.1-1) stable; urgency=low
+
+  * New upstream release, v2.1
+    - Removed built-in GIT submodules for libite and libuev
+    - Updated README
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun,  5 Jun 2016 00:19:30 +0100
+
 uftpd (2.0-1) stable; urgency=low
 
   * New upstream release, v2.0
     - Completely changed command line syntax
     - New binaries (symlinks) for inetd usage, in.tftpd and in.ftpd
     - Updated man page
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 22 Jan 2016 13:51:56 +0100
 
 uftpd (2.0-rc1-1) unstable; urgency=low
 

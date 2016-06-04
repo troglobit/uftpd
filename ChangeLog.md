@@ -4,6 +4,15 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.1][] - 2016-06-05
+---------------------
+
+### Changes
+- Remove GIT submodules for libuEv and libite, these two libraries
+  are now required to be installed separately.
+- The output from `uftpd -v` now only shows the version.
+
+
 [v2.0.2][] - 2016-02-02
 -----------------------
 

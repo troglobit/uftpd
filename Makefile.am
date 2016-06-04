@@ -36,7 +36,8 @@ package build-deb:
 			 --git-no-create-orig --git-upstream-branch=master
 
 ## Target to run when building a release
-release: dist build-deb
+## Temprarily removed: build-deb
+release: dist
 	@for file in $(DIST_ARCHIVES); do	\
 		md5sum $$file > ../$$file.md5;	\
 	done
@@ -48,6 +49,6 @@ release: dist build-deb
 		printf "$$file    \tDistribution tarball\n";			\
 		printf "$$file.md5\t"; cat ../$$file.md5 | cut -f1 -d' ';	\
 	done
-	@for file in `ls ../$(PACKAGE)_$(VERSION)-*`; do			\
-		printf "$$file    \tDebian/Ubuntu file\n";			\
-	done
+#	@for file in `ls ../$(PACKAGE)_$(VERSION)-*`; do			\
+#		printf "$$file    \tDebian/Ubuntu file\n";			\
+#	done

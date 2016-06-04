@@ -47,11 +47,6 @@ uftpd depend on two other projects to build from source, [libuEv][] and
 [lite][].  See their respective README's for details, there should be no
 real surprises, both use the familiar configure, make, make install.
 
-Alternatively, instead of building from source, you can try the latest
-[pre-built package][.deb] from [the FTP][] &mdash; or build and install
-your own package.  Installing the package takes care of setting up inetd
-for you.  Use `make package` to build the `.deb` package file.
-
 See below if you want to contribute.
 
 
@@ -95,7 +90,6 @@ complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
 [GitHub][].
 
 
-[.deb]:            http://ftp.troglobit.com/uftpd/uftpd_1.9-1_amd64.deb
 [Joachim Nilsson]: http://troglobit.com
 [the FTP]:         http://ftp.troglobit.com/uftpd/
 [Xu Wang]:         https://github.com/xu-wang11/

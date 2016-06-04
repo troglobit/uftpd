@@ -14,9 +14,9 @@ Features
 * Listens to `ftp/tcp` and `tftp/udp` found in `/etc/services`
 * Serves files from the ftp user's `$HOME`, found in `/etc/passwd`
 * Privilege separation, drops root privileges before serving files
-* Possible to use symlinks outside of the home directory (INSECURE,
-  but user friendly)
-* Possible to use group writable home directory (INSECURE, but again
+* Possible to use symlinks outside of the home directory (*insecure* but
+  user friendly)
+* Possible to use group writable home directory (*insecure* but again
   user friendly)
 
 
@@ -24,7 +24,7 @@ Caveat
 ------
 
 uftpd is not made for secure installations, it is primarily targeted at
-home users and developers in need of a simple TFTP/FTP server.  As such
+home users and developers in need of a simple FTP/TFTP server.  As such
 it allows symlinks outside the FTP home, as well as a group writable FTP
 home directory &mdash; i.e, user-friendly features that can easily cause
 security breaches, but also very useful for people who do not care and
@@ -32,20 +32,20 @@ just want their FTP server to work.
 
 *Seriously*, we do not advise you to ignore any security aspect of your
 installation.  If security is a concern for you, consider using another
-TFTP/FTP server!
+FTP/TFTP server!
 
 That being said, a lot of care has been taken to lock down and secure
 uftpd by default.  So, if you refrain from symlinking stuff from your
 home directory and carefully set up strict permissions on that
-directory, then uftpd is likely as secrure as any other TFTP/FTP server.
+directory, then uftpd is likely as secrure as any other FTP/TFTP server.
 
 
 Download
 --------
 
-uftpd depends on two other projects to build from source, [libuEv][] and
-[lite][].  See their respective README's for details, but there should
-be no real surprises, both are configure + make and make install ...
+uftpd depend on two other projects to build from source, [libuEv][] and
+[lite][].  See their respective README's for details, there should be no
+real surprises, both use the familiar configure, make, make install.
 
 Alternatively, instead of building from source, you can try the latest
 [pre-built package][.deb] from [the FTP][] &mdash; or build and install
@@ -67,8 +67,10 @@ To change port on either FTP or TFTP, use
     $ uftpd -o ftp=PORT,tftp=PORT
 
 Set `PORT` to zero (0) to disable either service.  Use `sudo`, or set
-`CAP_NET_ADMIN` capabilities, on `uftpd` to use privileged (standard)
-ports, `< 1024`.
+`CAP_NET_BIND_SERVICE` capabilities, on `uftpd` to allow regular users
+to start `uftpd` on privileged (standard) ports, i.e. `< 1024`:
+
+    $ sudo setcap cap_net_bind_service+ep uftpd
 
 To run uftpd from the Internet super server, inetd, use the following
 two lines in `/etc/inetd.conf`, notice how `in.ftpd` and `in.tftpd` are

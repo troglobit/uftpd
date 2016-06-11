@@ -37,7 +37,7 @@ FTP/TFTP server!
 That being said, a lot of care has been taken to lock down and secure
 uftpd by default.  So, if you refrain from symlinking stuff from your
 home directory and carefully set up strict permissions on that
-directory, then uftpd is likely as secrure as any other FTP/TFTP server.
+directory, then uftpd is likely as secure as any other FTP/TFTP server.
 
 
 Download

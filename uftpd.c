@@ -315,7 +315,7 @@ int main(int argc, char **argv)
 	}
 
 	if (do_syslog) {
-		openlog(NULL, LOG_PID | LOG_NDELAY, LOG_FTP);
+		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
 		setlogmask(LOG_UPTO(loglevel));
 	}
 

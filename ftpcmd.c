@@ -413,7 +413,7 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 
 			path = compose_path(ctrl, name);
 			if (stat(path, &st)) {
-				ERR(errno, "Failed reading status for %s", path);
+				LOGIT(LOG_INFO, errno, "Failed reading status for %s", path);
 				continue;
 			}
 

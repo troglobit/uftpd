@@ -399,8 +399,10 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	dir = opendir(path);
 	while (dir) {
 		char *pos = buf;
-		size_t len = sz;
+		size_t len = sz - 1;
 		struct dirent *entry;
+
+		memset(buf, 0, sz);
 
 		DBG("Reading directory %s ...", path);
 		while ((entry = readdir(dir)) && len > 80) {
@@ -436,7 +438,9 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 			pos += strlen(pos);
 		}
 
-		send_msg(ctrl->data_sd, buf);
+		if (strlen(buf))
+			send_msg(ctrl->data_sd, buf);
+
 		if (entry)
 			continue;
 		closedir(dir);

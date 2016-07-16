@@ -9,15 +9,24 @@ EXTRA_DIST         = README.md LICENSE ChangeLog.md
 
 # Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
 install-exec-hook:
-	@for file in $(SYMLINK); do						\
-		link=$(DESTDIR)$(sbindir)/$$file;				\
-		test `readlink $$link` = "$(sbin_PROGRAMS)" && continue;	\
-		$(LN_S) $(sbin_PROGRAMS) $$link;				\
+	@for file in $(SYMLINK); do \
+		link=$(DESTDIR)$(sbindir)/$$file; \
+		test -e $$link && continue; \
+		$(LN_S) $(sbin_PROGRAMS) $$link; \
+	done
+
+# Hook in install to add uftpd.8 --> in.ftpd.8, in.tftpd.8 symlinks
+install-data-hook:
+	@for file in $(SYMLINK); do \
+		link=$(DESTDIR)$(man8dir)/$$file.8; \
+		test -e $$link && continue; \
+		$(LN_S) $(dist_man8_MANS) $$link; \
 	done
 
 uninstall-hook:
-	@for file in $(SYMLINK); do				\
-		$(RM) $(DESTDIR)$(sbindir)/$$file;		\
+	for file in $(SYMLINK); do \
+		$(RM) $(DESTDIR)$(sbindir)/$$file; \
+		$(RM) $(DESTDIR)$(man8dir)/$$file.8; \
 	done
 
 

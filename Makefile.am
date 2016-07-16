@@ -7,16 +7,6 @@ SYMLINK            = in.ftpd in.tftpd
 doc_DATA           = README.md LICENSE
 EXTRA_DIST         = README.md LICENSE ChangeLog.md
 
-# Slightly ugly hacks to prevent the build system from installing
-# libuev/libite, which it does if we use the more plain SUBDIRS.
-$(uftpd_DEPENDENCIES):
-	@$(MAKE) -C `dirname $@` all
-
-clean-local:
-	@for dep in $(uftpd_DEPENDENCIES); do		\
-		$(MAKE) -C `dirname $$dep` clean;	\
-	done
-
 # Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
 install-exec-hook:
 	@for file in $(SYMLINK); do						\

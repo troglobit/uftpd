@@ -400,15 +400,23 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	while (dir) {
 		char *pos = buf;
 		size_t len = sz - 1;
-		struct dirent *entry;
 
 		memset(buf, 0, sz);
 
 		DBG("Reading directory %s ...", path);
-		while ((entry = readdir(dir)) && len > 80) {
+		while (len > 80) {
+			char *name;
 			struct stat st;
-			char *name = entry->d_name;
+			struct dirent *entry;
 
+			entry = readdir(dir);
+			if (!entry) {
+				closedir(dir);
+				dir = NULL;
+				break;
+			}
+
+			name = entry->d_name;
 			DBG("Found directory entry %s", name);
 			if (!strcmp(name, ".") || !strcmp(name, ".."))
 				continue;
@@ -440,11 +448,6 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 
 		if (strlen(buf))
 			send_msg(ctrl->data_sd, buf);
-
-		if (entry)
-			continue;
-		closedir(dir);
-		break;
 	}
 
 	free(buf);

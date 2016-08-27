@@ -797,6 +797,11 @@ static ftp_cmd_t supported[] = {
 	{ NULL, NULL }
 };
 
+static void child_exit(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+{
+	uev_exit(w->ctx);
+}
+
 static void read_client_command(uev_t *w, void *arg, int UNUSED(events))
 {
 	char *command, *argument;
@@ -826,6 +831,8 @@ static void read_client_command(uev_t *w, void *arg, int UNUSED(events))
 
 static void ftp_command(ctrl_t *ctrl)
 {
+	uev_t sigterm_watcher;
+
 	ctrl->bufsz = BUFFER_SIZE * sizeof(char);
 	ctrl->buf   = malloc(ctrl->bufsz);
 	if (!ctrl->buf) {
@@ -836,6 +843,7 @@ static void ftp_command(ctrl_t *ctrl)
 	snprintf(ctrl->buf, ctrl->bufsz, "220 %s (%s) ready.\r\n", __progname, VERSION);
 	send_msg(ctrl->sd, ctrl->buf);
 
+	uev_signal_init(ctrl->ctx, &sigterm_watcher, child_exit, NULL, SIGTERM);
 	uev_io_init(ctrl->ctx, &ctrl->io_watcher, read_client_command, ctrl, ctrl->sd, UEV_READ);
 	uev_run(ctrl->ctx, 0);
 }

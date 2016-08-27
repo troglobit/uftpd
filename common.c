@@ -160,6 +160,11 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 			return NULL;
 		}
 
+		/*
+		 * Set process group to parent, so uftpd can call
+		 * killpg() on all of us when it exits.
+		 */
+		setpgid(0, getppid());
 		/* Create new uEv context for the child. */
 		ctx = calloc(1, sizeof(uev_ctx_t));
 		if (!ctx) {

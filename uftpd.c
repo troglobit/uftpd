@@ -100,8 +100,12 @@ static void sigquit_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
 	INFO("Recieved signal %d, exiting ...", w->signo);
 
 	/* Forward signal to any children in this process group. */
-	killpg(0, SIGTERM);
-	sched_yield();		/* Give them time to exit gracefully. */
+	if (killpg(getpgrp(), SIGTERM))
+		WARN(errno, "Failed signalling children");
+
+	/* Give them time to exit gracefully. */
+	while(wait(NULL) != -1)
+		;
 
 	/* Leave main loop. */
 	uev_exit(w->ctx);

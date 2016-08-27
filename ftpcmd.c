@@ -357,11 +357,77 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
+static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, int dirs)
+{
+	int i, num;
+	char *pos = buf;
+	size_t len = bufsz - 1;
+	struct dirent **d;
+
+	memset(buf, 0, bufsz);
+
+	DBG("Reading directory %s ...", path);
+	num = scandir(path, &d, NULL, alphasort);
+	for (i = 0; i < num; i++) {
+		char *name;
+		struct stat st;
+		struct dirent *entry = d[i];
+
+		name = entry->d_name;
+		DBG("Found directory entry %s", name);
+		if (!strcmp(name, ".") || !strcmp(name, ".."))
+			goto next;
+
+		path = compose_path(ctrl, name);
+		if (stat(path, &st)) {
+			LOGIT(LOG_INFO, errno, "Failed reading status for %s", path);
+			goto next;
+		}
+
+		if (dirs && !S_ISDIR(st.st_mode))
+			goto next;
+		if (!dirs && S_ISDIR(st.st_mode))
+			goto next;
+
+		if (nlst)
+			snprintf(pos, len, "%s", name);
+		else
+			snprintf(pos, len,
+				 "%s 1 %5d %5d %12" PRIu64 " %s %s",
+				 mode_to_str(st.st_mode),
+				 0, 0, (uint64_t)st.st_size,
+				 time_to_str(st.st_mtime), name);
+
+		if (ctrl->type == TYPE_A)
+			strlcat(pos, "\r\n", len);
+		else
+			strlcat(pos, "\n", len);
+
+		DBG("LIST %s", pos);
+		len -= strlen(pos);
+		pos += strlen(pos);
+
+		if (len < 80) {
+			if (strlen(buf))
+				send_msg(ctrl->data_sd, buf);
+			memset(buf, 0, bufsz);
+			pos = buf;
+			len = bufsz - 1;
+		}
+
+	next:
+		free(entry);
+	}
+
+	if (strlen(buf))
+		send_msg(ctrl->data_sd, buf);
+
+	free(d);
+}
+
 static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 {
-	DIR *dir;
-	char *buf;
-	char *path;
+	char *buf, *path;
 	size_t sz = BUFFER_SIZE * sizeof(char);
 
 	if (string_valid(arg)) {
@@ -395,60 +461,11 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	INFO("Established TCP socket for data communication.");
 	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
+	/* Call list() twice to list directories first, then regular files */
 	path = compose_path(ctrl, arg);
-	dir = opendir(path);
-	while (dir) {
-		char *pos = buf;
-		size_t len = sz - 1;
-
-		memset(buf, 0, sz);
-
-		DBG("Reading directory %s ...", path);
-		while (len > 80) {
-			char *name;
-			struct stat st;
-			struct dirent *entry;
-
-			entry = readdir(dir);
-			if (!entry) {
-				closedir(dir);
-				dir = NULL;
-				break;
-			}
-
-			name = entry->d_name;
-			DBG("Found directory entry %s", name);
-			if (!strcmp(name, ".") || !strcmp(name, ".."))
-				continue;
-
-			path = compose_path(ctrl, name);
-			if (stat(path, &st)) {
-				LOGIT(LOG_INFO, errno, "Failed reading status for %s", path);
-				continue;
-			}
-
-			if (nlst)
-				snprintf(pos, len, "%s", name);
-			else
-				snprintf(pos, len,
-					 "%s 1 %5d %5d %12" PRIu64 " %s %s",
-					 mode_to_str(st.st_mode),
-					 0, 0, (uint64_t)st.st_size,
-					 time_to_str(st.st_mtime), name);
-
-			if (ctrl->type == TYPE_A)
-				strlcat(pos, "\r\n", len);
-			else
-				strlcat(pos, "\n", len);
-
-			DBG("LIST %s", pos);
-			len -= strlen(pos);
-			pos += strlen(pos);
-		}
-
-		if (strlen(buf))
-			send_msg(ctrl->data_sd, buf);
-	}
+	list(ctrl, path, nlst, buf, sz, 1);
+	path = compose_path(ctrl, arg);
+	list(ctrl, path, nlst, buf, sz, 0);
 
 	free(buf);
 	close_data_connection(ctrl);

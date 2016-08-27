@@ -9,26 +9,24 @@ Features
 --------
 
 * FTP and/or TFTP
-* No configuration file
+* No complex configuration file
 * Runs from standard UNIX inetd, or standalone
-* Listens to `ftp/tcp` and `tftp/udp` found in `/etc/services`
-* Serves files from the ftp user's `$HOME`, found in `/etc/passwd`
-* Privilege separation, drops root privileges before serving files
-* Possible to use symlinks outside of the home directory (*insecure* but
-  user friendly)
-* Possible to use group writable home directory (*insecure* but again
-  user friendly)
+* Uses `ftp` user's `$HOME`, from `/etc/passwd`, or custom path
+* Uses `ftp/tcp` and `tftp/udp` from `/etc/services`, or custom ports
+* Privilege separation, drops root privileges having bound to ports
+* Possible to use symlinks outside of the FTP home directory
+* Possible to have group writable FTP home directory
 
 
 Caveat
 ------
 
-uftpd is not made for secure installations, it is primarily targeted at
-home users and developers in need of a simple FTP/TFTP server.  As such
-it allows symlinks outside the FTP home, as well as a group writable FTP
-home directory &mdash; i.e, user-friendly features that can easily cause
-security breaches, but also very useful for people who do not care and
-just want their FTP server to work.
+uftpd is primarily not targetted at secure installations, it is targeted
+at home users and developers in need of a simple FTP/TFTP server.  uftpd
+allows symlinks to outside the FTP home, as well as a group writable FTP
+home directory &mdash; user-friendly features that potentially can cause
+security breaches, but also very useful for people who just want their
+FTP server to work.
 
 *Seriously*, we do not advise you to ignore any security aspect of your
 installation.  If security is a concern for you, consider using another
@@ -36,8 +34,8 @@ FTP/TFTP server!
 
 That being said, a lot of care has been taken to lock down and secure
 uftpd by default.  So, if you refrain from symlinking stuff from your
-home directory and carefully set up strict permissions on that
-directory, then uftpd is likely as secure as any other FTP/TFTP server.
+home directory and take care to set up strict permissions, then uftpd is
+likely as secure as any other FTP/TFTP server.
 
 
 Download

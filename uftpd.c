@@ -18,6 +18,7 @@
 #include "uftpd.h"
 
 /* Global daemon settings */
+char *prognm      = PACKAGE_NAME;
 char *home        = NULL;
 int   inetd       = 0;
 int   background  = 1;
@@ -45,12 +46,12 @@ static int version(void)
 
 static int usage(int code)
 {
-	int is_inetd = string_match(__progname, "in.");
+	int is_inetd = string_match(prognm, "in.");
 
 	if (is_inetd)
-		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", __progname);
+		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", prognm);
 	else
-		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]\n\n", __progname);
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]\n\n", prognm);
 
 	printf("  -h         Show this help text\n"
 	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");
@@ -228,6 +229,19 @@ static int serve_files(uev_ctx_t *ctx)
 	return uev_run(ctx, 0);
 }
 
+static char *progname(char *arg0)
+{
+       char *nm;
+
+       nm = strrchr(arg0, '/');
+       if (nm)
+	       nm++;
+       else
+	       nm = arg0;
+
+       return nm;
+}
+
 int main(int argc, char **argv)
 {
 	int c;
@@ -243,6 +257,7 @@ int main(int argc, char **argv)
 	};
 	uev_ctx_t ctx;
 
+	prognm = progname(argv[0]);
 	while ((c = getopt(argc, argv, "hl:no:sv")) != EOF) {
 		switch (c) {
 		case 'h':
@@ -304,13 +319,13 @@ int main(int argc, char **argv)
 		home = strdup(argv[optind]);
 
 	/* Inetd mode enforces foreground and syslog */
-	if (string_compare(__progname, "in.tftpd")) {
+	if (string_compare(prognm, "in.tftpd")) {
 		inetd      = 1;
 		do_ftp     = 0;
 		do_tftp    = 1;
 		background = 0;
 		do_syslog  = 1;
-	} else if (string_compare(__progname, "in.ftpd")) {
+	} else if (string_compare(prognm, "in.ftpd")) {
 		inetd      = 1;
 		do_ftp     = 1;
 		do_tftp    = 0;
@@ -319,7 +334,7 @@ int main(int argc, char **argv)
 	}
 
 	if (do_syslog) {
-		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
+		openlog(prognm, LOG_PID | LOG_NDELAY, LOG_FTP);
 		setlogmask(LOG_UPTO(loglevel));
 	}
 

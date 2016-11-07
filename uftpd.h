@@ -88,7 +88,7 @@
 #define INFO(fmt, args...)       LOGIT(LOG_INFO, 0, fmt, ##args)
 #define DBG(fmt, args...)        LOGIT(LOG_DEBUG, 0, fmt, ##args)
 
-extern char *__progname;
+extern char *prognm;
 extern char *home;		/* Server root/home directory       */
 extern int   inetd;             /* Bool: conflicts with daemonize   */
 extern int   background;	/* Bool: conflicts with inetd       */

@@ -840,7 +840,7 @@ static void ftp_command(ctrl_t *ctrl)
                 exit(1);
 	}
 
-	snprintf(ctrl->buf, ctrl->bufsz, "220 %s (%s) ready.\r\n", __progname, VERSION);
+	snprintf(ctrl->buf, ctrl->bufsz, "220 %s (%s) ready.\r\n", prognm, VERSION);
 	send_msg(ctrl->sd, ctrl->buf);
 
 	uev_signal_init(ctrl->ctx, &sigterm_watcher, child_exit, NULL, SIGTERM);

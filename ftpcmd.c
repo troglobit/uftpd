@@ -281,10 +281,6 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	char *dir = compose_path(ctrl, path);
 
 	if (chdir(dir)) {
-		if (!fexist(dir))
-			WARN(errno, "Client from %s tried to change to non existing dir %s", ctrl->clientaddr, dir);
-		else
-			DBG("Client from %s tried to CWD to a file %s", ctrl->clientaddr, dir);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}
@@ -293,7 +289,6 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 		strlcpy(ctrl->cwd, dir + strlen(home), sizeof(ctrl->cwd));
 	else
 		strlcpy(ctrl->cwd, dir, sizeof(ctrl->cwd));
-	DBG("Saved new CWD: %s", ctrl->cwd);
 
 	send_msg(ctrl->sd, "250 OK\r\n");
 }
@@ -569,7 +564,8 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 
 	fp = fopen(path, "rb");
 	if (!fp) {
-		ERR(errno, "Failed opening file %s for RETR", path);
+		if (errno != ENOENT)
+			ERR(errno, "Failed opening file %s for RETR", path);
 		free(buf);
 		send_msg(ctrl->sd, "451 Trouble to RETR file.\r\n");
 		return;
@@ -603,7 +599,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	if (result) {
 		send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
 	} else {
-		LOG("User %s from %s downloaded file %s", ctrl->name, ctrl->clientaddr, path);
+		INFO("User %s from %s downloaded file %s", ctrl->name, ctrl->clientaddr, path);
 		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 	}
 
@@ -659,7 +655,7 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 	if (result) {
 		send_msg(ctrl->sd, "426 TCP connection was established but then broken\r\n");
 	} else {
-		LOG("User %s at %s uploaded file %s/%s", ctrl->name, ctrl->clientaddr, ctrl->cwd, path);
+		INFO("User %s at %s uploaded file %s/%s", ctrl->name, ctrl->clientaddr, ctrl->cwd, path);
 		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 	}
 

@@ -3,9 +3,9 @@
 
 db_title uftpd
 
-db_input high uftpd/ftp || true
+db_input critical uftpd/ftp || true
 db_go
 
-db_input high uftpd/tftp || true
+db_input critical uftpd/tftp || true
 db_go
 

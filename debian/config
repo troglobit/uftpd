@@ -1,7 +1,7 @@
 #!/bin/sh -e
 . /usr/share/debconf/confmodule
 
-db_settitle uftpd/title
+db_title uftpd
 
 db_input high uftpd/ftp || true
 db_go

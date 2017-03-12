@@ -565,7 +565,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	fp = fopen(path, "rb");
 	if (!fp) {
 		if (errno != ENOENT)
-			ERR(errno, "Failed opening file %s for RETR", path);
+			ERR(errno, "%s: Failed opening file %s for RETR", ctrl->clientaddr, path);
 		free(buf);
 		send_msg(ctrl->sd, "451 Trouble to RETR file.\r\n");
 		return;

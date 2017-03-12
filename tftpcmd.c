@@ -181,7 +181,7 @@ static int handle_RRQ(ctrl_t *ctrl)
 
 	ctrl->fp = fopen(path, "r");
 	if (!ctrl->fp) {
-		ERR(errno, "Failed opening %s", path);
+		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
 		return send_ERROR(ctrl, ENOTFOUND);
 	}
 

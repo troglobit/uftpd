@@ -1,3 +1,9 @@
+uftpd (2.2-2) stable; urgency=low
+
+  * Add debconf support
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 12 Mar 2017 19:58:00 +0100
+
 uftpd (2.2-1) stable; urgency=low
 
   * New upstream release, v2.2

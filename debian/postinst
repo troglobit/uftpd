@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
 FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	/usr/sbin/in.ftpd"
 TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	/usr/sbin/in.tftpd"
 
@@ -17,8 +20,10 @@ if grep -q '[[:blank:]]/usr/sbin/uftpd.*' /etc/inetd.conf 2>/dev/null; then
 	update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
 fi
 
-update-inetd --group STANDARD --add "$FTPENTRY"
-update-inetd --group STANDARD --add "$TFTPENTRY"
+db_get uftpd/ftp
+[ "$RET" = "true" ] && update-inetd --group STANDARD --add "$FTPENTRY"
+db_get uftpd/tftp
+[ "$RET" = "true" ] && update-inetd --group STANDARD --add "$TFTPENTRY"
 
 if ! grep -q "^ftp:" /etc/passwd; then
 	addgroup --quiet --system ftp

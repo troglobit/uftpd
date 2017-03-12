@@ -2,7 +2,12 @@
 
 set -e
 
-update-inetd --pattern '/usr/sbin/in.ftpd' --multi --disable ftp
-update-inetd --pattern '/usr/sbin/in.tftpd' --multi --disable tftp
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+db_get uftpd/ftp
+[ "$RET" = "true" ] && update-inetd --pattern '/usr/sbin/in.ftpd' --multi --disable ftp
+db_get uftpd/tftp
+[ "$RET" = "true" ] && update-inetd --pattern '/usr/sbin/in.tftpd' --multi --disable tftp
 
 #DEBHELPER#

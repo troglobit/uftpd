@@ -1,0 +1,12 @@
+Template: uftpd/ftp
+Type: boolean
+Default: true
+Description: Enable FTP service
+
+Template: uftpd/tftp
+Type: boolean
+Default: true
+Description: Enable TFTP service
+ It is recommended to disable TFTP if running uftpd on the
+ Internet, otherwise your logs will fill up quickly.
+

@@ -22,6 +22,7 @@ install: build
 
 binary-indep: build install
 	dh_installdocs
+	dh_installdebconf
 	dh_installman
 	dh_installchangelogs
 
@@ -31,6 +32,7 @@ binary-arch: build install
 	rm -f debian/uftpd/usr/share/doc/uftpd/ChangeLog.md
 	dh_compress
 	dh_fixperms
+	dh_installdebconf
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol

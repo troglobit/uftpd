@@ -1,13 +1,11 @@
 #!/bin/sh -e
-
-# Source debconf library.
 . /usr/share/debconf/confmodule
 
-# Want FTP?
+db_settitle uftpd/title
+
 db_input high uftpd/ftp || true
 db_go
 
-# Want TFTP?
 db_input high uftpd/tftp || true
 db_go
 

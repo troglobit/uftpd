@@ -31,8 +31,7 @@ uninstall-hook:
 
 
 package build-deb:
-	gbp buildpackage --git-ignore-new --git-ignore-branch			 \
-			 --git-no-create-orig --git-upstream-branch=master
+	dpkg-buildpackage -uc -us -B
 
 ## Target to run when building a release
 ## Temprarily removed: build-deb

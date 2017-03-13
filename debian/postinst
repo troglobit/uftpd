@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+[ "$1" = "configure" ] || exit 0
+
 # Source debconf library.
 . /usr/share/debconf/confmodule
 

@@ -137,10 +137,26 @@ static int find_port(char *service, char *proto, int fallback)
 	return port;
 }
 
-static void init(uev_ctx_t *ctx)
+/*
+ * Check that we don't have write access to the FTP root
+ */
+static int security_check(char *home)
 {
-	uev_init(ctx);
+	if (access(home, F_OK)) {
+		ERR(errno, "Cannot access FTP root %s: %s", home);
+		return 1;
+	}
 
+	if (access(home, W_OK)) {
+		ERR(0, "FTP root %s writable, possible security violation!", home);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int init(uev_ctx_t *ctx)
+{
 	/* Figure out FTP/TFTP ports */
 	if (do_ftp == 1)
 		do_ftp  = find_port(FTP_SERVICE_NAME, FTP_PROTO_NAME, FTP_DEFAULT_PORT);
@@ -151,13 +167,18 @@ static void init(uev_ctx_t *ctx)
 	if (!home) {
 		pw = getpwnam(FTP_DEFAULT_USER);
 		if (!pw) {
-			home = strdup(FTP_DEFAULT_HOME);
 			WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
 			     FTP_DEFAULT_USER, home);
+			home = strdup(FTP_DEFAULT_HOME);
 		} else {
 			home = strdup(pw->pw_dir);
 		}
 	}
+
+	if (security_check(home))
+		return 1;
+
+	return uev_init(ctx);
 }
 
 static void ftp_cb(uev_t *w, void *arg, int UNUSED(events))
@@ -339,7 +360,10 @@ int main(int argc, char **argv)
 	}
 
 	DBG("Initializing ...");
-	init(&ctx);
+	if (init(&ctx)) {
+		ERR(0, "Failed initializing, exiting.");
+		return 1;
+	}
 
 	if (inetd) {
 		pid_t pid;

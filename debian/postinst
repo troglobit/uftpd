@@ -32,9 +32,9 @@ if ! grep -q "^ftp:" /etc/passwd; then
 	adduser --quiet --system --disabled-login --home /srv/ftp --ingroup ftp ftp || true
 fi
 
-# Adjust for any previous server, users wanting to share files with
-# TFTP/FTP should be in the ftp group
-chown --changes ftp:ftp /srv/ftp
-chmod --changes 0775 /srv/ftp
+# Adjust for any previous server, users wanting to share files using
+# TFTP/FTP should be in the users group
+chown --changes ftp:users /srv/ftp
+chmod --changes 0575      /srv/ftp
 
 update-inetd --pattern '/usr/sbin/in.*ftpd' --enable ".*ftp"

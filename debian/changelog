@@ -1,8 +1,16 @@
-uftpd (2.2-2) stable; urgency=low
+uftpd (2.2-3) stable; urgency=low
 
   * Add debconf support
+  * Change default group and permissions of /srv/ftp to prevent any
+    future "security" breaches by uploads to the FTP root directory.
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sun, 12 Mar 2017 19:58:00 +0100
+    A user must now be member of the users group to share files over
+    TFTP/FTP.  Simply add a user to 'users' and they can upload their
+    files to /srv/ftp.  The TFT/FTP server itself has no rights to
+    write there.  Add an uploads/ sub-directory with write perms for
+    the 'ftp' user if you want to enable anonymous uploads via FTP.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 13 Mar 2017 19:56:00 +0100
 
 uftpd (2.2-1) stable; urgency=low
 

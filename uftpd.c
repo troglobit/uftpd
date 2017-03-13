@@ -25,6 +25,7 @@ int   background  = 1;
 int   do_syslog   = 1;
 int   do_ftp      = FTP_DEFAULT_PORT;
 int   do_tftp     = TFTP_DEFAULT_PORT;
+int   do_insecure = 0;
 pid_t tftp_pid    = 0;
 struct passwd *pw = NULL;
 
@@ -60,6 +61,7 @@ static int usage(int code)
 		       "  -o OPT     Options:\n"
 		       "                      ftp=PORT\n"
 		       "                      tftp=PORT\n"
+		       "                      writable\n"
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
 
 	printf("  -v         Show program version\n\n");
@@ -138,7 +140,8 @@ static int find_port(char *service, char *proto, int fallback)
 }
 
 /*
- * Check that we don't have write access to the FTP root
+ * Check that we don't have write access to the FTP root,
+ * unless explicitly allowed
  */
 static int security_check(char *home)
 {
@@ -147,7 +150,7 @@ static int security_check(char *home)
 		return 1;
 	}
 
-	if (access(home, W_OK)) {
+	if (!do_insecure && access(home, W_OK)) {
 		ERR(0, "FTP root %s writable, possible security violation!", home);
 		return 1;
 	}
@@ -269,11 +272,13 @@ int main(int argc, char **argv)
 	enum {
 		FTP_OPT = 0,
 		TFTP_OPT,
+		SEC_OPT,
 	};
 	char *subopts;
 	char *const token[] = {
-		[FTP_OPT]   = "ftp",
-		[TFTP_OPT]  = "tftp",
+		[FTP_OPT]  = "ftp",
+		[TFTP_OPT] = "tftp",
+		[SEC_OPT]  = "writable",
 		NULL
 	};
 	uev_ctx_t ctx;
@@ -315,6 +320,10 @@ int main(int argc, char **argv)
 						return usage(1);
 					}
 					do_tftp = atoi(value);
+					break;
+
+				case SEC_OPT:
+					do_insecure = 1;
 					break;
 
 				default:

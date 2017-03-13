@@ -48,6 +48,21 @@ real surprises, both use the familiar configure, make, make install.
 See below if you want to contribute.
 
 
+Building
+--------
+
+uftpd, as well as its dependencys, can be built as `.deb` packages on
+Debian or Ubuntu based distributions.  Simply download each source
+component and run
+
+    ./autogen.sh      <--- Only needed if using GIT sources
+    ./configure
+    make package
+
+If you are using a different Linux or UNIX distribution, check the
+output from `./configure --help`, followed by `make all install`.
+
+
 Running
 -------
 

@@ -22,10 +22,22 @@ if grep -q '[[:blank:]]/usr/sbin/uftpd.*' /etc/inetd.conf 2>/dev/null; then
 	update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
 fi
 
+update-inetd --group STANDARD --add "$FTPENTRY"
+update-inetd --group STANDARD --add "$TFTPENTRY"
+
 db_get uftpd/ftp
-[ "$RET" = "true" ] && update-inetd --group STANDARD --add "$FTPENTRY"
+if [ "$RET" = "true" ]; then
+    update-inetd --enable ftp
+else
+    update-inetd --disable ftp
+fi
+
 db_get uftpd/tftp
-[ "$RET" = "true" ] && update-inetd --group STANDARD --add "$TFTPENTRY"
+if [ "$RET" = "true" ]; then
+    update-inetd --enable tftp
+else
+    update-inetd --disable tftp
+fi
 
 if ! grep -q "^ftp:" /etc/passwd; then
 	addgroup --quiet --system ftp
@@ -36,5 +48,3 @@ fi
 # TFTP/FTP should be in the users group
 chown --changes ftp:users /srv/ftp
 chmod --changes 0575      /srv/ftp
-
-update-inetd --pattern '/usr/sbin/in.*ftpd' --enable ".*ftp"

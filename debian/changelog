@@ -1,3 +1,10 @@
+uftpd (2.2-4) stable; urgency=low
+
+  * Fix dpkg-reconfigure support.  When disabling either TFTP/FTP
+    the disabled service was not properly disabled in /etc/inetd.conf
+
+-- Joachim Nilsson <troglobit@gmail.com>  Sun, 14 Mar 2017 22:05:00 +0100
+
 uftpd (2.2-3) stable; urgency=low
 
   * Add debconf support

@@ -8,19 +8,19 @@ All notable changes to the project are documented in this file.
 ---------------------
 
 ### Changes
-- Sort directories first in FTP LIST command
+- Sort directories first in FTP `LIST` command
 - Make sure to exit all lingering FTP sessions on exit
 - Logging: reduced verbosity of common FTP commands
 - Logging: show client address on failed file retrieval
-- Full Debian/Ubuntuy .deb build support, including debconf,
+- Full Debian/Ubuntu `.deb` build support, including debconf,
   asking user what services (FTP and/or TFTP) to run.
 - Verify FTP/TFTP root directory is not writable by default
 - New option to allow writable FTP/TFTP root, disabled by default
 
 ### Fixes
 - Fix FTP directory listings, was off-by-one, one entry missing
-- Issue #7: Spelling error in README
-- Issue #8: Install missing symlinks for in.ftpd.8 and in.tftpd.8
+- Issue #7: Spelling error in `README.md`
+- Issue #8: Install missing symlinks for `in.ftpd.8` and `in.tftpd.8`
 
 
 [v2.1][] - 2016-06-05

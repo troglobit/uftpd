@@ -39,9 +39,12 @@ else
     update-inetd --disable tftp
 fi
 
+# Redirect errors from adduser since 1) user may exist already,
+# 2) directory may exist and not be writable by user.  Ignore.
 if ! grep -q "^ftp:" /etc/passwd; then
 	addgroup --quiet --system ftp
-	adduser --quiet --system --disabled-login --home /srv/ftp --ingroup ftp ftp || true
+	adduser --quiet --system --disabled-login --home /srv/ftp \
+		--ingroup ftp ftp 2>/dev/null || true
 fi
 
 # Adjust for any previous server, users wanting to share files using

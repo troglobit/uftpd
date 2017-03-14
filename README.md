@@ -61,6 +61,14 @@ component and run
 
 If you are using a different Linux or UNIX distribution, check the
 output from `./configure --help`, followed by `make all install`.
+For instance, building on [Alpine Linux](https://alpinelinux.org/):
+
+    PKG_CONFIG_LIBDIR=/usr/local/lib/pkgconfig ./configure \
+	    --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+
+Provided the library dependencies were installed in `/usr/local/`.  This
+`PKG_CONFIG_LIBDIR` trick may be needed on other GNU/Linux, or UNIX,
+distributions as well.
 
 
 Running

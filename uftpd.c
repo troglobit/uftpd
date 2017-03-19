@@ -375,13 +375,19 @@ int main(int argc, char **argv)
 	}
 
 	if (inetd) {
+		int sd;
 		pid_t pid;
 
 		INFO("Started from inetd, serving files from %s ...", home);
+
+		/* Ensure socket is non-blocking */
+		sd = STDIN_FILENO;
+		(void)fcntl(sd, F_SETFL, fcntl(sd, F_GETFL, 0) | O_NONBLOCK);
+
 		if (do_tftp)
-			pid = tftp_session(&ctx, STDIN_FILENO);
+			pid = tftp_session(&ctx, sd);
 		else
-			pid = ftp_session(&ctx, STDIN_FILENO);
+			pid = ftp_session(&ctx, sd);
 
 		if (-1 == pid)
 			return 1;

@@ -555,6 +555,12 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	char *buf;
 	char *path = compose_path(ctrl, file);
 	size_t len = BUFFER_SIZE * sizeof(char);
+	struct stat st;
+
+	if (stat(path, &st) || !S_ISREG(st.st_mode)) {
+		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
+		return;
+	}
 
 	buf = malloc(len);
 	if (!buf) {

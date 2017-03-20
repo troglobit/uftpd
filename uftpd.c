@@ -170,9 +170,9 @@ static int init(uev_ctx_t *ctx)
 	if (!home) {
 		pw = getpwnam(FTP_DEFAULT_USER);
 		if (!pw) {
+			home = strdup(FTP_DEFAULT_HOME);
 			WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
 			     FTP_DEFAULT_USER, home);
-			home = strdup(FTP_DEFAULT_HOME);
 		} else {
 			home = strdup(pw->pw_dir);
 		}

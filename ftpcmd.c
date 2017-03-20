@@ -701,9 +701,37 @@ static void handle_RMD(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
 }
 #endif
 
+static size_t num_nl(char *file)
+{
+	FILE *fp;
+	char buf[80];
+	size_t len, num = 0;
+
+	fp = fopen(file, "r");
+	if (!fp)
+		return 0;
+
+	do {
+		char *ptr = buf;
+
+		len = fread(buf, sizeof(char), sizeof(buf) - 1, fp);
+		if (len > 0) {
+			buf[len] = 0;
+			while ((ptr = strchr(ptr, '\n'))) {
+				ptr++;
+				num++;
+			}
+		}
+	} while (len > 0);
+	fclose(fp);
+
+	return num;
+}
+
 static void handle_SIZE(ctrl_t *ctrl, char *file)
 {
 	char *path = compose_path(ctrl, file);
+	size_t extralen = 0;
 	struct stat st;
 
 	DBG("SIZE %s", path);
@@ -713,7 +741,10 @@ static void handle_SIZE(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	sprintf(path, "213 %"  PRIu64 "\r\n", (uint64_t)st.st_size);
+	if (ctrl->type == TYPE_A)
+		extralen = num_nl(file);
+
+	sprintf(path, "213 %"  PRIu64 "\r\n", (uint64_t)(st.st_size + extralen));
 	send_msg(ctrl->sd, path);
 }
 

@@ -614,6 +614,23 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	free(buf);
 }
 
+static void handle_MDTM(ctrl_t *ctrl, char *file)
+{
+	char buf[80];
+	char *path = compose_path(ctrl, file);
+	struct tm *tm;
+	struct stat st;
+
+	if (stat(path, &st) || !S_ISREG(st.st_mode)) {
+		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
+		return;
+	}
+
+	tm = gmtime(&st.st_mtime);
+	strftime(buf, sizeof(buf), "213 %Y%m%d%H%M%S\r\n", tm);
+	send_msg(ctrl->sd, buf);
+}
+
 static void handle_STOR(ctrl_t *ctrl, char *file)
 {
 	int result = 0;
@@ -783,6 +800,7 @@ static ftp_cmd_t supported[] = {
 	COMMAND(TYPE),
 	COMMAND(PORT),
 	COMMAND(RETR),
+	COMMAND(MDTM),
 	COMMAND(PASV),
 	COMMAND(QUIT),
 	COMMAND(LIST),

@@ -146,7 +146,7 @@ static int find_port(char *service, char *proto, int fallback)
 static int security_check(char *home)
 {
 	if (access(home, F_OK)) {
-		ERR(errno, "Cannot access FTP root %s: %s", home);
+		ERR(errno, "Cannot access FTP root %s", home);
 		return 1;
 	}
 

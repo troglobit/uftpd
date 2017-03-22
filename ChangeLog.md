@@ -4,6 +4,26 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.3][] - 2017-03-22
+---------------------
+
+Bug fix release.
+
+### Changes
+- Add support for `MDTM`, modify time, some clients rely this
+- Add support for correct `SIZE` when in ASCII mode
+- Add basic code of conduct to project
+- Add contributing guidelines, automatically referenced by GitHub
+  when filing a bug report or pull request
+
+### Fixes
+- Fix 100% CPU bug caused by `RETR` of non-regular file or directory
+- Fix segfault on missing FTP home
+- Fix ordering issue in fallback FTP user handling, introduced in v2.2
+- Fix error message on `CWD` to non-directory
+- Fix `.deb` generation and debconf installation/reconfigure issues
+
+
 [v2.2][] - 2017-03-14
 ---------------------
 
@@ -309,7 +329,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.2...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.3...HEAD
+[v2.2]:          https://github.com/troglobit/uftpd/compare/v2.2...v2.3
 [v2.2]:          https://github.com/troglobit/uftpd/compare/v2.1...v2.2
 [v2.1]:          https://github.com/troglobit/uftpd/compare/v2.0.2...v2.1
 [v2.0.2]:        https://github.com/troglobit/uftpd/compare/v2.0.1...v2.0.2

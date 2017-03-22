@@ -1,3 +1,10 @@
+uftpd (2.3-1) stable; urgency=low
+
+  * New upstream release, fixes issue with lingering inetd FTP processes
+    using up 100% CPU.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Wed, 22 Mar 2017 07:56:00 +0100
+
 uftpd (2.2-4) stable; urgency=low
 
   * Fix dpkg-reconfigure support.  When disabling either TFTP/FTP

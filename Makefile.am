@@ -29,7 +29,6 @@ uninstall-hook:
 		$(RM) $(DESTDIR)$(man8dir)/$$file.8; \
 	done
 
-
 package build-deb:
 	dpkg-buildpackage -uc -us -B
 

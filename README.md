@@ -1,6 +1,6 @@
 No Nonsense FTP/TFTP Server
 ===========================
-[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
+[![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 uftpd is a UNIX daemon with sane built-in defaults.  It just works.
 
@@ -119,6 +119,8 @@ complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
 [Finit]:           https://github.com/troglobit/finit
 [lite]:            https://github.com/troglobit/libite
 [libuEv]:          https://github.com/troglobit/libuev
+[License]:         https://en.wikipedia.org/wiki/ISC_license
+[License Badge]:   https://img.shields.io/badge/License-ISC-blue.svg
 [Travis]:          https://travis-ci.org/troglobit/uftpd
 [Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/2947

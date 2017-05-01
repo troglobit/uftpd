@@ -278,8 +278,9 @@ static void handle_PWD(ctrl_t *ctrl, char *UNUSED(arg))
 
 static void handle_CWD(ctrl_t *ctrl, char *path)
 {
-	char *dir = compose_path(ctrl, path);
+	char *dir;
 
+	dir = compose_path(ctrl, path);
 	if (chdir(dir)) {
 		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;

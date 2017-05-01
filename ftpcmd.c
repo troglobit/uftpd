@@ -286,10 +286,14 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 		return;
 	}
 
-	if (!chrooted)
-		strlcpy(ctrl->cwd, dir + strlen(home), sizeof(ctrl->cwd));
-	else
-		strlcpy(ctrl->cwd, dir, sizeof(ctrl->cwd));
+	if (!chrooted) {
+		size_t len = strlen(home);
+
+		while (len > 0 && dir[len] != '/')
+			len--;
+		dir += len;
+	}
+	strlcpy(ctrl->cwd, dir, sizeof(ctrl->cwd));
 
 	send_msg(ctrl->sd, "250 OK\r\n");
 }

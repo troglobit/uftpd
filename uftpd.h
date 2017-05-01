@@ -63,8 +63,8 @@
 /* XXX: What's a "good" buffer size, 4096? */
 #define BUFFER_SIZE       1000
 
-/* This is a stupid server, it doesn't expect >20 sec inactivity */
-#define INACTIVITY_TIMER  20 * 1000
+/* This is a stupid server, it doesn't expect >3 min inactivity */
+#define INACTIVITY_TIMER  180 * 1000
 
 /* TFTP Packet Types (New) */
 #define OACK              06	/* option acknowledgement */

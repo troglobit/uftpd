@@ -32,16 +32,20 @@ int chrooted = 0;
  */
 static void squash_dots(char *path)
 {
-	char *dots, *ptr;
+	char *dots, *ptr, *prev;
 
-	while ((dots = strstr(path, "/../"))) {
+	while ((dots = strstr(path, "/.."))) {
 		/* Walking up to parent attack */
 		if (path == dots) {
 			memmove(&path[0], &path[3], strlen(&path[3]) + 1);
 			continue;
 		}
 
-		ptr = strrchr(dots, '/');
+		/* Do cd .. */
+		ptr = NULL;
+		while ((prev = strchr(path, '/')) && prev != dots)
+			ptr = prev;
+
 		if (ptr) {
 			dots += 3;
 			memmove(ptr, dots, strlen(dots));

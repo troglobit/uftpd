@@ -116,7 +116,7 @@ static int open_data_connection(ctrl_t *ctrl)
 
 	/* Previous PORT command from client */
 	if (ctrl->data_address[0]) {
-		ctrl->data_sd = socket(AF_INET, SOCK_STREAM, 0);
+		ctrl->data_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if (-1 == ctrl->data_sd) {
 			perror("Failed creating data socket");
 			return -1;
@@ -499,7 +499,7 @@ static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
 	if (ctrl->data_listen_sd > 0)
 		close(ctrl->data_listen_sd);
 
-	ctrl->data_listen_sd = socket(AF_INET, SOCK_STREAM, 0);
+	ctrl->data_listen_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (ctrl->data_listen_sd < 0) {
 		ERR(errno, "Failed opening data server socket");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");

@@ -205,7 +205,7 @@ static int handle_ACK(ctrl_t *ctrl, int block)
 	return 0;
 }
 
-static void read_client_command(uev_t *w, void *arg, int UNUSED(events))
+static void read_client_command(uev_t *w, void *arg, int events)
 {
 	int              active = 1;
 	ctrl_t          *ctrl = (ctrl_t *)arg;

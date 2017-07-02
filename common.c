@@ -142,7 +142,7 @@ void convert_address(struct sockaddr_storage *ss, char *buf, size_t len)
 }
 
 /* Inactivity timer, bye bye */
-static void inactivity_cb(uev_t *UNUSED(w), void *arg, int UNUSED(events))
+static void inactivity_cb(uev_t *w, void *arg, int events)
 {
 	uev_ctx_t *ctx = (uev_ctx_t *)arg;
 

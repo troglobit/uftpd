@@ -1,8 +1,9 @@
 sbin_PROGRAMS      = uftpd
 dist_man8_MANS     = uftpd.8
 uftpd_SOURCES      = uftpd.c uftpd.h common.c ftpcmd.c tftpcmd.c log.c
-uftpd_CFLAGS       = -W -Wall -Wextra -std=gnu99 $(uev_CFLAGS) $(lite_CFLAGS)
-uftpd_LDADD        =  $(uev_LIBS) $(lite_LIBS)
+uftpd_CFLAGS       = -W -Wall -Wextra -Wno-unused-parameter -std=gnu99
+uftpd_CFLAGS      += $(uev_CFLAGS) $(lite_CFLAGS)
+uftpd_LDADD        = $(uev_LIBS)   $(lite_LIBS)
 SYMLINK            = in.ftpd in.tftpd
 doc_DATA           = README.md LICENSE
 EXTRA_DIST         = README.md LICENSE ChangeLog.md

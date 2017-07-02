@@ -74,7 +74,7 @@ static int usage(int code)
 /*
  * SIGCHLD: one of our children has died
  */
-static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
+static void sigchld_cb(uev_t *w, void *arg, int events)
 {
 	while (1) {
 		pid_t pid;
@@ -98,7 +98,7 @@ static void sigchld_cb(uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
 /*
  * SIGQUIT: request termination
  */
-static void sigquit_cb(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void sigquit_cb(uev_t *w, void *arg, int events)
 {
 	INFO("Recieved signal %d, exiting ...", w->signo);
 
@@ -184,7 +184,7 @@ static int init(uev_ctx_t *ctx)
 	return uev_init(ctx);
 }
 
-static void ftp_cb(uev_t *w, void *arg, int UNUSED(events))
+static void ftp_cb(uev_t *w, void *arg, int events)
 {
         int client;
 
@@ -197,7 +197,7 @@ static void ftp_cb(uev_t *w, void *arg, int UNUSED(events))
         ftp_session(arg, client);
 }
 
-static void tftp_cb(uev_t *w, void *arg, int UNUSED(events))
+static void tftp_cb(uev_t *w, void *arg, int events)
 {
 	uev_io_stop(w);
 

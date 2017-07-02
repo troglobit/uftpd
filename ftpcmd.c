@@ -235,7 +235,7 @@ static void handle_PASS(ctrl_t *ctrl, char *pass)
 	send_msg(ctrl->sd, "230 Guest login OK, access restrictions apply.\r\n");
 }
 
-static void handle_SYST(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_SYST(ctrl_t *ctrl, char *arg)
 {
 	char system[] = "215 UNIX Type: L8\r\n";
 
@@ -268,7 +268,7 @@ static void handle_TYPE(ctrl_t *ctrl, char *argument)
 	send_msg(ctrl->sd, type);
 }
 
-static void handle_PWD(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_PWD(ctrl_t *ctrl, char *arg)
 {
 	char buf[300];
 
@@ -483,7 +483,7 @@ static void handle_NLST(ctrl_t *ctrl, char *arg)
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
-static void handle_PASV(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_PASV(ctrl_t *ctrl, char *arg)
 {
 	int port;
 	char *msg, *p, buf[200];
@@ -693,15 +693,15 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 }
 
 #if 0
-static void handle_DELE(ctrl_t *UNUSED(ctrl), char *UNUSED(file))
+static void handle_DELE(ctrl_t *ctrl, char *file)
 {
 }
 
-static void handle_MKD(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
+static void handle_MKD(ctrl_t *ctrl, char *arg)
 {
 }
 
-static void handle_RMD(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
+static void handle_RMD(ctrl_t *ctrl, char *arg)
 {
 }
 #endif
@@ -754,33 +754,33 @@ static void handle_SIZE(ctrl_t *ctrl, char *file)
 }
 
 /* No operation - used as session keepalive by clients. */
-static void handle_NOOP(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_NOOP(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "200 NOOP OK.\r\n");
 }
 
 #if 0
-static void handle_RNFR(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
+static void handle_RNFR(ctrl_t *ctrl, char *arg)
 {
 }
 
-static void handle_RNTO(ctrl_t *UNUSED(ctrl), char *UNUSED(arg))
+static void handle_RNTO(ctrl_t *ctrl, char *arg)
 {
 }
 #endif
 
-static void handle_QUIT(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_QUIT(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "221 Goodbye.\r\n");
 	uev_exit(ctrl->ctx);
 }
 
-static void handle_CLNT(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_CLNT(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "200 CLNT\r\n");
 }
 
-static void handle_OPTS(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_OPTS(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
 }
@@ -809,7 +809,7 @@ static void handle_HELP(ctrl_t *ctrl, char *arg)
 	send_msg(ctrl->sd, ctrl->buf);
 }
 
-static void handle_FEAT(ctrl_t *ctrl, char *UNUSED(arg))
+static void handle_FEAT(ctrl_t *ctrl, char *arg)
 {
 	snprintf(ctrl->buf, ctrl->bufsz, "211-Features:\r\n"
 		" PASV\r\n"
@@ -853,12 +853,12 @@ static ftp_cmd_t supported[] = {
 	{ NULL, NULL }
 };
 
-static void child_exit(uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void child_exit(uev_t *w, void *arg, int events)
 {
 	uev_exit(w->ctx);
 }
 
-static void read_client_command(uev_t *w, void *arg, int UNUSED(events))
+static void read_client_command(uev_t *w, void *arg, int events)
 {
 	char *command, *argument;
 	ctrl_t *ctrl = (ctrl_t *)arg;

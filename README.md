@@ -82,8 +82,9 @@ Set `PORT` to zero (0) to disable either service.
 Running from inetd
 ------------------
 
-Rarely used services like FTP/TFTP on a developer laptop are good
-candidates to run from the Internet super server, inetd¹!
+Rarely used services like FTP/TFTP are good candidates to run from the
+Internet super server, inetd.  On Debian and Ubuntu based distributions
+we recommend `openbsd-inetd`.
 
 Use the following two lines in `/etc/inetd.conf`, notice how `in.ftpd`
 and `in.tftpd` are symlinks to the `uftpd` binary:
@@ -97,9 +98,6 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 
     inetd ftp/tcp   nowait /usr/sbin/in.ftpd  -- The uftpd FTP server
     inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
-
-____
-¹ Recommended inetd: [apt:openbsd-inetd](apt:openbsd-inetd)
 
 
 Build & Install

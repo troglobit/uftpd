@@ -4,6 +4,22 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.4][] - 2017-09-03
+---------------------
+
+Bug fix release.
+
+### Changes
+- Handle non-chrooted use-cases better, ensure CWD starts with /
+- Increased default inactivty timer: 20 sec --> 180 sec
+- Ensure FTP `PASV` and `PORT` sockets are set non-blocking to prevent
+  blocking the event loop
+- [README.md][] updates, add usage section and improve build + install
+
+### Fixes
+- Fix 100% CPU issue.  Triggered sometimes when a user issued `CWD ..`
+
+
 [v2.3][] - 2017-03-22
 ---------------------
 

@@ -1,3 +1,9 @@
+uftpd (2.4-1) unstable; urgency=medium
+
+  * New upstream release, fixes 100% CPU issue reported by some users.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 03 Sep 2017 12:38:38 +0200
+
 uftpd (2.3-1) stable; urgency=low
 
   * New upstream release, fixes issue with lingering inetd FTP processes

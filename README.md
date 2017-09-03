@@ -74,7 +74,8 @@ distributions as well.
 Running
 -------
 
-To start uftpd in the background as an FTP/TFTP server, simply call
+To start uftpd in the background as an FTP/TFTP server, simply start the
+daemon, possibly using `sudo`:
 
     $ uftpd
 
@@ -88,12 +89,14 @@ to start `uftpd` on privileged (standard) ports, i.e. `< 1024`:
 
     $ sudo setcap cap_net_bind_service+ep uftpd
 
-To run uftpd from the Internet super server, inetd, use the following
+### Running from inetd ###
+
+To run uftpd from the Internet super server, inetd¹, use the following
 two lines in `/etc/inetd.conf`, notice how `in.ftpd` and `in.tftpd` are
 symlinks to the `uftpd` binary:
 
-    ftp		stream	tcp	nowait	root	/usr/sbin/in.ftpd
-    tftp	dgram	udp	wait	root	/usr/sbin/in.tftpd
+    ftp     stream  tcp nowait  root    /usr/sbin/in.ftpd
+    tftp    dgram   udp wait    root    /usr/sbin/in.tftpd
 
 Remember to activate your changes to inetd by reloading the service or
 sending `SIGHUP` to it.  Another inetd server may use different syntax.
@@ -101,6 +104,9 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 
     inetd ftp/tcp   nowait /usr/sbin/in.ftpd  -- The uftpd FTP server
     inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
+
+____
+¹ Recommended inetd: [openbsd-inetd](apt:openbsd-inetd)
 
 
 Origin & References

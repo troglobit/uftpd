@@ -106,7 +106,7 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
     inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
 
 ____
-¹ Recommended inetd: [openbsd-inetd](apt:openbsd-inetd)
+¹ Recommended inetd: <apt:openbsd-inetd>
 
 
 Origin & References

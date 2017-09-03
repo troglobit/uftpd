@@ -71,29 +71,55 @@ Provided the library dependencies were installed in `/usr/local/`.  This
 distributions as well.
 
 
-Running
--------
+Usage
+-----
 
-To start uftpd in the background as an FTP/TFTP server, simply start the
-daemon, possibly using `sudo`:
+```
+uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]
+
+  -h         Show this help text
+  -l LEVEL   Set log level: none, err, info, notice (default), debug
+  -n         Run in foreground, do not detach from controlling terminal
+  -o OPT     Options:
+                      ftp=PORT
+                      tftp=PORT
+                      writable
+  -s         Use syslog, even if running in foreground, default w/o -n
+  -v         Show program version
+
+The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'
+Bug report address: https://github.com/troglobit/uftpd/issues
+```
+
+To start uftpd in the background as an FTP/TFTP server:
 
     $ uftpd
+
+If the `ftp` user does not exist on your system, `uftpd` defaults to
+serve files from the `/srv/ftp` directory.  To serve another directory,
+simply append that directory to the argument list.
+
+Use `sudo`, or set `CAP_NET_BIND_SERVICE` capabilities, on `uftpd` to
+allow regular users to start `uftpd` on privileged (standard) ports,
+i.e. `< 1024`:
+
+    $ sudo setcap cap_net_bind_service+ep uftpd
 
 To change port on either FTP or TFTP, use
 
     $ uftpd -o ftp=PORT,tftp=PORT
 
-Set `PORT` to zero (0) to disable either service.  Use `sudo`, or set
-`CAP_NET_BIND_SERVICE` capabilities, on `uftpd` to allow regular users
-to start `uftpd` on privileged (standard) ports, i.e. `< 1024`:
+Set `PORT` to zero (0) to disable either service.
 
-    $ sudo setcap cap_net_bind_service+ep uftpd
 
-### Running from inetd ###
+Running from inetd
+------------------
 
-To run uftpd from the Internet super server, inetd¹, use the following
-two lines in `/etc/inetd.conf`, notice how `in.ftpd` and `in.tftpd` are
-symlinks to the `uftpd` binary:
+Rarely used services like FTP/TFTP on a developer laptop are good
+candidates to run from the Internet super server, inetd¹!
+
+Use the following two lines in `/etc/inetd.conf`, notice how `in.ftpd`
+and `in.tftpd` are symlinks to the `uftpd` binary:
 
     ftp     stream  tcp nowait  root    /usr/sbin/in.ftpd
     tftp    dgram   udp wait    root    /usr/sbin/in.tftpd
@@ -106,7 +132,7 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
     inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
 
 ____
-¹ Recommended inetd: <apt:openbsd-inetd>
+¹ Recommended inetd: [apt:openbsd-inetd](apt:openbsd-inetd)
 
 
 Origin & References

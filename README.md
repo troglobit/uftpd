@@ -38,39 +38,6 @@ home directory and take care to set up strict permissions, then uftpd is
 likely as secure as any other FTP/TFTP server.
 
 
-Download
---------
-
-uftpd depend on two other projects to build from source, [libuEv][] and
-[lite][].  See their respective README's for details, there should be no
-real surprises, both use the familiar configure, make, make install.
-
-See below if you want to contribute.
-
-
-Building
---------
-
-uftpd, as well as its dependencys, can be built as `.deb` packages on
-Debian or Ubuntu based distributions.  Simply download each source
-component and run
-
-    ./autogen.sh      <--- Only needed if using GIT sources
-    ./configure
-    make package
-
-If you are using a different Linux or UNIX distribution, check the
-output from `./configure --help`, followed by `make all install`.
-For instance, building on [Alpine Linux](https://alpinelinux.org/):
-
-    PKG_CONFIG_LIBDIR=/usr/local/lib/pkgconfig ./configure \
-	    --prefix=/usr --localstatedir=/var --sysconfdir=/etc
-
-Provided the library dependencies were installed in `/usr/local/`.  This
-`PKG_CONFIG_LIBDIR` trick may be needed on other GNU/Linux, or UNIX,
-distributions as well.
-
-
 Usage
 -----
 
@@ -133,6 +100,33 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 
 ____
 ¹ Recommended inetd: [apt:openbsd-inetd](apt:openbsd-inetd)
+
+
+Build & Install
+---------------
+
+`uftpd` depends on two other projects to build from source, [libuEv][]
+and [lite][].  See their respective README for details, there should be
+no real surprises, both use the familiar configure, make, make install.
+
+uftpd, as well as its dependencies, can be built as `.deb` packages on
+Debian or Ubuntu based distributions.  Simply download each source
+component and run
+
+    ./autogen.sh      <--- Only needed if using GIT sources
+    ./configure
+    make package
+
+If you are using a different Linux or UNIX distribution, check the
+output from `./configure --help`, followed by `make all install`.
+For instance, building on [Alpine Linux](https://alpinelinux.org/):
+
+    PKG_CONFIG_LIBDIR=/usr/local/lib/pkgconfig ./configure \
+	    --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+
+Provided the library dependencies were installed in `/usr/local/`.  This
+`PKG_CONFIG_LIBDIR` trick may be needed on other GNU/Linux, or UNIX,
+distributions as well.
 
 
 Origin & References

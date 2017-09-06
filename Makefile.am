@@ -25,13 +25,13 @@ install-data-hook:
 	done
 
 uninstall-hook:
-	for file in $(SYMLINK); do \
+	@for file in $(SYMLINK); do \
 		$(RM) $(DESTDIR)$(sbindir)/$$file; \
 		$(RM) $(DESTDIR)$(man8dir)/$$file.8; \
 	done
 
 package build-deb:
-	dpkg-buildpackage -uc -us -B
+	@dpkg-buildpackage -uc -us -B
 
 ## Target to run when building a release
 ## Temprarily removed: build-deb

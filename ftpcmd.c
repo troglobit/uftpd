@@ -270,7 +270,7 @@ static void handle_TYPE(ctrl_t *ctrl, char *argument)
 
 static void handle_PWD(ctrl_t *ctrl, char *arg)
 {
-	char buf[300];
+	char buf[sizeof(ctrl->cwd) + 10];
 
 	snprintf(buf, sizeof(buf), "257 \"%s\"\r\n", ctrl->cwd);
 	send_msg(ctrl->sd, buf);

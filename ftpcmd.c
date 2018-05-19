@@ -870,8 +870,8 @@ static void handle_SIZE(ctrl_t *ctrl, char *file)
 	struct stat st;
 
 	path = compose_path(ctrl, file);
-	if (!path || stat(path, &st)) {
-		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+	if (!path || stat(path, &st) || S_ISDIR(st.st_mode)) {
+		send_msg(ctrl->sd, "550 No such file, or argument is a directory.\r\n");
 		return;
 	}
 

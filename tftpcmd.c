@@ -145,6 +145,8 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 
 	/* First opt is always filename */
 	ctrl->file = strdup(buf);
+	if (!ctrl->file)
+		return send_ERROR(ctrl, ENOMEM);
 
 	do {
 		/* Prepare to read options */

@@ -167,15 +167,15 @@ static int init(uev_ctx_t *ctx)
 	if (!home) {
 		pw = getpwnam(FTP_DEFAULT_USER);
 		if (!pw) {
-			home = strdup(FTP_DEFAULT_HOME);
 			WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
-			     FTP_DEFAULT_USER, home);
+			     FTP_DEFAULT_USER, FTP_DEFAULT_HOME);
+			home = strdup(FTP_DEFAULT_HOME);
 		} else {
 			home = strdup(pw->pw_dir);
 		}
 	}
 
-	if (security_check(home))
+	if (!home || security_check(home))
 		return 1;
 
 	return uev_init(ctx);
@@ -342,8 +342,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (optind < argc)
+	if (optind < argc) {
 		home = strdup(argv[optind]);
+		if (!home) {
+			ERR(errno, "Failed allocating memory");
+			return 1;
+		}
+	}
 
 	/* Inetd mode enforces foreground and syslog */
 	if (string_compare(prognm, "in.tftpd")) {

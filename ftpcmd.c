@@ -141,10 +141,17 @@ static int open_data_connection(ctrl_t *ctrl)
 
 	/* Previous PASV command, accept connect from client */
 	if (ctrl->data_listen_sd > 0) {
+		int retries = 3;
 		char client_ip[100];
 
+	retry:
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
 		if (-1 == ctrl->data_sd) {
+			if (EAGAIN == errno && --retries) {
+				sleep(1);
+				goto retry;
+			}
+
 			ERR(errno, "Failed accepting connection from client");
 			return -1;
 		}

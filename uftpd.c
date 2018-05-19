@@ -80,10 +80,7 @@ static void sigchld_cb(uev_t *w, void *arg, int events)
 		pid_t pid;
 
 		pid = waitpid(0, NULL, WNOHANG);
-		if (!pid)
-			continue;
-
-		if (-1 == pid)
+		if (pid <= 0)
 			break;
 
 		/* TFTP client disconnected, we can now serve TFTP again! */

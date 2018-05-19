@@ -45,7 +45,7 @@ static int send_msg(int sd, char *msg)
 		int result = send(sd, msg + n, l, 0);
 
 		if (result < 0) {
-			perror("Failed sending message to client");
+			ERR(errno, "Failed sending message to client");
 			return 1;
 		}
 
@@ -118,7 +118,7 @@ static int open_data_connection(ctrl_t *ctrl)
 	if (ctrl->data_address[0]) {
 		ctrl->data_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if (-1 == ctrl->data_sd) {
-			perror("Failed creating data socket");
+			ERR(errno, "Failed creating data socket");
 			return -1;
 		}
 
@@ -128,7 +128,7 @@ static int open_data_connection(ctrl_t *ctrl)
 		inet_aton(ctrl->data_address, &(sin.sin_addr));
 
 		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
-			perror("Failed connecting data socket to client");
+			ERR(errno, "Failed connecting data socket to client");
 			close(ctrl->data_sd);
 			ctrl->data_sd = -1;
 
@@ -145,13 +145,13 @@ static int open_data_connection(ctrl_t *ctrl)
 
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
 		if (-1 == ctrl->data_sd) {
-			perror("Failed accepting connection from client");
+			ERR(errno, "Failed accepting connection from client");
 			return -1;
 		}
 
 		len = sizeof(struct sockaddr);
 		if (-1 == getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len)) {
-			perror("Cannot determine client address");
+			ERR(errno, "Cannot determine client address");
 			close(ctrl->data_sd);
 			ctrl->data_sd = -1;
 			return -1;
@@ -1012,14 +1012,14 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 
 	len = sizeof(ctrl->server_sa);
 	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
-		perror("Cannot determine our address");
+		ERR(errno, "Cannot determine our address");
 		goto fail;
 	}
 	convert_address(&ctrl->server_sa, ctrl->serveraddr, sizeof(ctrl->serveraddr));
 
 	len = sizeof(ctrl->client_sa);
 	if (-1 == getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len)) {
-		perror("Cannot determine client address");
+		ERR(errno, "Cannot determine client address");
 		goto fail;
 	}
 	convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));

@@ -389,6 +389,39 @@ static const char *mlsd_type(char *name, int mode)
 	return S_ISDIR(mode) ? "dir" : "file";
 }
 
+static void mlsd_printf(char *buf, size_t len, char *path, char *name, struct stat *st)
+{
+	char perms[10] = "";
+	int ro = !access(path, R_OK);
+	int rw = !access(path, W_OK);
+
+	if (S_ISDIR(st->st_mode)) {
+		/* XXX: Verify 'e' by checking that we can CD to the 'name' */
+		if (ro)
+			strlcat(perms, "le", sizeof(perms));
+		if (rw)
+			strlcat(perms, "pc", sizeof(perms)); /* 'd' RMD, 'm' MKD */
+		snprintf(buf, len,
+			 "modify=%s;perm=%s;type=%s; %s\r\n",
+			 mlsd_time(st->st_mtime),
+			 "le",
+			 mlsd_type(name, st->st_mode),
+			 name);
+	} else {
+		if (ro)
+			strlcat(perms, "r", sizeof(perms));
+		if (rw)
+			strlcat(perms, "w", sizeof(perms)); /* 'f' RNFR, 'd' DELE */
+		snprintf(buf, len,
+			 "modify=%s;perm=%s;size=%" PRIu64 ";type=%s; %s\r\n",
+			 mlsd_time(st->st_mtime),
+			 perms,
+			 (uint64_t)st->st_size,
+			 mlsd_type(name, st->st_mode),
+			 name);
+	}
+}
+
 static void list(ctrl_t *ctrl, char *path, int mode, char *buf, size_t bufsz, int dirs)
 {
 	int i, num;
@@ -423,21 +456,7 @@ static void list(ctrl_t *ctrl, char *path, int mode, char *buf, size_t bufsz, in
 
 		switch (mode) {
 		case 2:		/* MLSD */
-			if (S_ISDIR(st.st_mode))
-				snprintf(pos, len,
-					 "modify=%s;perm=%s;type=%s; %s\r\n",
-					 mlsd_time(st.st_mtime),
-					 "le",
-					 mlsd_type(name, st.st_mode),
-					 name);
-			else
-				snprintf(pos, len,
-					 "modify=%s;perm=%s;size=%" PRIu64 ";type=%s; %s\r\n",
-					 mlsd_time(st.st_mtime),
-					 "r",
-					 (uint64_t)st.st_size,
-					 mlsd_type(name, st.st_mode),
-					 name);
+			mlsd_printf(pos, len, path, name, &st);
 			break;
 
 		case 1:		/* NLST */

@@ -398,7 +398,7 @@ static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, in
 				 0, 0, (uint64_t)st.st_size,
 				 time_to_str(st.st_mtime), name);
 
-		if (ctrl->type == TYPE_A)
+		if (nlst || ctrl->type == TYPE_A)
 			strlcat(pos, "\r\n", len);
 		else
 			strlcat(pos, "\n", len);

@@ -4,6 +4,20 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.5][] - 2018-05-xx
+---------------------
+
+### Changes
+- Support for `EPSV` and `EPSV ALL` FTP commands, issue #11
+- Support for `MLSD` FTP command to provide support for the VLC android
+  app., issue #9 and #12
+
+### Fixes
+- Really fix 100% CPU problem, issue #9.  Multiple failure modes in
+  libuEv and improper handling of `waitpid()` in event loop callback
+- Fix `NLST` + `LIST` line endings, must be \r\n
+
+
 [v2.4][] - 2017-09-03
 ---------------------
 

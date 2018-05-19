@@ -1,3 +1,11 @@
+uftpd (2.5) unstable; urgency=critical
+
+  * Really fix 100% CPU issue
+  * Fix line endings for NLST and LIST commands
+  * Add support for EPSV and MLSD commands required for VLC Android app
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sat, 19 May 2018 13:35:01 +0200
+
 uftpd (2.4-1) unstable; urgency=medium
 
   * New upstream release, fixes 100% CPU issue reported by some users.

@@ -387,7 +387,7 @@ First official uftpd release! :-)
 [FtpServer]:     https://github.com/xu-wang11/FtpServer
 [Travis-CI]:     https://travis-ci.org/troglobit/uftpd
 [Coverity Scan]: https://scan.coverity.com/projects/2947
-[TODO.md]:       https://github.com/troglobit/uftpd/blob/master/TODO.md
+[TODO.md]:       https://github.com/troglobit/uftpd/blob/master/docs/TODO.md
 [README.md]:     https://github.com/troglobit/uftpd/blob/master/README.md
 [CHANGELOG.md]:  https://github.com/troglobit/uftpd/blob/master/CHANGELOG.md
 

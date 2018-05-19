@@ -327,6 +327,11 @@ static void handle_PORT(ctrl_t *ctrl, char *str)
 	send_msg(ctrl->sd, "200 PORT command successful.\r\n");
 }
 
+static void handle_EPRT(ctrl_t *ctrl, char *str)
+{
+	send_msg(ctrl->sd, "502 Command not implemented.\r\n");
+}
+
 static char *mode_to_str(mode_t m)
 {
 	static char str[11];
@@ -483,13 +488,9 @@ static void handle_NLST(ctrl_t *ctrl, char *arg)
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
-static void handle_PASV(ctrl_t *ctrl, char *arg)
+static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *len)
 {
-	int port;
-	char *msg, *p, buf[200];
 	struct sockaddr_in server;
-	struct sockaddr_in data;
-	socklen_t len = sizeof(struct sockaddr);
 
 	if (ctrl->data_sd > 0) {
 		close(ctrl->data_sd);
@@ -503,7 +504,7 @@ static void handle_PASV(ctrl_t *ctrl, char *arg)
 	if (ctrl->data_listen_sd < 0) {
 		ERR(errno, "Failed opening data server socket");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
-		return;
+		return 1;
 	}
 
 	memset(&server, 0, sizeof(server));
@@ -515,7 +516,7 @@ static void handle_PASV(ctrl_t *ctrl, char *arg)
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
 
 	INFO("Data server port estabished.  Waiting for client connnect ...");
@@ -524,16 +525,29 @@ static void handle_PASV(ctrl_t *ctrl, char *arg)
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
 
-	memset(&data, 0, sizeof(data));
-	if (-1 == getsockname(ctrl->data_listen_sd, (struct sockaddr *)&data, &len)) {
+	memset(data, 0, sizeof(*data));
+	if (-1 == getsockname(ctrl->data_listen_sd, data, len)) {
 		ERR(errno, "Cannot determine our address, need it if client should connect to us");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
+
+	return 0;
+}
+
+static void handle_PASV(ctrl_t *ctrl, char *arg)
+{
+	struct sockaddr_in data;
+	socklen_t len = sizeof(data);
+	char *msg, *p, buf[200];
+	int port;
+
+	if (do_PASV(ctrl, arg, (struct sockaddr *)&data, &len))
+		return;
 
 	/* Convert server IP address and port to comma separated list */
 	msg = strdup(ctrl->serveraddr);
@@ -551,6 +565,24 @@ static void handle_PASV(ctrl_t *ctrl, char *arg)
 	send_msg(ctrl->sd, buf);
 
 	free(msg);
+}
+
+static void handle_EPSV(ctrl_t *ctrl, char *arg)
+{
+	struct sockaddr_in data;
+	socklen_t len = sizeof(data);
+	char buf[200];
+
+	if (string_valid(arg) && string_case_compare(arg, "ALL")) {
+		send_msg(ctrl->sd, "200 Command OK\r\n");
+		return;
+	}
+
+	if (do_PASV(ctrl, arg, (struct sockaddr *)&data, &len))
+		return;
+
+	snprintf(buf, sizeof(buf), "229 Entering Extended Passive Mode (|||%d|)\r\n", ntohs(data.sin_port));
+	send_msg(ctrl->sd, buf);
 }
 
 static void handle_RETR(ctrl_t *ctrl, char *file)
@@ -812,10 +844,11 @@ static void handle_HELP(ctrl_t *ctrl, char *arg)
 static void handle_FEAT(ctrl_t *ctrl, char *arg)
 {
 	snprintf(ctrl->buf, ctrl->bufsz, "211-Features:\r\n"
-		" PASV\r\n"
-		" SIZE\r\n"
-		" UTF8\r\n"
-		"211 End\r\n");
+		 " EPSV\r\n"
+		 " PASV\r\n"
+		 " SIZE\r\n"
+		 " UTF8\r\n"
+		 "211 End\r\n");
 	send_msg(ctrl->sd, ctrl->buf);
 }
 
@@ -835,9 +868,11 @@ static ftp_cmd_t supported[] = {
 	COMMAND(SYST),
 	COMMAND(TYPE),
 	COMMAND(PORT),
+	COMMAND(EPRT),
 	COMMAND(RETR),
 	COMMAND(MDTM),
 	COMMAND(PASV),
+	COMMAND(EPSV),
 	COMMAND(QUIT),
 	COMMAND(LIST),
 	COMMAND(NLST),

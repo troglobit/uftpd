@@ -288,7 +288,7 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	char *dir;
 
 	dir = compose_path(ctrl, path);
-	if (chdir(dir)) {
+	if (!dir || chdir(dir)) {
 		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;
 	}
@@ -411,8 +411,8 @@ static void list(ctrl_t *ctrl, char *path, int mode, char *buf, size_t bufsz, in
 			goto next;
 
 		path = compose_path(ctrl, name);
-		if (stat(path, &st)) {
-			LOGIT(LOG_INFO, errno, "Failed reading status for %s", path);
+		if (!path || stat(path, &st)) {
+			LOGIT(LOG_INFO, errno, "Failed reading status for %s", path ? path : name);
 			goto next;
 		}
 
@@ -504,8 +504,8 @@ static void do_list(ctrl_t *ctrl, char *arg, int mode)
 	}
 
 	if (open_data_connection(ctrl)) {
-		free(buf);
 		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+		free(buf);
 		return;
 	}
 
@@ -517,6 +517,12 @@ static void do_list(ctrl_t *ctrl, char *arg, int mode)
 
 	/* Call list() twice to list directories first, then regular files */
 	path = compose_path(ctrl, arg);
+	if (!path) {
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		free(buf);
+		return;
+	}
+
 	list(ctrl, path, mode, buf, sz, 1);
 	path = compose_path(ctrl, arg);
 	list(ctrl, path, mode, buf, sz, 0);
@@ -649,11 +655,12 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	int result = 0;
 	FILE *fp = NULL;
 	char *buf;
-	char *path = compose_path(ctrl, file);
+	char *path;
 	size_t len = BUFFER_SIZE * sizeof(char);
 	struct stat st;
 
-	if (stat(path, &st) || !S_ISREG(st.st_mode)) {
+	path = compose_path(ctrl, file);
+	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}
@@ -713,11 +720,12 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 static void handle_MDTM(ctrl_t *ctrl, char *file)
 {
 	char buf[80];
-	char *path = compose_path(ctrl, file);
+	char *path;
 	struct tm *tm;
 	struct stat st;
 
-	if (stat(path, &st) || !S_ISREG(st.st_mode)) {
+	path = compose_path(ctrl, file);
+	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}
@@ -731,8 +739,14 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 {
 	int result = 0;
 	FILE *fp = NULL;
-	char *buf, *path = compose_path(ctrl, file);
+	char *buf, *path;
 	size_t len = BUFFER_SIZE * sizeof(char);
+
+	path = compose_path(ctrl, file);
+	if (!path) {
+		send_msg(ctrl->sd, "550 Invalid path to file.\r\n");
+		return;
+	}
 
 	DBG("STOR %s", path);
 
@@ -826,22 +840,24 @@ static size_t num_nl(char *file)
 
 static void handle_SIZE(ctrl_t *ctrl, char *file)
 {
-	char *path = compose_path(ctrl, file);
+	char *path;
+	char buf[80];
 	size_t extralen = 0;
 	struct stat st;
 
-	DBG("SIZE %s", path);
-
-	if (-1 == stat(path, &st)) {
+	path = compose_path(ctrl, file);
+	if (!path || stat(path, &st)) {
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}
 
-	if (ctrl->type == TYPE_A)
-		extralen = num_nl(file);
+	DBG("SIZE %s", path);
 
-	sprintf(path, "213 %"  PRIu64 "\r\n", (uint64_t)(st.st_size + extralen));
-	send_msg(ctrl->sd, path);
+	if (ctrl->type == TYPE_A)
+		extralen = num_nl(path);
+
+	snprintf(buf, sizeof(buf), "213 %"  PRIu64 "\r\n", (uint64_t)(st.st_size + extralen));
+	send_msg(ctrl->sd, buf);
 }
 
 /* No operation - used as session keepalive by clients. */

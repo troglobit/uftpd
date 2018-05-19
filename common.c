@@ -30,32 +30,10 @@ int chrooted = 0;
  *
  * Forced dir ------> /srv/ftp/etc
  */
-static void squash_dots(char *path)
-{
-	char *dots, *ptr, *prev;
-
-	while ((dots = strstr(path, "/.."))) {
-		/* Walking up to parent attack */
-		if (path == dots) {
-			memmove(&path[0], &path[3], strlen(&path[3]) + 1);
-			continue;
-		}
-
-		/* Do cd .. */
-		ptr = NULL;
-		while ((prev = strchr(path, '/')) && prev != dots)
-			ptr = prev;
-
-		if (ptr) {
-			dots += 3;
-			memmove(ptr, dots, strlen(dots));
-		}
-	}
-}
-
 char *compose_path(ctrl_t *ctrl, char *path)
 {
-	static char dir[PATH_MAX];
+	static char rpath[PATH_MAX];
+	char dir[PATH_MAX];
 
 	strlcpy(dir, ctrl->cwd, sizeof(dir));
 
@@ -70,9 +48,6 @@ char *compose_path(ctrl_t *ctrl, char *path)
 		strlcpy(dir, path, sizeof(dir));
 	}
 
-	/* Protect against directory traversal attacks */
-	squash_dots(dir);
-
 	if (!chrooted) {
 		size_t len = strlen(home);
 
@@ -84,7 +59,13 @@ char *compose_path(ctrl_t *ctrl, char *path)
 		DBG("Resulting non-chroot path: %s", dir);
 	}
 
-	return dir;
+	if (!realpath(dir, rpath))
+		return NULL;
+
+	if (!chrooted && !strncmp(dir, home, strlen(home)))
+		return NULL;
+
+	return rpath;
 }
 
 int open_socket(int port, int type, char *desc)

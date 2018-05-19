@@ -179,7 +179,13 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 
 static int handle_RRQ(ctrl_t *ctrl)
 {
-	char *path = compose_path(ctrl, ctrl->file);
+	char *path;
+
+	path = compose_path(ctrl, ctrl->file);
+	if (!path) {
+		ERR(errno, "%s: Invalid path to file %s", ctrl->clientaddr, ctrl->file);
+		return send_ERROR(ctrl, ENOTFOUND);
+	}
 
 	ctrl->fp = fopen(path, "r");
 	if (!ctrl->fp) {

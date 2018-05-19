@@ -395,18 +395,13 @@ static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, in
 			goto next;
 
 		if (nlst)
-			snprintf(pos, len, "%s", name);
+			snprintf(pos, len, "%s\r\n", name);
 		else
 			snprintf(pos, len,
-				 "%s 1 %5d %5d %12" PRIu64 " %s %s",
+				 "%s 1 %5d %5d %12" PRIu64 " %s %s\r\n",
 				 mode_to_str(st.st_mode),
 				 0, 0, (uint64_t)st.st_size,
 				 time_to_str(st.st_mtime), name);
-
-		if (nlst || ctrl->type == TYPE_A)
-			strlcat(pos, "\r\n", len);
-		else
-			strlcat(pos, "\n", len);
 
 		DBG("LIST %s", pos);
 		len -= strlen(pos);

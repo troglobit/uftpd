@@ -305,6 +305,11 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	send_msg(ctrl->sd, "250 OK\r\n");
 }
 
+static void handle_CDUP(ctrl_t *ctrl, char *path)
+{
+	handle_CWD(ctrl, "..");
+}
+
 static void handle_PORT(ctrl_t *ctrl, char *str)
 {
 	int a, b, c, d, e, f;
@@ -978,6 +983,7 @@ static ftp_cmd_t supported[] = {
 	COMMAND(PWD),
 	COMMAND(STOR),
 	COMMAND(CWD),
+	COMMAND(CDUP),
 	COMMAND(SIZE),
 	COMMAND(NOOP),
 	COMMAND(HELP),

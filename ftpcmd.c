@@ -362,7 +362,27 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
-static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, int dirs)
+static char *mlsd_time(time_t mtime)
+{
+	struct tm *t = localtime(&mtime);
+	static char str[20];
+
+	strftime(str, sizeof(str), "%Y%m%d%H%M%S", t);
+
+	return str;
+}
+
+static const char *mlsd_type(char *name, int mode)
+{
+	if (!strcmp(name, "."))
+		return "cdir";
+	if (!strcmp(name, ".."))
+		return "pdir";
+
+	return S_ISDIR(mode) ? "dir" : "file";
+}
+
+static void list(ctrl_t *ctrl, char *path, int mode, char *buf, size_t bufsz, int dirs)
 {
 	int i, num;
 	char *pos = buf;
@@ -380,7 +400,7 @@ static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, in
 
 		name = entry->d_name;
 		DBG("Found directory entry %s", name);
-		if (!strcmp(name, ".") || !strcmp(name, ".."))
+		if ((!strcmp(name, ".") || !strcmp(name, "..")) && mode != 2)
 			goto next;
 
 		path = compose_path(ctrl, name);
@@ -394,14 +414,38 @@ static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, in
 		if (!dirs && S_ISDIR(st.st_mode))
 			goto next;
 
-		if (nlst)
+		switch (mode) {
+		case 2:		/* MLSD */
+			if (S_ISDIR(st.st_mode))
+				snprintf(pos, len,
+					 "modify=%s;perm=%s;type=%s; %s\r\n",
+					 mlsd_time(st.st_mtime),
+					 "le",
+					 mlsd_type(name, st.st_mode),
+					 name);
+			else
+				snprintf(pos, len,
+					 "modify=%s;perm=%s;size=%" PRIu64 ";type=%s; %s\r\n",
+					 mlsd_time(st.st_mtime),
+					 "r",
+					 (uint64_t)st.st_size,
+					 mlsd_type(name, st.st_mode),
+					 name);
+			break;
+
+		case 1:		/* NLST */
 			snprintf(pos, len, "%s\r\n", name);
-		else
+			break;
+
+		case 0:		/* LIST */
+		default:
 			snprintf(pos, len,
 				 "%s 1 %5d %5d %12" PRIu64 " %s %s\r\n",
 				 mode_to_str(st.st_mode),
 				 0, 0, (uint64_t)st.st_size,
 				 time_to_str(st.st_mtime), name);
+			break;
+		}
 
 		DBG("LIST %s", pos);
 		len -= strlen(pos);
@@ -425,7 +469,7 @@ static void list(ctrl_t *ctrl, char *path, int nlst, char *buf, size_t bufsz, in
 	free(d);
 }
 
-static void do_list(ctrl_t *ctrl, char *arg, int nlst)
+static void do_list(ctrl_t *ctrl, char *arg, int mode)
 {
 	char *buf, *path;
 	size_t sz = BUFFER_SIZE * sizeof(char);
@@ -459,13 +503,16 @@ static void do_list(ctrl_t *ctrl, char *arg, int nlst)
 	}
 
 	INFO("Established TCP socket for data communication.");
-	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
+	if (mode == 2)
+		send_msg(ctrl->sd, "150 Opening ASCII mode data connection for MLSD.\r\n");
+	else
+		send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
 
 	/* Call list() twice to list directories first, then regular files */
 	path = compose_path(ctrl, arg);
-	list(ctrl, path, nlst, buf, sz, 1);
+	list(ctrl, path, mode, buf, sz, 1);
 	path = compose_path(ctrl, arg);
-	list(ctrl, path, nlst, buf, sz, 0);
+	list(ctrl, path, mode, buf, sz, 0);
 
 	free(buf);
 	close_data_connection(ctrl);
@@ -480,6 +527,16 @@ static void handle_LIST(ctrl_t *ctrl, char *arg)
 static void handle_NLST(ctrl_t *ctrl, char *arg)
 {
 	do_list(ctrl, arg, 1);
+}
+
+static void handle_MLST(ctrl_t *ctrl, char *arg)
+{
+	send_msg(ctrl->sd, "502 Command not implemented.\r\n");
+}
+
+static void handle_MLSD(ctrl_t *ctrl, char *arg)
+{
+	do_list(ctrl, arg, 2);
 }
 
 /* XXX: Audit this, does it really work with multiple interfaces? */
@@ -843,6 +900,7 @@ static void handle_FEAT(ctrl_t *ctrl, char *arg)
 		 " PASV\r\n"
 		 " SIZE\r\n"
 		 " UTF8\r\n"
+		 " MLST modify*;perm*;size*;type*;\r\n"
 		 "211 End\r\n");
 	send_msg(ctrl->sd, ctrl->buf);
 }
@@ -871,6 +929,8 @@ static ftp_cmd_t supported[] = {
 	COMMAND(QUIT),
 	COMMAND(LIST),
 	COMMAND(NLST),
+	COMMAND(MLST),
+	COMMAND(MLSD),
 	COMMAND(CLNT),
 	COMMAND(OPTS),
 	COMMAND(PWD),

@@ -68,6 +68,17 @@ char *compose_path(ctrl_t *ctrl, char *path)
 	return rpath;
 }
 
+int set_nonblock(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFL, 0);
+	if (!flags)
+		fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+	return fd;
+}
+
 int open_socket(int port, int type, char *desc)
 {
 	int sd, err, val = 1;
@@ -166,7 +177,7 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 		goto fail;
 	}
 
-	ctrl->sd = sd;
+	ctrl->sd = set_nonblock(sd);
 	ctrl->ctx = ctx;
 	strlcpy(ctrl->cwd, "/", sizeof(ctrl->cwd));
 

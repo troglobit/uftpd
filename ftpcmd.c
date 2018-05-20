@@ -25,6 +25,19 @@ typedef struct {
 
 static ftp_cmd_t supported[];
 
+static int is_cont(char *msg)
+{
+	char *ptr;
+
+	ptr = strchr(msg, '\r');
+	if (ptr) {
+		ptr++;
+		if (strchr(ptr, '\r'))
+			return 1;
+	}
+
+	return 0;
+}
 
 static int send_msg(int sd, char *msg)
 {
@@ -52,7 +65,7 @@ static int send_msg(int sd, char *msg)
 		n += result;
 	}
 
-	DBG("Sent: %s", msg);
+	DBG("Sent: %s%s", is_cont(msg) ? "\n" : "", msg);
 
 	return 0;
 }

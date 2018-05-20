@@ -47,8 +47,11 @@ void logit(int severity, const char *fmt, ...)
         va_start(args, fmt);
 	if (do_syslog)
 		vsyslog(severity, fmt, args);
-	else if (severity <= loglevel)
+	else if (severity <= loglevel) {
+		if (loglevel == LOG_DEBUG)
+			fprintf(file, "%d> ", getpid());
 		vfprintf(file, fmt, args);
+	}
         va_end(args);
 }
 

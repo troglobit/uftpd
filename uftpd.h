@@ -60,8 +60,7 @@
 #define FTP_DEFAULT_USER  "ftp"
 #define FTP_DEFAULT_HOME  "/srv/ftp"
 
-/* XXX: What's a "good" buffer size, 4096? */
-#define BUFFER_SIZE       1000
+#define BUFFER_SIZE       BUFSIZ
 
 /* This is a stupid server, it doesn't expect >3 min inactivity */
 #define INACTIVITY_TIMER  180 * 1000

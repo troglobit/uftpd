@@ -82,16 +82,16 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	memset(msg, 0, len);
 
 	/* Save one byte (-1) for NUL termination */
-	while ((bytes = recv(sd, msg, len - 1, 0))) {
-		if (bytes < 0) {
-			if (EINTR == errno)
-				return 1;
-
-			ERR(errno, "Failed reading client command");
+	bytes = recv(sd, msg, len - 1, 0);
+	if (bytes < 0) {
+		if (EINTR == errno)
 			return 1;
-		}
 
-		break;
+		if (ECONNRESET == errno)
+			DBG("Connection reset by client.");
+		else
+			ERR(errno, "Failed reading client command");
+		return 1;
 	}
 
 	if (!bytes) {

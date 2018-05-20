@@ -77,6 +77,7 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 {
 	char *ptr;
 	ssize_t bytes;
+	uint8_t *raw = (uint8_t *)msg;
 
 	/* Clear for every new command. */
 	memset(msg, 0, len);
@@ -97,6 +98,29 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	if (!bytes) {
 		INFO("Client disconnected.");
 		return 1;
+	}
+
+	if (raw[0] == 0xff) {
+		char tmp[4];
+		char buf[20] = { 0 };
+		int i;
+
+		i = recv(sd, &msg[bytes], len - bytes - 1, MSG_OOB | MSG_DONTWAIT);
+		if (i > 0)
+			bytes += i;
+
+		for (i = 0; i < bytes; i++) {
+			snprintf(tmp, sizeof(tmp), "%2X%s", raw[i], i + 1 < bytes ? " " : "");
+			strlcat(buf, tmp, sizeof(buf));
+		}
+
+		strlcpy(msg, buf, len);
+		*cmd      = msg;
+		*argument = NULL;
+
+		DBG("Recv: [%s], %d bytes", msg, bytes);
+
+		return 0;
 	}
 
 	/* NUL terminate for strpbrk() */
@@ -1025,6 +1049,11 @@ static void read_client_command(uev_t *w, void *arg, int events)
 
 	if (!string_valid(command))
 		return;
+
+	if (string_match(command, "FF F4")) {
+		DBG("Ignoring IAC command, client should send ABOR as well.");
+		return;
+	}
 
 	for (cmd = &supported[0]; cmd->command; cmd++) {
 		if (string_compare(command, cmd->command)) {

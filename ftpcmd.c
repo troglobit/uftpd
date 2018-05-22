@@ -172,7 +172,8 @@ static int open_data_connection(ctrl_t *ctrl)
 			return -1;
 		}
 
-		DBG("Connected successfully to client's previously requested address:PORT %s:%d", ctrl->data_address, ctrl->data_port);
+		DBG("Connected successfully to client's previously requested address:PORT %s:%d",
+		    ctrl->data_address, ctrl->data_port);
 		return 0;
 	}
 
@@ -201,7 +202,7 @@ static int open_data_connection(ctrl_t *ctrl)
 			return -1;
 		}
 		inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
-		DBG("Client PASV data connection from %s", client_ip);
+		DBG("Client PASV data connection from %s:%d", client_ip, ntohs(sin.sin_port));
 	}
 
 	return 0;
@@ -209,6 +210,8 @@ static int open_data_connection(ctrl_t *ctrl)
 
 static void close_data_connection(ctrl_t *ctrl)
 {
+	DBG("Closing data connection ...");
+
 	/* PASV server listening socket */
 	if (ctrl->data_listen_sd > 0) {
 		shutdown(ctrl->data_listen_sd, SHUT_RDWR);

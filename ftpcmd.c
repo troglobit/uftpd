@@ -533,8 +533,8 @@ static void list(ctrl_t *ctrl, char *path, int mode, char *buf, size_t bufsz, in
 
 	if (strlen(buf))
 		send_msg(ctrl->data_sd, buf);
-
-	free(d);
+	if (num >= 0)
+		free(d);
 }
 
 static void do_list(ctrl_t *ctrl, char *arg, int mode)

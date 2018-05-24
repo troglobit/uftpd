@@ -208,8 +208,10 @@ static int open_data_connection(ctrl_t *ctrl)
 	return 0;
 }
 
-static void close_data_connection(ctrl_t *ctrl)
+static int close_data_connection(ctrl_t *ctrl)
 {
+	int ret = 0;
+
 	DBG("Closing data connection ...");
 
 	/* PASV server listening socket */
@@ -217,6 +219,7 @@ static void close_data_connection(ctrl_t *ctrl)
 		shutdown(ctrl->data_listen_sd, SHUT_RDWR);
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
+		ret++;
 	}
 
 	/* PASV client socket */
@@ -224,6 +227,7 @@ static void close_data_connection(ctrl_t *ctrl)
 		shutdown(ctrl->data_sd, SHUT_RDWR);
 		close(ctrl->data_sd);
 		ctrl->data_sd = -1;
+		ret++;
 	}
 
 	/* PORT */
@@ -231,6 +235,8 @@ static void close_data_connection(ctrl_t *ctrl)
 		ctrl->data_address[0] = 0;
 		ctrl->data_port = 0;
 	}
+
+	return ret;
 }
 
 static int check_user_pass(ctrl_t *ctrl)
@@ -242,6 +248,21 @@ static int check_user_pass(ctrl_t *ctrl)
 		return 1;
 
 	return 0;
+}
+
+static int do_abort(ctrl_t *ctrl)
+{
+	ctrl->offset = 0;
+	return close_data_connection(ctrl);
+}
+
+static void handle_ABOR(ctrl_t *ctrl, char *arg)
+{
+	DBG("Aborting any current transfer ...");
+	if (do_abort(ctrl))
+		send_msg(ctrl->sd, "426 Connection closed; transfer aborted.\r\n");
+
+	send_msg(ctrl->sd, "226 Closing data connection.\r\n");
 }
 
 static void handle_USER(ctrl_t *ctrl, char *name)
@@ -1019,6 +1040,7 @@ static void handle_UNKNOWN(ctrl_t *ctrl, char *command)
 #define COMMAND(NAME) { #NAME, handle_ ## NAME }
 
 static ftp_cmd_t supported[] = {
+	COMMAND(ABOR),
 	COMMAND(USER),
 	COMMAND(PASS),
 	COMMAND(SYST),

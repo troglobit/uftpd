@@ -875,6 +875,21 @@ static void handle_RMD(ctrl_t *ctrl, char *arg)
 }
 #endif
 
+static void handle_REST(ctrl_t *ctrl, char *arg)
+{
+	const char *errstr;
+	char buf[80];
+
+	if (!string_valid(arg)) {
+		send_msg(ctrl->sd, "550 Invalid argument.\r\n");
+		return;
+	}
+
+	ctrl->offset = strtonum(arg, 0, INT64_MAX, &errstr);
+	snprintf(buf, sizeof(buf), "350 Restarting at %ld.  Send STOR or RETR to continue transfer.\r\n", ctrl->offset);
+	send_msg(ctrl->sd, buf);
+}
+
 static size_t num_nl(char *file)
 {
 	FILE *fp;
@@ -987,6 +1002,7 @@ static void handle_FEAT(ctrl_t *ctrl, char *arg)
 		 " PASV\r\n"
 		 " SIZE\r\n"
 		 " UTF8\r\n"
+		 " REST STREAM\r\n"
 		 " MLST modify*;perm*;size*;type*;\r\n"
 		 "211 End\r\n");
 	send_msg(ctrl->sd, ctrl->buf);
@@ -1010,6 +1026,7 @@ static ftp_cmd_t supported[] = {
 	COMMAND(PORT),
 	COMMAND(EPRT),
 	COMMAND(RETR),
+	COMMAND(REST),
 	COMMAND(MDTM),
 	COMMAND(PASV),
 	COMMAND(EPSV),

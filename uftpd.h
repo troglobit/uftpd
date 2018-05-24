@@ -122,6 +122,7 @@ typedef struct {
 
 	/* TFTP */
 	char    *file;	        /* Current file name to fetch */
+	off_t    offset;	/* Offset in current file, for REST */
 	FILE    *fp;		/* Current file in operation */
 	tftp_t  *th;		/* Same as buf, only as tftp_t */
 	size_t   segsize;	/* SEGSIZE, or per session negotiated */

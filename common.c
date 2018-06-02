@@ -113,7 +113,7 @@ int open_socket(int port, int type, char *desc)
 			WARN(errno, "Failed starting %s server", desc);
 	}
 
-	DBG("Opened socket for port %d!", port);
+	DBG("Opened socket for port %d", port);
 
 	return sd;
 }

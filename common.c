@@ -22,7 +22,7 @@ int chrooted = 0;
 /* Protect against common directory traversal attacks, for details see
  * https://en.wikipedia.org/wiki/Directory_traversal_attack
  *
- * Example:            /srv/ftp/ ../../etc => /etc
+ * Example:            /srv/ftp/ ../../etc/passwd => /etc/passwd
  *                    .~~~~~~~~ .~~~~~~~~~
  *                   /         /
  * Server dir ------'         /
@@ -32,12 +32,16 @@ int chrooted = 0;
  */
 char *compose_path(ctrl_t *ctrl, char *path)
 {
+	struct stat st;
 	static char rpath[PATH_MAX];
-	char dir[PATH_MAX];
+	char *name, *ptr;
+	char dir[PATH_MAX] = { 0 };
 
 	strlcpy(dir, ctrl->cwd, sizeof(dir));
-
 	DBG("Compose path from cwd: %s, arg: %s", ctrl->cwd, path ?: "");
+	if (!path || !strlen(path))
+		goto check;
+
 	if (!path || path[0] != '/') {
 		if (path && path[0] != 0) {
 			if (dir[strlen(dir) - 1] != '/')
@@ -45,8 +49,12 @@ char *compose_path(ctrl_t *ctrl, char *path)
 			strlcat(dir, path, sizeof(dir));
 		}
 	} else {
-		strlcpy(dir, path, sizeof(dir));
+		strlcat(dir, path, sizeof(dir));
 	}
+
+check:
+	while ((ptr = strstr(dir, "//")))
+		memmove(ptr, &ptr[1], strlen(&ptr[1]) + 1);
 
 	if (!chrooted) {
 		size_t len = strlen(home);
@@ -59,11 +67,37 @@ char *compose_path(ctrl_t *ctrl, char *path)
 		DBG("Resulting non-chroot path: %s", dir);
 	}
 
-	if (!realpath(dir, rpath))
-		return NULL;
+	/*
+	 * Handle directories slightly differently, since dirname() on a
+	 * directory returns the parent directory.  So, just squash ..
+	 */
+	if (!stat(dir, &st) && S_ISDIR(st.st_mode)) {
+		if (!realpath(dir, rpath))
+			return NULL;
+	} else {
+		/*
+		 * Check realpath() of directory containing the file, a
+		 * STOR may want to save a new file.  Then append the
+		 * file and return it.
+		 */
+		name = basename(path);
+		ptr = dirname(dir);
 
-	if (!chrooted && !strncmp(dir, home, strlen(home)))
+		memset(rpath, 0, sizeof(rpath));
+		if (!realpath(ptr, rpath)) {
+			ERR(errno, "Failed realpath(%s)", ptr);
+			return NULL;
+		}
+
+		if (rpath[1] != 0)
+			strlcat(rpath, "/", sizeof(rpath));
+		strlcat(rpath, name, sizeof(rpath));
+	}
+
+	if (!chrooted && strncmp(dir, home, strlen(home))) {
+		DBG("Failed non-chroot dir:%s vs home:%s", dir, home);
 		return NULL;
+	}
 
 	return rpath;
 }

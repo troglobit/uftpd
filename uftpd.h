@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <libgen.h>
 #include <limits.h>
 #include <locale.h>
 #include <netdb.h>
@@ -113,17 +114,24 @@ typedef struct {
 	char clientaddr[INET_ADDRSTRLEN];
 
 	/* Event loop context and session watchers */
-	uev_t      io_watcher, timeout_watcher;
+	uev_t      io_watcher, data_watcher, timeout_watcher;
 	uev_ctx_t *ctx;
 
 	/* Session buffer */
 	char    *buf;		/* Pointer to segment buffer */
 	size_t   bufsz;		/* Size of buf */
 
-	/* TFTP */
+	char     pending; 	/* Pending op: LIST, RETR, STOR */
+	char     list_mode;	/* Current LIST mode */
 	char    *file;	        /* Current file name to fetch */
 	off_t    offset;	/* Offset in current file, for REST */
 	FILE    *fp;		/* Current file in operation */
+	int      i;		/* i of d_num in 'd' */
+	int      d_num;		/* Number of entries in 'd' */
+	struct dirent **d;	/* Current directory in LIST op */
+	struct timeval tv;	/* Progress indicator */
+
+	/* TFTP */
 	tftp_t  *th;		/* Same as buf, only as tftp_t */
 	size_t   segsize;	/* SEGSIZE, or per session negotiated */
 	int      timeout;	/* INACTIVITY_TIMER, or per session neg. */

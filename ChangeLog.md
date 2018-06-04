@@ -4,17 +4,24 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.5][] - 2018-05-xx
+[v2.5][] - 2018-06-xx
 ---------------------
 
+The VLC Android app release.
+
 ### Changes
+- Support for `ABOR` FTP command, issue #14
+- Support for `REST` FTP command, issue #13
 - Support for `EPSV` and `EPSV ALL` FTP commands, issue #11
-- Support for `MLSD` FTP command to provide support for the VLC android
-  app., issue #9 and #12
+- Basic support for `MLST` and `MLSD` FTP commands to provide support
+  for the VLC android app., issue #9 and #12
+- Add `CDUP` FTP convenience command, alias to `CWD ..`
+- Refactor `LIST`, `RETR`, `STOR` and `PASV` FTP commands for speed
 
 ### Fixes
 - Really fix 100% CPU problem, issue #9.  Multiple failure modes in
   libuEv and improper handling of `waitpid()` in event loop callback
+- Use libuEv callback also for `PASV` FTP connections
 - Fix `NLST` + `LIST` line endings, must be \r\n
 
 

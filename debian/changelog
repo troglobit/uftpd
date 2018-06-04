@@ -1,8 +1,10 @@
 uftpd (2.5) unstable; urgency=critical
 
   * Really fix 100% CPU issue
-  * Fix line endings for NLST and LIST commands
-  * Add support for EPSV and MLSD commands required for VLC Android app
+  * Fix line endings for NLST and LIST FTP commands
+  * Add support for EPSV, MLSD, ABOR, and REST FTP commands, required
+	for VLC Android app
+  * Refactor LIST, RETR, STOR and PASV FTP commands for speed
 
  -- Joachim Nilsson <troglobit@gmail.com>  Sat, 19 May 2018 13:35:01 +0200
 

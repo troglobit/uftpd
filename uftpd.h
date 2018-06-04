@@ -157,6 +157,7 @@ int     ftp_session(uev_ctx_t *ctx, int client);
 int     tftp_session(uev_ctx_t *ctx, int client);
 
 char   *compose_path(ctrl_t *ctrl, char *path);
+char   *compose_abspath(ctrl_t *ctrl, char *path);
 int     set_nonblock(int fd);
 int     open_socket(int port, int type, char *desc);
 void    convert_address(struct sockaddr_storage *ss, char *buf, size_t len);

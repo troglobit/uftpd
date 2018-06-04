@@ -42,13 +42,11 @@ char *compose_path(ctrl_t *ctrl, char *path)
 	if (!path || !strlen(path))
 		goto check;
 
-	if (!path || path[0] != '/') {
-		if (path && path[0] != 0) {
+	if (path) {
+		if (path[0] != '/') {
 			if (dir[strlen(dir) - 1] != '/')
 				strlcat(dir, "/", sizeof(dir));
-			strlcat(dir, path, sizeof(dir));
 		}
-	} else {
 		strlcat(dir, path, sizeof(dir));
 	}
 
@@ -100,6 +98,24 @@ check:
 	}
 
 	return rpath;
+}
+
+char *compose_abspath(ctrl_t *ctrl, char *path)
+{
+	char *ptr;
+	char cwd[sizeof(ctrl->cwd)];
+
+	if (path && path[0] == '/') {
+		strlcpy(cwd, ctrl->cwd, sizeof(cwd));
+		memset(ctrl->cwd, 0, sizeof(ctrl->cwd));
+	}
+
+	ptr = compose_path(ctrl, path);
+
+	if (path && path[0] == '/')
+		strlcpy(ctrl->cwd, cwd, sizeof(ctrl->cwd));
+
+	return ptr;
 }
 
 int set_nonblock(int fd)

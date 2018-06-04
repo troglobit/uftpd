@@ -376,25 +376,18 @@ static void handle_PWD(ctrl_t *ctrl, char *arg)
 
 static void handle_CWD(ctrl_t *ctrl, char *path)
 {
+	struct stat st;
 	char *dir;
-	char cwd[sizeof(ctrl->cwd)];
 
 	if (!path)
 		goto done;
 
-	if (path[0] == '/') {
-		memcpy(cwd, ctrl->cwd, sizeof(cwd));
-		memset(ctrl->cwd, 0, sizeof(ctrl->cwd));
-		dir = compose_path(ctrl, path);
-		if (!dir) {
-			memcpy(ctrl->cwd, cwd, sizeof(ctrl->cwd));
-			goto fail;
-		}
-	}
-
-	dir = compose_path(ctrl, path);
-	if (!dir) {
-	fail:
+	/*
+	 * Some FTP clients, most notably Chrome, use CWD to check if an
+	 * entry is a file or directory.
+	 */
+	dir = compose_abspath(ctrl, path);
+	if (!dir || stat(dir, &st) || !S_ISDIR(st.st_mode)) {
 		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;
 	}
@@ -966,7 +959,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	char *path;
 	struct stat st;
 
-	path = compose_path(ctrl, file);
+	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
@@ -1005,7 +998,7 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 	struct tm *tm;
 	struct stat st;
 
-	path = compose_path(ctrl, file);
+	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
@@ -1071,7 +1064,7 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 	FILE *fp = NULL;
 	char *path;
 
-	path = compose_path(ctrl, file);
+	path = compose_abspath(ctrl, file);
 	DBG("Trying to write to %s ...", path);
 	fp = fopen(path, "wb");
 	if (!fp) {
@@ -1160,7 +1153,7 @@ static void handle_SIZE(ctrl_t *ctrl, char *file)
 	size_t extralen = 0;
 	struct stat st;
 
-	path = compose_path(ctrl, file);
+	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || S_ISDIR(st.st_mode)) {
 		send_msg(ctrl->sd, "550 No such file, or argument is a directory.\r\n");
 		return;

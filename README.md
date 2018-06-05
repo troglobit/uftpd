@@ -60,7 +60,7 @@ Bug report address: https://github.com/troglobit/uftpd/issues
 
 To start uftpd in the background as an FTP/TFTP server:
 
-    $ uftpd
+    uftpd
 
 If the `ftp` user does not exist on your system, `uftpd` defaults to
 serve files from the `/srv/ftp` directory.  To serve another directory,
@@ -70,11 +70,11 @@ Use `sudo`, or set `CAP_NET_BIND_SERVICE` capabilities, on `uftpd` to
 allow regular users to start `uftpd` on privileged (standard) ports,
 i.e. `< 1024`:
 
-    $ sudo setcap cap_net_bind_service+ep uftpd
+    sudo setcap cap_net_bind_service+ep uftpd
 
 To change port on either FTP or TFTP, use
 
-    $ uftpd -o ftp=PORT,tftp=PORT
+    uftpd -o ftp=PORT,tftp=PORT
 
 Set `PORT` to zero (0) to disable either service.
 

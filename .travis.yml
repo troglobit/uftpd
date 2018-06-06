@@ -25,7 +25,7 @@ addons:
       name: "troglobit/uftpd"
       description: "uftpd -- the no nonsense (T)FTP server"
     notification_email: troglobit@gmail.com
-    build_command_prepend: "./autogen.sh && ./configure"
+    build_command_prepend: "./autogen.sh && PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=/tmp"
     build_command: "make -j5 clean all"
     branch_pattern: dev
 

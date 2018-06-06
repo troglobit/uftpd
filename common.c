@@ -124,7 +124,7 @@ int set_nonblock(int fd)
 
 	flags = fcntl(fd, F_GETFL, 0);
 	if (!flags)
-		fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+		(void)fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
 	return fd;
 }

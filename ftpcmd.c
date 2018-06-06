@@ -1146,7 +1146,7 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 			ERR(errno, "Failed setting MTIME %s of %s", mtime, file);
 			goto fail;
 		}
-		stat(path, &st);
+		(void)stat(path, &st);
 	}
 
 	tm = gmtime(&st.st_mtime);

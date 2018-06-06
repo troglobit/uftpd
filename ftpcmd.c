@@ -766,7 +766,10 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		arg = ptr;
 	}
 
-	path = compose_path(ctrl, arg);
+	if (mode >= 2)
+		path = compose_abspath(ctrl, arg);
+	else
+		path = compose_path(ctrl, arg);
 	if (!path) {
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
@@ -1244,7 +1247,7 @@ static void handle_DELE(ctrl_t *ctrl, char *file)
 		if (ENOENT == errno)
 		fail:	send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		else if (EPERM == errno)
-			send_msg(ctrl->sd, "550 Not allowed to remove file.\r\n");
+			send_msg(ctrl->sd, "550 Not allowed to remove file or directory.\r\n");
 		else
 			send_msg(ctrl->sd, "550 Unknown error.\r\n");
 		return;
@@ -1253,15 +1256,31 @@ static void handle_DELE(ctrl_t *ctrl, char *file)
 	send_msg(ctrl->sd, "200 Command OK\r\n");
 }
 
-#if 0
 static void handle_MKD(ctrl_t *ctrl, char *arg)
 {
+	char *path;
+
+	path = compose_abspath(ctrl, arg);
+	if (!path) {
+		ERR(errno, "Invalid path for %s", arg);
+		goto fail;
+	}
+
+	if (mkdir(path, 0755)) {
+		if (EPERM == errno)
+		fail:	send_msg(ctrl->sd, "550 Not allowed to create directory.\r\n");
+		else
+			send_msg(ctrl->sd, "550 Unknown error.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->sd, "200 Command OK\r\n");
 }
 
 static void handle_RMD(ctrl_t *ctrl, char *arg)
 {
+	handle_DELE(ctrl, arg);
 }
-#endif
 
 static void handle_REST(ctrl_t *ctrl, char *arg)
 {
@@ -1442,6 +1461,8 @@ static ftp_cmd_t supported[] = {
 	COMMAND(PORT),
 	COMMAND(EPRT),
 	COMMAND(RETR),
+	COMMAND(MKD),
+	COMMAND(RMD),
 	COMMAND(REST),
 	COMMAND(MDTM),
 	COMMAND(PASV),

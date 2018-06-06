@@ -104,7 +104,7 @@ static void sigquit_cb(uev_t *w, void *arg, int events)
 		WARN(errno, "Failed signalling children");
 
 	/* Give them time to exit gracefully. */
-	while(wait(NULL) != -1)
+	while (wait(NULL) != -1)
 		;
 
 	/* Leave main loop. */

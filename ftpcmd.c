@@ -555,6 +555,9 @@ static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *n
 	}
 
 	memset(buf, 0, len);
+	if (ctrl->d_num == -1 && (ctrl->list_mode & 0x0F) == 2)
+		strlcat(buf, " ", len);
+
 	for (int i = 0; ctrl->facts[i]; i++)
 		mlsd_fact(ctrl->facts[i], buf, len, name, perms, st);
 
@@ -581,7 +584,9 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 		return 1;
 
 	switch (mode) {
-	case 2:			/* MLSD */
+	case 3:			/* MLSD */
+		/* fallthrough */
+	case 2:			/* MLST */
 		mlsd_printf(ctrl, buf, len, path, name, &st);
 		break;
 
@@ -600,15 +605,50 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 	return 0;
 }
 
+static void do_MLST(ctrl_t *ctrl)
+{
+	size_t len = 0;
+	char buf[512] = { 0 };
+	int sd = ctrl->sd;
+
+	if (ctrl->data_sd != -1)
+		sd = ctrl->data_sd;
+
+	snprintf(buf, sizeof(buf), "250- Listing %s\r\n", ctrl->file);
+	len = strlen(buf);
+
+	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, ctrl->file, basename(ctrl->file))) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	strlcat(buf, "250 End.\r\n", sizeof(buf));
+	send_msg(sd, buf);
+}
+
+static void do_MLSD(ctrl_t *ctrl)
+{
+	char buf[512] = { 0 };
+
+	if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->data_sd, buf);
+	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+}
+
 static void do_LIST(uev_t *w, void *arg, int events)
 {
 	ctrl_t *ctrl = (ctrl_t *)arg;
 	struct timeval tv;
 	ssize_t bytes;
-	char buf[BUFFER_SIZE];
+	char buf[BUFFER_SIZE] = { 0 };
 
 	if (UEV_ERROR == events || UEV_HUP == events) {
-		DBG("error on data_sd ...");
 		uev_io_start(w);
 		return;
 	}
@@ -616,23 +656,19 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	/* Reset inactivity timer. */
 	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
 
+	if (ctrl->d_num == -1) {
+		if (ctrl->list_mode == 3)
+			do_MLSD(ctrl);
+		else
+			do_MLST(ctrl);
+		do_abort(ctrl);
+		return;
+	}
+
 	gettimeofday(&tv, NULL);
 	if (tv.tv_sec - ctrl->tv.tv_sec > 3) {
 		DBG("Sending LIST entry %d of %d to %s ...", ctrl->i, ctrl->d_num, ctrl->clientaddr);
 		ctrl->tv.tv_sec = tv.tv_sec;
-	}
-
-	memset(buf, 0, sizeof(buf));
-
-	if (ctrl->d_num == -1) {
-		if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
-			do_abort(ctrl);
-			send_msg(ctrl->sd, "550 No such file or directory.\r\n");
-			return;
-		}
-
-		send_msg(ctrl->data_sd >= 0 ? ctrl->data_sd : ctrl->sd, buf);
-		goto done;
 	}
 
 	ctrl->list_mode |= (ctrl->pending ? 0 : 0x80);
@@ -645,7 +681,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		name  = entry->d_name;
 
 		DBG("Found directory entry %s", name);
-		if ((!strcmp(name, ".") || !strcmp(name, "..")) && ctrl->list_mode != 2)
+		if ((!strcmp(name, ".") || !strcmp(name, "..")) && ctrl->list_mode < 2)
 			continue;
 
 		snprintf(cwd, sizeof(cwd), "%s%s%s", ctrl->file,
@@ -694,7 +730,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		ctrl->i = 0;
 		return;
 	}
-done:
+
 	do_abort(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
@@ -746,18 +782,6 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		send_msg(ctrl->sd, "125 Data connection already open; transfer starting.\r\n");
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
 		return;
-	} else if (ctrl->d_num == -1) {
-		char buf[512];
-
-		if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
-			do_abort(ctrl);
-			send_msg(ctrl->sd, "550 No such file or directory.\r\n");
-			return;
-		}
-
-		send_msg(ctrl->sd, buf);
-		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
-		return;
 	}
 
 	do_PORT(ctrl, 1);
@@ -780,7 +804,7 @@ static void handle_MLST(ctrl_t *ctrl, char *arg)
 
 static void handle_MLSD(ctrl_t *ctrl, char *arg)
 {
-	list(ctrl, arg, 2);
+	list(ctrl, arg, 3);
 }
 
 static void do_pasv_connection(uev_t *w, void *arg, int events)
@@ -993,6 +1017,13 @@ static void do_RETR(uev_t *w, void *arg, int events)
 static void do_PORT(ctrl_t *ctrl, int pending)
 {
 	if (!ctrl->data_address[0]) {
+		/* Check if previous command was PASV */
+		if (ctrl->data_sd == -1 && ctrl->data_listen_sd == -1) {
+			if (pending == 1 && ctrl->d_num == -1)
+				do_MLST(ctrl);
+			return;
+		}
+
 		ctrl->pending = pending;
 		return;
 	}
@@ -1003,7 +1034,8 @@ static void do_PORT(ctrl_t *ctrl, int pending)
 		return;
 	}
 
-	send_msg(ctrl->sd, "150 Data connection opened; transfer starting.\r\n");
+	if (pending != 1 || ctrl->list_mode != 2)
+		send_msg(ctrl->sd, "150 Data connection opened; transfer starting.\r\n");
 
 	switch (pending) {
 	case 3:

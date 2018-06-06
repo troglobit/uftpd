@@ -5,6 +5,9 @@ language: c
 # Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
 sudo: false
 
+# Attempt to use Ubuntu 16.04
+dist: xenial
+
 # Test build with both GCC and Clang (LLVM)
 compiler:
   - gcc

@@ -128,10 +128,15 @@ The FTP server currently supports the following requests.
 The case of the requests is ignored.
 .Bl -column "Request" -offset indent
 .It Request Ta "Description"
+.It ABOR Ta "abort current transfer"
+.It CDUP Ta "shorthand for CD .. command"
 .It CWD Ta "change working directory"
 .It DELE Ta "delete a file"
+.It EPSV Ta "extended PASV command, used by VLC for Android"
 .It LIST Ta "give list files in a directory" Pq Dq Li "ls -lgA"
 .It NLST Ta "like LIST, but much less verbose"
+.It MLST Ta "RFC 3659 extension to LIST"
+.It MLSD Ta "RFC 3659 extension to LIST"
 .It MKD Ta "make a directory"
 .It NOOP Ta "do nothing, used for keep-alive"
 .It PASS Ta "specify password"
@@ -139,6 +144,7 @@ The case of the requests is ignored.
 .It PORT Ta "specify data connection port"
 .It PWD Ta "print the current working directory"
 .It QUIT Ta "terminate session"
+.It REST Ta "restore RETR or STOR command at file offset"
 .It RETR Ta "retrieve a file"
 .It RMD Ta "remove a directory"
 .It RNFR Ta "specify rename-from file name"

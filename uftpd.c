@@ -185,6 +185,12 @@ static void ftp_cb(uev_t *w, void *arg, int events)
 {
         int client;
 
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		uev_io_stop(w);
+		close(w->fd);
+		return;
+	}
+
         client = accept(w->fd, NULL, NULL);
         if (client < 0) {
                 WARN(errno, "Failed accepting FTP client connection");
@@ -197,6 +203,11 @@ static void ftp_cb(uev_t *w, void *arg, int events)
 static void tftp_cb(uev_t *w, void *arg, int events)
 {
 	uev_io_stop(w);
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		close(w->fd);
+		return;
+	}
 
         tftp_pid = tftp_session(arg, w->fd);
 	if (tftp_pid < 0) {

@@ -397,9 +397,3 @@ First official uftpd release! :-)
 [TODO.md]:       https://github.com/troglobit/uftpd/blob/master/docs/TODO.md
 [README.md]:     https://github.com/troglobit/uftpd/blob/master/README.md
 [CHANGELOG.md]:  https://github.com/troglobit/uftpd/blob/master/CHANGELOG.md
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->

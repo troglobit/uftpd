@@ -149,9 +149,3 @@ complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
 [Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/2947
 [Coverity Status]: https://scan.coverity.com/projects/2947/badge.svg
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->

@@ -8,7 +8,8 @@ Homepage: http://troglobit.com/uftpd.html
 
 Package: uftpd
 Architecture: any
-Depends: openbsd-inetd | inet-superserver, ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: adduser
+Depends: openbsd-inetd | inet-superserver, debconf (>= 0.2.17), ${shlibs:Depends}, ${misc:Depends}
 Provides: ftp-server
 Conflicts: ftp-server, tftpd, tftpd-hpa
 Description: The no nonsense TFTP/FTP server.

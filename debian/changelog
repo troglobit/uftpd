@@ -1,3 +1,98 @@
+uftpd (2.5) unstable; urgency=critical
+
+  * Really fix 100% CPU issue
+  * Fix line endings for NLST and LIST FTP commands
+  * Add support for EPSV, MLSD, ABOR, and REST FTP commands, required
+    for VLC Android app
+  * Refactor LIST, RETR, STOR and PASV FTP commands for speed
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sat, 19 May 2018 13:35:01 +0200
+
+uftpd (2.4-1) unstable; urgency=medium
+
+  * New upstream release, fixes 100% CPU issue reported by some users.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 03 Sep 2017 12:38:38 +0200
+
+uftpd (2.3-1) stable; urgency=low
+
+  * New upstream release, fixes issue with lingering inetd FTP processes
+    using up 100% CPU.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Wed, 22 Mar 2017 07:56:00 +0100
+
+uftpd (2.2-4) stable; urgency=low
+
+  * Fix dpkg-reconfigure support.  When disabling either TFTP/FTP
+    the disabled service was not properly disabled in /etc/inetd.conf
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 14 Mar 2017 22:05:00 +0100
+
+uftpd (2.2-3) stable; urgency=low
+
+  * Add debconf support
+  * Change default group and permissions of /srv/ftp to prevent any
+    future "security" breaches by uploads to the FTP root directory.
+
+    A user must now be member of the users group to share files over
+    TFTP/FTP.  Simply add a user to 'users' and they can upload their
+    files to /srv/ftp.  The TFT/FTP server itself has no rights to
+    write there.  Add an uploads/ sub-directory with write perms for
+    the 'ftp' user if you want to enable anonymous uploads via FTP.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 13 Mar 2017 19:56:00 +0100
+
+uftpd (2.2-1) stable; urgency=low
+
+  * New upstream release, v2.2
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 12 Mar 2017 17:36:00 +0100
+
+uftpd (2.1-1) stable; urgency=low
+
+  * New upstream release, v2.1
+    - Removed built-in GIT submodules for libite and libuev
+    - Updated README
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun,  5 Jun 2016 00:19:30 +0100
+
+uftpd (2.0-1) stable; urgency=low
+
+  * New upstream release, v2.0
+    - Completely changed command line syntax
+    - New binaries (symlinks) for inetd usage, in.tftpd and in.ftpd
+    - Updated man page
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 22 Jan 2016 13:51:56 +0100
+
+uftpd (2.0-rc1-1) unstable; urgency=low
+
+  * New upstream release, v2.0-rc1
+    - Completely changed command line syntax
+    - New binaries (symlinks) for inetd usage
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 17 Jan 2016 23:16:58 +0100
+
+uftpd (1.9.1-1) unstable; urgency=medium
+
+  * Minor fix release
+  * Added support for building with external libite and libuEv
+  * Rebuild for Ubuntu 15.10
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 27 Sep 2015 10:14:31 +0200
+
+uftpd (1.9-1) unstable; urgency=low
+
+  * New upstream release:
+    - Add support for NLST FTP command.
+    - Fix problem with 2 seconds before exiting on SIGTERM/SIGINT.
+    - Fix zombie problem when backgrounding.
+    - Add support for automatically creating a PID file.
+    - Fix problem with LIST (and NLST) ignoring path argument.
+    - Fix problem with FTP client simply closing connection (no QUIT)
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Mon, 13 Jul 2015 01:25:26 +0200
+
 uftpd (1.8-1) unstable; urgency=low
 
   * New upstream release:

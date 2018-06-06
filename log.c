@@ -1,6 +1,6 @@
 /* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014-2017  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,39 +15,48 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define SYSLOG_NAMES
 #include "uftpd.h"
 
-static char log_msg[300];
+int loglevel = LOG_NOTICE;
 
-void logit(int level, int code, const char *fmt, ...)
+
+int loglvl(char *level)
 {
-        int len;
-	FILE *fp = stderr;
-        va_list args;
-
-        va_start(args, fmt);
-        len = vsnprintf(log_msg, sizeof(log_msg), fmt, args);
-        va_end(args);
-        if (code)
-                snprintf(log_msg + len, sizeof(log_msg) - len, ". Error %d: %s", code, strerror(code));
-
-	if (do_log) {
-		syslog(level, "%s", log_msg);
-		return;
+	for (int i = 0; prioritynames[i].c_name; i++) {
+		if (string_match(prioritynames[i].c_name, level))
+			return prioritynames[i].c_val;
 	}
 
-	if (logfile)
-		fp = fopen(logfile, "a");
+	return atoi(level);
+}
 
-	fprintf(fp, "%s%s", log_msg, log_msg[strlen(log_msg)] != '\n' ? "\n" : "");
+void logit(int severity, const char *fmt, ...)
+{
+	FILE *file;
+        va_list args;
 
-	if (logfile)
-		fclose(fp);
+	if (loglevel == INTERNAL_NOPRI)
+		return;
+
+	if (severity > LOG_WARNING)
+		file = stdout;
+	else
+		file = stderr;
+
+        va_start(args, fmt);
+	if (do_syslog)
+		vsyslog(severity, fmt, args);
+	else if (severity <= loglevel) {
+		if (loglevel == LOG_DEBUG)
+			fprintf(file, "%d> ", getpid());
+		vfprintf(file, fmt, args);
+	}
+        va_end(args);
 }
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

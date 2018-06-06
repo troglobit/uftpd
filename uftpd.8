@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+.\" Copyright (c) 2014-2017  Joachim Nilsson <troglobit@gmail.com>
 .\"
 .\" Permission to use, copy, modify, and/or distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -13,64 +13,94 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd Dec 14, 2014
+.Dd Sep 03, 2017
 .Dt UFTPD 8
-.Os "uFTPd (1.7)"
+.Os "uftpd (2.4)"
 .Sh NAME
 .Nm uftpd
 .Nd
 No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
-.Nm uftpd
-.Op Fl dinvV
-.Op Fl h Ar PATH
-.Op Fl l Ar LOGFILE
-.Op Fl f Ar PORT
-.Op Fl t Ar PORT
+.Nm
+.Op Fl hnsv
+.Op Fl l Ar LVL
+.Op Fl o Ar ftp=PORT,tftp=PORT
+.Op Ar PATH
 .Sh DESCRIPTION
-.Nm uftpd
-is a very simple TFTP and anonymous FTP server.  It listens on standard
-Internet ports for each protocol, as defined in the system service
-specification, unless other ports are given on the command line.  For
-details, see
+.Nm
+is a very simple TFTP and anonymous FTP server with inetd support.  It
+listens on standard Internet ports for each protocol, as defined in the
+system service specification,
+.Pa /etc/services ,
+unless other ports are given on the command line.  For details, see
 .Xr services 5 .
 .Pp
-Available options:
-.Bl -tag -width Ds
-.It Fl d
-Enable developer debug messages.  With syslog backend, log messages are
-written to the syslog using
+Without any command line arguments
+.Nm
+serves both FTP and TFTP and automatically backgrounds itself.  Usually
+.Nm
+this means listen to port 21 (FTP) and port 69 (TFTP), serve files from
+.Pa /srv/ftp ,
+and log anything out of the ordinary to syslog.  Messages are written to
+the syslog using the
 .Nm LOG_FTP
-.It Fl i
-Inetd mode, take client connections from stdin
+facility.
+.Pp
+Available command line options:
+.Bl -tag -width Ds
+.It Fl h
+Show built-in help text
+.It Fl l Ar LVL
+Set log level: none, err, info,
+.Ar notice ,
+debug
 .It Fl n
 Run in foreground, do not detach from controlling terminal
-.It Fl h
-Serve files from
-.Ar PATH .
-.Nm uftpd
-defaults to the FTP user's $HOME
-.It Fl l
-Enable syslog backend, useful in combination with
-.Fl n .
-The optional
-.Ar LOGFILE
-argument redirects logging to a file
-.It Fl f
-Enable FTP service.  Use the optional
+.It Fl o
+Set
+.Nm
+option:
+.Bl -tag
+.It Ar ftp=PORT
+.It Ar tftp=PORT
+.It Ar writable
+.El
+.Pp
+Override Internet ports otherwise derived from
+.Xr services 5 .
+Set the
 .Ar PORT
-argument to listen to a custom port
-.It Fl t
-Enable TFTP service.  Use the optional
-.Ar PORT
-argument to listen to a custom port
+to zero (0) to disable a service.
+.Pp
+The
+.Ar writable
+option is to enable writable FTP root, which is not recommended.  Some
+people want this, but it is recommended to instead rely on a writable
+sub-directory, like
+.Ar upload/ ,
+or similar.
+.It Fl s
+Use syslog, even if running in foreground, default when running in the
+background
 .It Fl v
 Show program version
-.It Fl V
-Verbose logging
-.It Fl ?
-Show built-in help text
+.It Ar PATH
+Root directory. The default is to serve files from the FTP user's $HOME
 .El
+.Pp
+.Sh Inetd
+.Nm
+can also be used with an Internet superserver, like the traditional
+inetd or modern init replacements like finit.  In inetd mode the server
+takes client connections from stdin.  To enable inetd mode
+.Nm
+must be called as either
+.Nm in.tftpd
+or
+.Nm in.ftpd .
+In inetd mode
+.Nm
+always runs in the foreground with syslog for messages.
 .Pp
 .Sh FTP
 The file
@@ -98,16 +128,23 @@ The FTP server currently supports the following requests.
 The case of the requests is ignored.
 .Bl -column "Request" -offset indent
 .It Request Ta "Description"
+.It ABOR Ta "abort current transfer"
+.It CDUP Ta "shorthand for CD .. command"
 .It CWD Ta "change working directory"
 .It DELE Ta "delete a file"
+.It EPSV Ta "extended PASV command, used by VLC for Android"
 .It LIST Ta "give list files in a directory" Pq Dq Li "ls -lgA"
+.It NLST Ta "like LIST, but much less verbose"
+.It MLST Ta "RFC 3659 extension to LIST"
+.It MLSD Ta "RFC 3659 extension to LIST"
 .It MKD Ta "make a directory"
-.It NOOP Ta "do nothing"
+.It NOOP Ta "do nothing, used for keep-alive"
 .It PASS Ta "specify password"
 .It PASV Ta "prepare for server-to-server transfer"
 .It PORT Ta "specify data connection port"
 .It PWD Ta "print the current working directory"
 .It QUIT Ta "terminate session"
+.It REST Ta "restore RETR or STOR command at file offset"
 .It RETR Ta "retrieve a file"
 .It RMD Ta "remove a directory"
 .It RNFR Ta "specify rename-from file name"
@@ -119,11 +156,12 @@ The case of the requests is ignored.
 .It USER Ta "specify user name"
 .El
 .Pp
-Remaining FTP requests, as specified in Internet RFC 959, are not
+Remaining FTP requests, as specified in Internet RFC959, are not
 recognized at the moment.  Patches are welcome!
 .Pp
 .Sh TFTP
-uftpd also supports TFTP, the Trivial File Transfer Protocol, which is
+.Nm
+also supports TFTP, the Trivial File Transfer Protocol, which is
 often used for net booting diskless devices, e.g., BOOTP and PXEBOOT.
 .Pp
 The TFTP server currently supports the following requests.
@@ -133,7 +171,8 @@ The TFTP server currently supports the following requests.
 .It ACK
 .El
 .Pp
-uftpd supports TFTP blocksize negotiation, according to RFC 2348.
+.Nm
+supports TFTP blocksize negotiation, according to RFC2348.
 Support for WRQ is not yet implemented, patches welcome!
 .Pp
 .Sh FILES
@@ -148,6 +187,13 @@ file exists.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,
+.Xr tftp 1 ,
 .Xr syslogd 8
+.Sh AUTHORS
+.Nm
+was written by Joachim Nilsson
+.Aq mailto:troglobit@gmail.com
+and is maintained at
+.Aq https://github.com/troglobit/uftpd
 .Sh BUGS
 Here be dragons.

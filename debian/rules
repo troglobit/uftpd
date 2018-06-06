@@ -1,17 +1,16 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+# Simple debian/rules that uses debhelper(7).
+# GNU copyright 1997 by Joey Hess.
+.PHONY: build clean binary-indep binary-arch binary install
 
 build:
 	dh_testdir
-	$(MAKE)
+	dh_auto_configure
+	dh_auto_build
 
 clean:
 	dh_testdir
 	dh_testroot
-	$(MAKE) distclean
 	dh_clean
 
 install: build
@@ -19,36 +18,24 @@ install: build
 	dh_testroot
 	dh_prep
 	dh_installdirs
+	dh_auto_install
 
-	cp uftpd debian/uftpd/usr/sbin/uftpd
-	cp uftpd.8 debian/uftpd/usr/share/man/man8/uftpd.8
-
-# Build architecture-independent files here.
 binary-indep: build install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: build install
-#	dh_testversion
-	dh_testdir
-	dh_testroot
-#	dh_installdebconf
 	dh_installdocs
-#	dh_installexamples
-#	dh_installmenu
-#	dh_installemacsen
-#	dh_installinit
-#	dh_installcron
-#	dh_installmanpages
-#	dh_undocumented
-#	dh_installchangelogs ChangeLog
+	dh_installdebconf
+	dh_installman
+	dh_installchangelogs
+
+binary-arch: build install
 	dh_strip
+	rm -f debian/uftpd/usr/share/doc/uftpd/LICENSE
+	rm -f debian/uftpd/usr/share/doc/uftpd/ChangeLog.md
 	dh_compress
 	dh_fixperms
+	dh_installdebconf
 	dh_installdeb
 	dh_shlibdeps
 	dh_gencontrol
-#	dh_makeshlibs
 	dh_md5sums
 	dh_builddeb
 
@@ -56,4 +43,3 @@ source diff:
 	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install

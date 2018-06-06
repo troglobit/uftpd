@@ -1,6 +1,6 @@
 /* uftpd -- the no nonsense (T)FTP server
  *
- * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014-2017  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -18,15 +18,15 @@
 #include "uftpd.h"
 
 /* Global daemon settings */
+char *prognm      = PACKAGE_NAME;
 char *home        = NULL;
 int   inetd       = 0;
 int   background  = 1;
-int   debug       = 0;
-int   verbose     = 0;
-int   do_log      = 1;
-int   do_ftp      = 0;
-int   do_tftp     = 0;
-char *logfile     = NULL;
+int   do_syslog   = 1;
+int   do_ftp      = FTP_DEFAULT_PORT;
+int   do_tftp     = TFTP_DEFAULT_PORT;
+int   do_insecure = 0;
+pid_t tftp_pid    = 0;
 struct passwd *pw = NULL;
 
 /* Event contexts */
@@ -41,112 +41,74 @@ static uev_t sigquit_watcher;
 
 static int version(void)
 {
-	printf("Version %s\n", VERSION);
+	printf("%s\n", PACKAGE_VERSION);
 	return 0;
 }
 
-static int usage(void)
+static int usage(int code)
 {
-	printf("\nUsage: %s [-dinvV] [-hPATH] [-lLOGFILE] [-fPORT] [-tPORT]\n"
-	       "\n"
-	       "  -d         Enable developer debug logs\n"
-	       "  -i         Inetd mode, take client connections from stdin\n"
-	       "  -n         Run in foreground, do not detach from controlling terminal\n"
-	       "  -hPATH     Serve files from PATH, defaults to FTP user's $HOME\n"
-	       "  -l[PATH]   Log to stdout, an optional logfile, or default to syslog\n"
-	       "  -f[PORT]   Enable FTP service, on system defalt port, or custom PORT\n"
-	       "  -t[PORT]   Enable TFTP service, on system default port, or custom PORT\n"
-	       "  -v         Show program version\n"
-	       "  -V         Verbose logging\n"
-	       "  -?         Show this help text\n"
-	       "\n"
-	       "Bug report address: %-40s\n\n", __progname, BUGADDR);
+	int is_inetd = string_match(prognm, "in.");
 
-	return 0;
-}
+	if (is_inetd)
+		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", prognm);
+	else
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]\n\n", prognm);
 
-static void ftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
-{
-        int client;
+	printf("  -h         Show this help text\n"
+	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");
+	if (!is_inetd)
+		printf("  -n         Run in foreground, do not detach from controlling terminal\n"
+		       "  -o OPT     Options:\n"
+		       "                      ftp=PORT\n"
+		       "                      tftp=PORT\n"
+		       "                      writable\n"
+		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
 
-        client = accept(w->fd, NULL, NULL);
-        if (client < 0) {
-                perror("Failed accepting incoming FTP client connection");
-                return;
-        }
+	printf("  -v         Show program version\n\n");
+	printf("The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'\n"
+	       "Bug report address: %-40s\n\n", PACKAGE_BUGREPORT);
 
-        ftp_session(client);
-}
-
-static void tftp_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void UNUSED(*arg), int UNUSED(events))
-{
-	DBG("TFTP callback for socket %d!", w->fd);
-        tftp_session(w->fd);
-}
-
-static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
-{
-	int sd;
-
-	if (!port)
-		/* Disabled */
-		return 1;
-
-	sd = open_socket(port, type, desc);
-	if (sd < 0) {
-		WARN(errno, "Failed starting %s service", desc);
-		return 1;
-	}
-
-	INFO("Starting %s server on port %d ...", desc, port);
-	uev_io_init(ctx, w, cb, NULL, sd, UEV_READ);
-
-	return 0;
-}
-
-int serve_files(uev_ctx_t *ctx)
-{
-	int ftp, tftp;
-
-	DBG("Starting services ...");
-	ftp  = start_service(ctx, &ftp_watcher,   ftp_cb, do_ftp, SOCK_STREAM, "FTP");
-	tftp = start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
-
-	/* Check if failed to start any service ... */
-	if (ftp && tftp)
-		return 1;
-
-	INFO("Serving files from %s ...", home);
-
-	return uev_run(ctx, 0);
+	return code;
 }
 
 /*
  * SIGCHLD: one of our children has died
  */
-static void sigchld_cb(uev_ctx_t *UNUSED(ctx), uev_t *UNUSED(w), void *UNUSED(arg), int UNUSED(events))
+static void sigchld_cb(uev_t *w, void *arg, int events)
 {
 	while (1) {
 		pid_t pid;
 
 		pid = waitpid(0, NULL, WNOHANG);
-		if (!pid)
-			continue;
-
-		if (-1 == pid)
+		if (pid <= 0)
 			break;
+
+		/* TFTP client disconnected, we can now serve TFTP again! */
+		if (pid == tftp_pid) {
+			DBG("Previous TFTP session ended, restarting TFTP watcher ...");
+			tftp_pid = 0;
+			uev_io_start(&tftp_watcher);
+		}
 	}
 }
 
 /*
  * SIGQUIT: request termination
  */
-static void sigquit_cb(uev_ctx_t *UNUSED(ctx), uev_t *w, void *UNUSED(arg), int UNUSED(events))
+static void sigquit_cb(uev_t *w, void *arg, int events)
 {
 	INFO("Recieved signal %d, exiting ...", w->signo);
-	killpg(0, SIGTERM);
-	sleep(2);
-	killpg(0, SIGKILL);
+
+	/* Forward signal to any children in this process group. */
+	if (killpg(getpgrp(), SIGTERM))
+		WARN(errno, "Failed signalling children");
+
+	/* Give them time to exit gracefully. */
+	while(wait(NULL) != -1)
+		;
+
+	/* Leave main loop. */
+	uev_exit(w->ctx);
 }
 
 static void sig_init(uev_ctx_t *ctx)
@@ -174,13 +136,27 @@ static int find_port(char *service, char *proto, int fallback)
 	return port;
 }
 
-static void init(uev_ctx_t *ctx)
+/*
+ * Check that we don't have write access to the FTP root,
+ * unless explicitly allowed
+ */
+static int security_check(char *home)
 {
-	uev_init(ctx);
+	if (access(home, F_OK)) {
+		ERR(errno, "Cannot access FTP root %s", home);
+		return 1;
+	}
 
-	/* Setup signal callbacks */
-	sig_init(ctx);
+	if (!do_insecure && access(home, W_OK)) {
+		ERR(0, "FTP root %s writable, possible security violation!", home);
+		return 1;
+	}
 
+	return 0;
+}
+
+static int init(uev_ctx_t *ctx)
+{
 	/* Figure out FTP/TFTP ports */
 	if (do_ftp == 1)
 		do_ftp  = find_port(FTP_SERVICE_NAME, FTP_PROTO_NAME, FTP_DEFAULT_PORT);
@@ -191,88 +167,239 @@ static void init(uev_ctx_t *ctx)
 	if (!home) {
 		pw = getpwnam(FTP_DEFAULT_USER);
 		if (!pw) {
-			home = strdup(FTP_DEFAULT_HOME);
 			WARN(errno, "Cannot find user %s, falling back to %s as FTP root.",
-			     FTP_DEFAULT_USER, home);
+			     FTP_DEFAULT_USER, FTP_DEFAULT_HOME);
+			home = strdup(FTP_DEFAULT_HOME);
 		} else {
 			home = strdup(pw->pw_dir);
 		}
 	}
+
+	if (!home || security_check(home))
+		return 1;
+
+	return uev_init(ctx);
+}
+
+static void ftp_cb(uev_t *w, void *arg, int events)
+{
+        int client;
+
+        client = accept(w->fd, NULL, NULL);
+        if (client < 0) {
+                WARN(errno, "Failed accepting FTP client connection");
+                return;
+        }
+
+        ftp_session(arg, client);
+}
+
+static void tftp_cb(uev_t *w, void *arg, int events)
+{
+	uev_io_stop(w);
+
+        tftp_pid = tftp_session(arg, w->fd);
+	if (tftp_pid < 0) {
+		tftp_pid = 0;
+		uev_io_start(w);
+	}
+}
+
+static int start_service(uev_ctx_t *ctx, uev_t *w, uev_cb_t *cb, int port, int type, char *desc)
+{
+	int sd;
+
+	if (!port)
+		/* Disabled */
+		return 1;
+
+	sd = open_socket(port, type, desc);
+	if (sd < 0) {
+		if (EACCES == errno)
+			WARN(0, "Not allowed to start %s service.%s",
+			     desc, port < 1024 ? "  Privileged port." : "");
+		return 1;
+	}
+
+	INFO("Starting %s server on port %d ...", desc, port);
+	uev_io_init(ctx, w, cb, ctx, sd, UEV_READ);
+
+	return 0;
+}
+
+static int serve_files(uev_ctx_t *ctx)
+{
+	int ftp, tftp;
+
+	DBG("Starting services ...");
+	ftp  = start_service(ctx, &ftp_watcher,   ftp_cb, do_ftp, SOCK_STREAM, "FTP");
+	tftp = start_service(ctx, &tftp_watcher, tftp_cb, do_tftp, SOCK_DGRAM, "TFTP");
+
+	/* Check if failed to start any service ... */
+	if (ftp && tftp)
+		return 1;
+
+	/* Setup signal callbacks */
+	sig_init(ctx);
+
+	/* We're now up and running, save pid file. */
+	pidfile(NULL);
+
+	INFO("Serving files from %s ...", home);
+
+	return uev_run(ctx, 0);
+}
+
+static char *progname(char *arg0)
+{
+       char *nm;
+
+       nm = strrchr(arg0, '/');
+       if (nm)
+	       nm++;
+       else
+	       nm = arg0;
+
+       return nm;
 }
 
 int main(int argc, char **argv)
 {
 	int c;
+	enum {
+		FTP_OPT = 0,
+		TFTP_OPT,
+		SEC_OPT,
+	};
+	char *subopts;
+	char *const token[] = {
+		[FTP_OPT]  = "ftp",
+		[TFTP_OPT] = "tftp",
+		[SEC_OPT]  = "writable",
+		NULL
+	};
 	uev_ctx_t ctx;
 
-	while ((c = getopt (argc, argv, "?df::h:il::nt::vV")) != EOF) {
+	prognm = progname(argv[0]);
+	while ((c = getopt(argc, argv, "hl:no:sv")) != EOF) {
 		switch (c) {
-		case 'd':
-			debug = 1;
-			break;
-
-		case 'f':
-			do_ftp = 1;
-			if (optarg)
-				do_ftp = atoi(optarg);
-			break;
-
 		case 'h':
-			home = strdup(optarg);
-			break;
-
-		case 'i':
-			inetd = 1;
-			break;
+			return usage(0);
 
 		case 'l':
-			do_log = 1;
-			if (optarg)
-				logfile = strdup(optarg);
+			loglevel = loglvl(optarg);
+			if (-1 == loglevel)
+				return usage(1);
 			break;
 
 		case 'n':
 			background = 0;
+			do_syslog--;
 			break;
 
-		case 't':
-			do_tftp = 1;
-			if (optarg)
-				do_tftp = atoi(optarg);
+		case 'o':
+			subopts = optarg;
+			while (*subopts != '\0') {
+				char *value;
+
+				switch (getsubopt(&subopts, token, &value)) {
+				case FTP_OPT:
+					if (!value) {
+						fprintf(stderr, "Missing port argument to -o ftp=PORT\n");
+						return usage(1);
+					}
+					do_ftp = atoi(value);
+					break;
+
+				case TFTP_OPT:
+					if (!value) {
+						fprintf(stderr, "Missing port argument to -o tftp=PORT\n");
+						return usage(1);
+					}
+					do_tftp = atoi(value);
+					break;
+
+				case SEC_OPT:
+					do_insecure = 1;
+					break;
+
+				default:
+					fprintf(stderr, "Unrecognized option '%s'\n", value);
+					return usage(1);
+				}
+			}
+			break;
+
+		case 's':
+			do_syslog++;
 			break;
 
 		case 'v':
 			return version();
 
-		case 'V':
-			verbose = 1;
-			break;
-
 		default:
-			return usage();
+			return usage(1);
 		}
 	}
 
-	/* Disable syslog() in foreground with debug enabled */
-	if (!background && debug)
-		do_log = 0;
+	if (optind < argc) {
+		size_t len;
 
-	if (do_log)
-		openlog(__progname, LOG_PID | LOG_NDELAY, LOG_FTP);
+		home = strdup(argv[optind]);
+		if (!home) {
+			ERR(errno, "Failed allocating memory");
+			return 1;
+		}
 
-	/* Default to FTP for backwards compat */
-	if (!do_ftp && !do_tftp)
-		do_ftp = 1;
+		len = strlen(home) - 1;
+		if (home[len] == '/')
+			home[len] = 0;
+	}
+
+	/* Inetd mode enforces foreground and syslog */
+	if (string_compare(prognm, "in.tftpd")) {
+		inetd      = 1;
+		do_ftp     = 0;
+		do_tftp    = 1;
+		background = 0;
+		do_syslog  = 1;
+	} else if (string_compare(prognm, "in.ftpd")) {
+		inetd      = 1;
+		do_ftp     = 1;
+		do_tftp    = 0;
+		background = 0;
+		do_syslog  = 1;
+	}
+
+	if (do_syslog) {
+		openlog(prognm, LOG_PID | LOG_NDELAY, LOG_FTP);
+		setlogmask(LOG_UPTO(loglevel));
+	}
 
 	DBG("Initializing ...");
-	init(&ctx);
+	if (init(&ctx)) {
+		ERR(0, "Failed initializing, exiting.");
+		return 1;
+	}
 
 	if (inetd) {
-		INFO("Started from inetd, serving files from %s ...", home);
-		if (do_tftp)
-			return tftp_session(STDIN_FILENO);
+		int sd;
+		pid_t pid;
 
-		return ftp_session(STDIN_FILENO);
+		INFO("Started from inetd, serving files from %s ...", home);
+
+		/* Ensure socket is non-blocking */
+		sd = STDIN_FILENO;
+		(void)fcntl(sd, F_SETFL, fcntl(sd, F_GETFL, 0) | O_NONBLOCK);
+
+		if (do_tftp)
+			pid = tftp_session(&ctx, sd);
+		else
+			pid = ftp_session(&ctx, sd);
+
+		if (-1 == pid)
+			return 1;
+		return 0;
 	}
 
 	if (background) {
@@ -283,13 +410,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	DBG("Serving files ...");
+	DBG("Serving files as PID %d ...", getpid());
 	return serve_files(&ctx);
 }
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

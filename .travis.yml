@@ -1,7 +1,14 @@
 # Travis CI integration
+# Defaults to GNU GCC and autotools: ./configure && make && make test
 language: c
+
+# Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
+sudo: false
+
+# Test build with both GCC and Clang (LLVM)
 compiler:
   - gcc
+  - clang
 
 env:
   global:
@@ -10,13 +17,32 @@ env:
    - secure: "PQuj5u9r9J22UAgjeu0unfZewE48Y1PFmzD+o3QHpc/lPqFoDKvUY+pjAOsCXuV4DBORLGLKs+oZBFmb1yliBZBm6nO1Yj2JutlwyFRKUBTJkEi5Xn12adAYRI0THaQ5/b0kKPonxOuA/4ksoC2myqX7izz+Z6qKgSwJanKHrvA="
 
 addons:
+  apt:
+    packages:
+      - tree
   coverity_scan:
     project:
       name: "troglobit/uftpd"
       description: "uftpd -- the no nonsense (T)FTP server"
     notification_email: troglobit@gmail.com
-    build_command_prepend: "make distclean"
-    build_command: "make -j5"
+    build_command_prepend: "./autogen.sh && ./configure"
+    build_command: "make -j5 clean all"
     branch_pattern: dev
 
-script: make -j5
+install:
+  - wget https://github.com/troglobit/libuev/releases/download/v2.1.0/libuev-2.1.0.tar.xz
+  - wget https://github.com/troglobit/libite/releases/download/v1.5.0/libite-1.5.0.tar.xz
+  - tar xf libuev-2.1.0.tar.xz
+  - tar xf libite-1.5.0.tar.xz
+  - (cd libuev-2.1.0 && ./configure --prefix=/tmp && make && make install-strip)
+  - (cd libite-1.5.0 && ./configure --prefix=/tmp && make && make install-strip)
+
+script:
+  - ./autogen.sh
+  - PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=/tmp
+  - make clean
+  - make -j5
+  - make install-strip
+  - tree /tmp
+  - ldd /tmp/sbin/uftpd
+  - LD_LIBRARY_PATH=/tmp/lib /tmp/sbin/uftpd -h

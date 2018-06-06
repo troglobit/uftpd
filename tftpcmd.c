@@ -1,6 +1,6 @@
 /* TFTP Engine
  *
- * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014-2017  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,8 +15,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <poll.h>
 #include "uftpd.h"
+#include <poll.h>
+#include <arpa/tftp.h>
 
 /* Send @len bytes data in @ctrl->buf */
 static int do_send(ctrl_t *ctrl, size_t len)
@@ -144,6 +145,8 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 
 	/* First opt is always filename */
 	ctrl->file = strdup(buf);
+	if (!ctrl->file)
+		return send_ERROR(ctrl, ENOMEM);
 
 	do {
 		/* Prepare to read options */
@@ -176,11 +179,17 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 
 static int handle_RRQ(ctrl_t *ctrl)
 {
-	char *path = compose_path(ctrl, ctrl->file);
+	char *path;
+
+	path = compose_path(ctrl, ctrl->file);
+	if (!path) {
+		ERR(errno, "%s: Invalid path to file %s", ctrl->clientaddr, ctrl->file);
+		return send_ERROR(ctrl, ENOTFOUND);
+	}
 
 	ctrl->fp = fopen(path, "r");
 	if (!ctrl->fp) {
-		ERR(errno, "Failed opening %s", path);
+		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
 		return send_ERROR(ctrl, ENOTFOUND);
 	}
 
@@ -204,112 +213,94 @@ static int handle_ACK(ctrl_t *ctrl, int block)
 	return 0;
 }
 
-void tftp_command(ctrl_t *ctrl)
+static void read_client_command(uev_t *w, void *arg, int events)
 {
-	int active = 1;
+	int              active = 1;
+	ctrl_t          *ctrl = (ctrl_t *)arg;
+	ssize_t          len;
+	uint16_t         port, op, block;
+	struct sockaddr *addr = (struct sockaddr *)&ctrl->client_sa;
+	socklen_t        addr_len = sizeof(ctrl->client_sa);
 
-	DBG("Entering %s() ...", __func__);
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
 
+	memset(ctrl->buf, 0, ctrl->bufsz);
+	len = recvfrom(ctrl->sd, ctrl->buf, ctrl->bufsz, 0, addr, &addr_len);
+	if (-1 == len) {
+		if (errno != EINTR)
+			ERR(errno, "Failed reading command/status from client");
+
+		uev_exit(w->ctx);
+		return;
+	}
+
+	convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
+	port   = ntohs(((struct sockaddr_in *)addr)->sin_port);
+	op     = ntohs(ctrl->th->th_opcode);
+	block  = ntohs(ctrl->th->th_block);
+
+	switch (op) {
+	case RRQ:
+		len -= ctrl->th->th_stuff - ctrl->buf;
+		if (parse_RRQ(ctrl, ctrl->th->th_stuff, len)) {
+			ERR(errno, "Failed parsing TFTP RRQ");
+			active = 0;
+			break;
+		}
+		DBG("tftp RRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		active = handle_RRQ(ctrl);
+		free(ctrl->file);
+		break;
+
+	case ERROR:
+		DBG("tftp ERROR: %hd", ntohs(ctrl->th->th_code));
+		active = 0;
+		break;
+
+	case ACK:
+		DBG("tftp ACK, block # %hu", block);
+		active = handle_ACK(ctrl, block);
+		break;
+
+	default:
+		DBG("tftp opcode: %hd", op);
+		DBG("tftp block#: %hu", block);
+		break;
+	}
+
+	if (!active)
+		uev_exit(w->ctx);
+}
+
+static void tftp_command(ctrl_t *ctrl)
+{
 	/* Default buffer and segment size */
 	if (alloc_buf(ctrl, SEGSIZE)) {
 		ERR(errno, "Failed allocating TFTP buffer memory");
 		return;
 	}
 
-	while (active) {
-		ssize_t    len;
-		uint16_t   port, op, block;
-		socklen_t  addr_len = sizeof(ctrl->client_sa);
-		struct pollfd pfd = {
-			.fd     = ctrl->sd,
-			.events = POLLIN | POLLPRI
-		};
-
-		errno = 0;
-		if (poll(&pfd, 1, INACTIVITY_TIMER * 1000) <= 0) {
-			ERR(errno, "Error or timeout waiting for client");
-			break;
-		}
-
-		memset(ctrl->buf, 0, ctrl->bufsz);
-
-		DBG("Reading TFTP request ... ");
-		len = recvfrom(ctrl->sd, ctrl->buf, ctrl->bufsz, 0, (struct sockaddr *)&ctrl->client_sa, &addr_len);
-		if (-1 == len) {
-			if (errno == EINTR || errno == EAGAIN)
-				break;
-
-			ERR(errno, "Failed reading command/status from client");
-			break;
-		}
-
-		convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
-		port   = ntohs(((struct sockaddr_in *)&ctrl->client_sa)->sin_port);
-		op     = ntohs(ctrl->th->th_opcode);
-		block  = ntohs(ctrl->th->th_block);
-
-		switch (op) {
-		case RRQ:
-			len -= ctrl->th->th_stuff - ctrl->buf;
-			if (parse_RRQ(ctrl, ctrl->th->th_stuff, len)) {
-				ERR(errno, "Failed parsing TFTP RRQ");
-				active = 0;
-				break;
-			}
-			DBG("tftp RRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
-			active = handle_RRQ(ctrl);
-			free(ctrl->file);
-			break;
-
-		case ERROR:
-			DBG("tftp ERROR: %hd", ntohs(ctrl->th->th_code));
-			active = 0;
-			break;
-
-		case ACK:
-			DBG("tftp ACK, block # %hu", block);
-			active = handle_ACK(ctrl, block);
-			break;
-
-		default:
-			DBG("tftp opcode: %hd", op);
-			DBG("tftp block#: %hu", block);
-			break;
-		}
-	}
-
-	DBG("Leaving %s() ...", __func__);
+	uev_io_init(ctrl->ctx, &ctrl->io_watcher, read_client_command, ctrl, ctrl->sd, UEV_READ);
+	uev_run(ctrl->ctx, 0);
 }
 
-int tftp_session(int sd)
+int tftp_session(uev_ctx_t *ctx, int sd)
 {
 	int pid = 0;
 	ctrl_t *ctrl;
 
-	/* NULL can be error or parent process */
-	ctrl = new_session(sd, &pid);
-	if (!ctrl) {
-		int status = 0;
-
-		if (-1 == pid)
-			return -1;
-
-		waitpid(pid, &status, WUNTRACED | WCONTINUED);
-		return WEXITSTATUS(status);
-	}
+	ctrl = new_session(ctx, sd, &pid);
+	if (!ctrl)
+		return pid;
 
 	tftp_command(ctrl);
 
-	DBG("Exiting ...");
-	del_session(ctrl);
-
-	exit(0);
+	exit(del_session(ctrl, 0));
 }
-
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

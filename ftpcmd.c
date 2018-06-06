@@ -1,6 +1,6 @@
 /* FTP engine
  *
- * Copyright (c) 2014  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2014-2017  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,10 +15,36 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "ftpcmd.h"
+#include "uftpd.h"
+#include <arpa/ftp.h>
 
+typedef struct {
+	char *command;
+	void (*cb)(ctrl_t *ctr, char *arg);
+} ftp_cmd_t;
 
-static void send_msg(int sd, char *msg)
+static ftp_cmd_t supported[];
+
+static void do_PORT(ctrl_t *ctrl, int pending);
+static void do_LIST(uev_t *w, void *arg, int events);
+static void do_RETR(uev_t *w, void *arg, int events);
+static void do_STOR(uev_t *w, void *arg, int events);
+
+static int is_cont(char *msg)
+{
+	char *ptr;
+
+	ptr = strchr(msg, '\r');
+	if (ptr) {
+		ptr++;
+		if (strchr(ptr, '\r'))
+			return 1;
+	}
+
+	return 0;
+}
+
+static int send_msg(int sd, char *msg)
 {
 	int n = 0;
 	int l;
@@ -26,7 +52,7 @@ static void send_msg(int sd, char *msg)
 	if (!msg) {
 	err:
 		ERR(EINVAL, "Missing argument to send_msg()");
-		return;
+		return 1;
 	}
 
 	l = strlen(msg);
@@ -37,14 +63,16 @@ static void send_msg(int sd, char *msg)
 		int result = send(sd, msg + n, l, 0);
 
 		if (result < 0) {
-			perror("Failed sending message to client");
-			return;
+			ERR(errno, "Failed sending message to client");
+			return 1;
 		}
 
 		n += result;
 	}
 
-	DBG("%s\n", msg);
+	DBG("Sent: %s%s", is_cont(msg) ? "\n" : "", msg);
+
+	return 0;
 }
 
 /*
@@ -54,26 +82,50 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 {
 	char *ptr;
 	ssize_t bytes;
+	uint8_t *raw = (uint8_t *)msg;
 
 	/* Clear for every new command. */
 	memset(msg, 0, len);
 
 	/* Save one byte (-1) for NUL termination */
-	while ((bytes = recv(sd, msg, len - 1, 0))) {
-		if (bytes < 0) {
-			if (EINTR == errno)
-				return 1;
+	bytes = recv(sd, msg, len - 1, 0);
+	if (bytes < 0) {
+		if (EINTR == errno)
+			return 1;
 
+		if (ECONNRESET == errno)
+			DBG("Connection reset by client.");
+		else
 			ERR(errno, "Failed reading client command");
-			return 1;
+		return 1;
+	}
+
+	if (!bytes) {
+		INFO("Client disconnected.");
+		return 1;
+	}
+
+	if (raw[0] == 0xff) {
+		char tmp[4];
+		char buf[20] = { 0 };
+		int i;
+
+		i = recv(sd, &msg[bytes], len - bytes - 1, MSG_OOB | MSG_DONTWAIT);
+		if (i > 0)
+			bytes += i;
+
+		for (i = 0; i < bytes; i++) {
+			snprintf(tmp, sizeof(tmp), "%2X%s", raw[i], i + 1 < bytes ? " " : "");
+			strlcat(buf, tmp, sizeof(buf));
 		}
 
-		if (!bytes) {
-			show_log("Client disconnected.");
-			return 1;
-		}
+		strlcpy(msg, buf, len);
+		*cmd      = msg;
+		*argument = NULL;
 
-		break;
+		DBG("Recv: [%s], %d bytes", msg, bytes);
+
+		return 0;
 	}
 
 	/* NUL terminate for strpbrk() */
@@ -94,6 +146,8 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	if (ptr)
 		*ptr = 0;
 
+	DBG("Recv: %s %s", *cmd, *argument ?: "");
+
 	return 0;
 }
 
@@ -104,9 +158,11 @@ static int open_data_connection(ctrl_t *ctrl)
 
 	/* Previous PORT command from client */
 	if (ctrl->data_address[0]) {
-		ctrl->data_sd = socket(AF_INET, SOCK_STREAM, 0);
+		int rc;
+
+		ctrl->data_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if (-1 == ctrl->data_sd) {
-			perror("Failed creating data socket");
+			ERR(errno, "Failed creating data socket");
 			return -1;
 		}
 
@@ -115,54 +171,71 @@ static int open_data_connection(ctrl_t *ctrl)
 		sin.sin_port = htons(ctrl->data_port);
 		inet_aton(ctrl->data_address, &(sin.sin_addr));
 
-		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
-			perror("Failed connecting data socket to client");
+		rc = connect(ctrl->data_sd, (struct sockaddr *)&sin, len);
+		if (rc == -1 && EINPROGRESS != errno) {
+			ERR(errno, "Failed connecting data socket to client");
 			close(ctrl->data_sd);
 			ctrl->data_sd = -1;
 
 			return -1;
 		}
 
-		DBG("Connected successfully to client's previously requested address:PORT %s:%d", ctrl->data_address, ctrl->data_port);
+		DBG("Connected successfully to client's previously requested address:PORT %s:%d",
+		    ctrl->data_address, ctrl->data_port);
 		return 0;
 	}
 
 	/* Previous PASV command, accept connect from client */
 	if (ctrl->data_listen_sd > 0) {
+		const int const_int_1 = 1;
+		int retries = 3;
 		char client_ip[100];
 
+	retry:
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
 		if (-1 == ctrl->data_sd) {
-			perror("Failed accepting connection from client");
+			if (EAGAIN == errno && --retries) {
+				sleep(1);
+				goto retry;
+			}
+
+			ERR(errno, "Failed accepting connection from client");
 			return -1;
 		}
 
-		len = sizeof(struct sockaddr);
-		if (-1 == getpeername(ctrl->data_sd, (struct sockaddr *)&sin, &len)) {
-			perror("Cannot determine client address");
-			close(ctrl->data_sd);
-			ctrl->data_sd = -1;
-			return -1;
-		}
+		setsockopt(ctrl->data_sd, SOL_SOCKET, SO_KEEPALIVE, &const_int_1, sizeof(const_int_1));
+		set_nonblock(ctrl->data_sd);
+
 		inet_ntop(AF_INET, &(sin.sin_addr), client_ip, INET_ADDRSTRLEN);
-		DBG("Client PASV data connection from %s", client_ip);
+		DBG("Client PASV data connection from %s:%d", client_ip, ntohs(sin.sin_port));
+
+		close(ctrl->data_listen_sd);
+		ctrl->data_listen_sd = -1;
 	}
 
 	return 0;
 }
 
-static void close_data_connection(ctrl_t *ctrl)
+static int close_data_connection(ctrl_t *ctrl)
 {
+	int ret = 0;
+
+	DBG("Closing data connection ...");
+
 	/* PASV server listening socket */
 	if (ctrl->data_listen_sd > 0) {
+		shutdown(ctrl->data_listen_sd, SHUT_RDWR);
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
+		ret++;
 	}
 
 	/* PASV client socket */
 	if (ctrl->data_sd > 0) {
+		shutdown(ctrl->data_sd, SHUT_RDWR);
 		close(ctrl->data_sd);
 		ctrl->data_sd = -1;
+		ret++;
 	}
 
 	/* PORT */
@@ -170,6 +243,8 @@ static void close_data_connection(ctrl_t *ctrl)
 		ctrl->data_address[0] = 0;
 		ctrl->data_port = 0;
 	}
+
+	return ret;
 }
 
 static int check_user_pass(ctrl_t *ctrl)
@@ -183,7 +258,48 @@ static int check_user_pass(ctrl_t *ctrl)
 	return 0;
 }
 
-void handle_USER(ctrl_t *ctrl, char *name)
+static int do_abort(ctrl_t *ctrl)
+{
+	if (ctrl->d || ctrl->d_num) {
+		uev_io_stop(&ctrl->data_watcher);
+		if (ctrl->d_num > 0)
+			free(ctrl->d);
+		ctrl->d_num = 0;
+		ctrl->d = NULL;
+		ctrl->i = 0;
+
+		if (ctrl->file)
+			free(ctrl->file);
+		ctrl->file = NULL;
+	}
+
+	if (ctrl->file) {
+		uev_io_stop(&ctrl->data_watcher);
+		free(ctrl->file);
+		ctrl->file = NULL;
+	}
+
+	if (ctrl->fp) {
+		fclose(ctrl->fp);
+		ctrl->fp = NULL;
+	}
+
+	ctrl->pending = 0;
+	ctrl->offset = 0;
+
+	return close_data_connection(ctrl);
+}
+
+static void handle_ABOR(ctrl_t *ctrl, char *arg)
+{
+	DBG("Aborting any current transfer ...");
+	if (do_abort(ctrl))
+		send_msg(ctrl->sd, "426 Connection closed; transfer aborted.\r\n");
+
+	send_msg(ctrl->sd, "226 Closing data connection.\r\n");
+}
+
+static void handle_USER(ctrl_t *ctrl, char *name)
 {
 	if (ctrl->name[0]) {
 		ctrl->name[0] = 0;
@@ -203,7 +319,7 @@ void handle_USER(ctrl_t *ctrl, char *name)
 	}
 }
 
-void handle_PASS(ctrl_t *ctrl, char *pass)
+static void handle_PASS(ctrl_t *ctrl, char *pass)
 {
 	if (!ctrl->name[0]) {
 		send_msg(ctrl->sd, "503 No username given.\r\n");
@@ -221,14 +337,14 @@ void handle_PASS(ctrl_t *ctrl, char *pass)
 	send_msg(ctrl->sd, "230 Guest login OK, access restrictions apply.\r\n");
 }
 
-void handle_SYST(ctrl_t *ctrl)
+static void handle_SYST(ctrl_t *ctrl, char *arg)
 {
 	char system[] = "215 UNIX Type: L8\r\n";
 
 	send_msg(ctrl->sd, system);
 }
 
-void handle_TYPE(ctrl_t *ctrl, char *argument)
+static void handle_TYPE(ctrl_t *ctrl, char *argument)
 {
 	char type[24]  = "200 Type set to I.\r\n";
 	char unknown[] = "501 Invalid argument to TYPE.\r\n";
@@ -254,40 +370,59 @@ void handle_TYPE(ctrl_t *ctrl, char *argument)
 	send_msg(ctrl->sd, type);
 }
 
-void handle_PWD(ctrl_t *ctrl)
+static void handle_PWD(ctrl_t *ctrl, char *arg)
 {
-	char buf[300];
+	char buf[sizeof(ctrl->cwd) + 10];
 
 	snprintf(buf, sizeof(buf), "257 \"%s\"\r\n", ctrl->cwd);
 	send_msg(ctrl->sd, buf);
 }
 
-void handle_CWD(ctrl_t *ctrl, char *path)
+static void handle_CWD(ctrl_t *ctrl, char *path)
 {
-	char *dir = compose_path(ctrl, path);
+	struct stat st;
+	char *dir;
 
-	if (chdir(dir)) {
-		WARN(errno, "Client from %s tried to change to non existing dir %s", ctrl->clientaddr, dir);
-		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+	if (!path)
+		goto done;
+
+	/*
+	 * Some FTP clients, most notably Chrome, use CWD to check if an
+	 * entry is a file or directory.
+	 */
+	dir = compose_abspath(ctrl, path);
+	if (!dir || stat(dir, &st) || !S_ISDIR(st.st_mode)) {
+		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;
 	}
 
-	if (!chrooted)
-		strlcpy(ctrl->cwd, dir + strlen(home), sizeof(ctrl->cwd));
-	else
-		strlcpy(ctrl->cwd, dir, sizeof(ctrl->cwd));
-	DBG("Saved new CWD: %s", ctrl->cwd);
+	if (!chrooted) {
+		size_t len = strlen(home);
 
+		DBG("non-chrooted CWD, home:%s, dir:%s, len:%zd, dirlen:%zd",
+		    home, dir, len, strlen(dir));
+		if (len <= strlen(dir))
+			dir += len;
+	}
+	snprintf(ctrl->cwd, sizeof(ctrl->cwd), "%s", dir);
+done:
+	DBG("New CWD: '%s'", ctrl->cwd);
 	send_msg(ctrl->sd, "250 OK\r\n");
 }
 
-void handle_PORT(ctrl_t *ctrl, char *str)
+static void handle_CDUP(ctrl_t *ctrl, char *path)
+{
+	handle_CWD(ctrl, "..");
+}
+
+static void handle_PORT(ctrl_t *ctrl, char *str)
 {
 	int a, b, c, d, e, f;
 	char addr[INET_ADDRSTRLEN];
 	struct sockaddr_in sin;
 
 	if (ctrl->data_sd > 0) {
+		uev_io_stop(&ctrl->data_watcher);
 		close(ctrl->data_sd);
 		ctrl->data_sd = -1;
 	}
@@ -308,6 +443,11 @@ void handle_PORT(ctrl_t *ctrl, char *str)
 
 	DBG("Client PORT command accepted for %s:%d", ctrl->data_address, ctrl->data_port);
 	send_msg(ctrl->sd, "200 PORT command successful.\r\n");
+}
+
+static void handle_EPRT(ctrl_t *ctrl, char *str)
+{
+	send_msg(ctrl->sd, "502 Command not implemented.\r\n");
 }
 
 static char *mode_to_str(mode_t m)
@@ -340,80 +480,392 @@ static char *time_to_str(time_t mtime)
 	return str;
 }
 
-void handle_LIST(ctrl_t *ctrl)
+static char *mlsd_time(time_t mtime)
 {
-	DIR *dir;
-	char *buf;
-	char *path = compose_path(ctrl, NULL);
-	size_t sz = BUFFER_SIZE * sizeof(char);
+	struct tm *t = localtime(&mtime);
+	static char str[20];
 
-	buf = malloc(sz);
-	if (!buf) {
-		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+	strftime(str, sizeof(str), "%Y%m%d%H%M%S", t);
+
+	return str;
+}
+
+static const char *mlsd_type(char *name, int mode)
+{
+	if (!strcmp(name, "."))
+		return "cdir";
+	if (!strcmp(name, ".."))
+		return "pdir";
+
+	return S_ISDIR(mode) ? "dir" : "file";
+}
+
+void mlsd_fact(char fact, char *buf, size_t len, char *name, char *perms, struct stat *st)
+{
+	char size[20];
+
+	switch (fact) {
+	case 'm':
+		strlcat(buf, "modify=", len);
+		strlcat(buf, mlsd_time(st->st_mtime), len);
+		break;
+
+	case 'p':
+		strlcat(buf, "perm=", len);
+		strlcat(buf, perms, len);
+		break;
+
+	case 't':
+		strlcat(buf, "type=", len);
+		strlcat(buf, mlsd_type(name, st->st_mode), len);
+		break;
+
+
+	case 's':
+		if (S_ISDIR(st->st_mode))
+			return;
+		snprintf(size, sizeof(size), "size=%" PRIu64, st->st_size);
+		strlcat(buf, size, len);
+		break;
+
+	default:
 		return;
 	}
 
-	if (open_data_connection(ctrl)) {
-		free(buf);
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
-		return;
+	strlcat(buf, ";", len);
+}
+
+static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name, struct stat *st)
+{
+	char perms[10] = "";
+	int ro = !access(path, R_OK);
+	int rw = !access(path, W_OK);
+
+	if (S_ISDIR(st->st_mode)) {
+		/* XXX: Verify 'e' by checking that we can CD to the 'name' */
+		if (ro)
+			strlcat(perms, "le", sizeof(perms));
+		if (rw)
+			strlcat(perms, "pc", sizeof(perms)); /* 'd' RMD, 'm' MKD */
+	} else {
+		if (ro)
+			strlcat(perms, "r", sizeof(perms));
+		if (rw)
+			strlcat(perms, "w", sizeof(perms)); /* 'f' RNFR, 'd' DELE */
 	}
 
-	show_log("Established TCP socket for data communication.");
-	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
+	memset(buf, 0, len);
+	if (ctrl->d_num == -1 && (ctrl->list_mode & 0x0F) == 2)
+		strlcat(buf, " ", len);
 
-	dir = opendir(path);
-	while (dir) {
-		char *pos = buf;
-		size_t len = sz;
-		struct dirent *entry;
+	for (int i = 0; ctrl->facts[i]; i++)
+		mlsd_fact(ctrl->facts[i], buf, len, name, perms, st);
 
-		DBG("Reading directory %s ...", path);
-		while ((entry = readdir(dir)) && len > 80) {
-			struct stat st;
-			char *name = entry->d_name;
+	strlcat(buf, " ", len);
+	strlcat(buf, name, len);
+	strlcat(buf, "\r\n", len);
+}
 
-			DBG("Found directory entry %s", name);
-			if (!strcmp(name, ".") || !strcmp(name, ".."))
-				continue;
+static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name)
+{
+	int dirs;
+	int mode = ctrl->list_mode;
+	struct stat st;
 
-			path = compose_path(ctrl, name);
-			if (stat(path, &st)) {
-				ERR(errno, "Failed reading status for %s", path);
-				continue;
-			}
+	if (stat(path, &st))
+		return -1;
 
-			snprintf(pos, len, "%s 1 %5d %5d %12"  PRIu64 " %s %s%s\n",
-				 mode_to_str(st.st_mode),
-				 0, 0, (uint64_t)st.st_size,
-				 time_to_str(st.st_mtime),
-				 name, ctrl->type == TYPE_A ? "\r" : "");
+	dirs = mode & 0xF0;
+	mode = mode & 0x0F;
 
-			DBG("LIST %s", pos);
-			len -= strlen(pos);
-			pos += strlen(pos);
-		}
+	if (dirs && !S_ISDIR(st.st_mode))
+		return 1;
+	if (!dirs && S_ISDIR(st.st_mode))
+		return 1;
 
-		send_msg(ctrl->data_sd, buf);
-		if (entry)
-			continue;
-		closedir(dir);
+	switch (mode) {
+	case 3:			/* MLSD */
+		/* fallthrough */
+	case 2:			/* MLST */
+		mlsd_printf(ctrl, buf, len, path, name, &st);
+		break;
+
+	case 1:			/* NLST */
+		snprintf(buf, len, "%s\r\n", name);
+		break;
+
+	case 0:			/* LIST */
+		snprintf(buf, len, "%s 1 %5d %5d %12" PRIu64 " %s %s\r\n",
+			 mode_to_str(st.st_mode),
+			 0, 0, (uint64_t)st.st_size,
+			 time_to_str(st.st_mtime), name);
 		break;
 	}
 
-	free(buf);
-	close_data_connection(ctrl);
+	return 0;
+}
+
+static void do_MLST(ctrl_t *ctrl)
+{
+	size_t len = 0;
+	char buf[512] = { 0 };
+	int sd = ctrl->sd;
+
+	if (ctrl->data_sd != -1)
+		sd = ctrl->data_sd;
+
+	snprintf(buf, sizeof(buf), "250- Listing %s\r\n", ctrl->file);
+	len = strlen(buf);
+
+	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, ctrl->file, basename(ctrl->file))) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	strlcat(buf, "250 End.\r\n", sizeof(buf));
+	send_msg(sd, buf);
+}
+
+static void do_MLSD(ctrl_t *ctrl)
+{
+	char buf[512] = { 0 };
+
+	if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->data_sd, buf);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
 
-/* XXX: Audit this, does it really work with multiple interfaces? */
-void handle_PASV(ctrl_t *ctrl)
+static void do_LIST(uev_t *w, void *arg, int events)
 {
-	int port;
-	char *msg, *p, buf[200];
+	ctrl_t *ctrl = (ctrl_t *)arg;
+	struct timeval tv;
+	ssize_t bytes;
+	char buf[BUFFER_SIZE] = { 0 };
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		uev_io_start(w);
+		return;
+	}
+
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
+
+	if (ctrl->d_num == -1) {
+		if (ctrl->list_mode == 3)
+			do_MLSD(ctrl);
+		else
+			do_MLST(ctrl);
+		do_abort(ctrl);
+		return;
+	}
+
+	gettimeofday(&tv, NULL);
+	if (tv.tv_sec - ctrl->tv.tv_sec > 3) {
+		DBG("Sending LIST entry %d of %d to %s ...", ctrl->i, ctrl->d_num, ctrl->clientaddr);
+		ctrl->tv.tv_sec = tv.tv_sec;
+	}
+
+	ctrl->list_mode |= (ctrl->pending ? 0 : 0x80);
+	while (ctrl->i < ctrl->d_num) {
+		struct dirent *entry;
+		char *name, *path;
+		char cwd[PATH_MAX];
+
+		entry = ctrl->d[ctrl->i++];
+		name  = entry->d_name;
+
+		DBG("Found directory entry %s", name);
+		if ((!strcmp(name, ".") || !strcmp(name, "..")) && ctrl->list_mode < 2)
+			continue;
+
+		snprintf(cwd, sizeof(cwd), "%s%s%s", ctrl->file,
+			 ctrl->file[strlen(ctrl->file) - 1] == '/' ? "" : "/", name);
+		path = compose_path(ctrl, cwd);
+		if (!path) {
+		fail:
+			LOGIT(LOG_INFO, errno, "Failed reading status for %s", path ? path : name);
+			continue;
+		}
+
+		switch (list_printf(ctrl, buf, sizeof(buf), path, name)) {
+		case -1:
+			goto fail;
+		case 1:
+			continue;
+		default:
+			break;
+		}
+
+		DBG("LIST %s", buf);
+		free(entry);
+
+		bytes = send(ctrl->data_sd, buf, strlen(buf), 0);
+		if (-1 == bytes) {
+			if (ECONNRESET == errno)
+				DBG("Connection reset by client.");
+			else
+				ERR(errno, "Failed sending file %s to client", ctrl->file);
+
+			while (ctrl->i < ctrl->d_num) {
+				struct dirent *entry = ctrl->d[ctrl->i++];
+				free(entry);
+			}
+			do_abort(ctrl);
+			send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
+		}
+
+		return;
+	}
+	ctrl->list_mode &= 0x0F;
+
+	/* Rewind and list files */
+	if (ctrl->pending == 0) {
+		ctrl->pending++;
+		ctrl->i = 0;
+		return;
+	}
+
+	do_abort(ctrl);
+	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+}
+
+static void list(ctrl_t *ctrl, char *arg, int mode)
+{
+	char *path;
+
+	if (string_valid(arg)) {
+		char *ptr, *quot;
+
+		/* Check if client sends ls arguments ... */
+		ptr = arg;
+		while (*ptr) {
+			if (*ptr == ' ')
+				ptr++;
+			if (string_match(ptr, "-l"))
+				ptr += 2;
+			else
+				break;
+		}
+
+		/* Strip any "" from "<arg>" */
+		while ((quot = strchr(ptr, '"'))) {
+			char *ptr2;
+
+			ptr2 = strchr(&quot[1], '"');
+			if (ptr2) {
+				memmove(ptr2, &ptr2[1], strlen(ptr2));
+				memmove(quot, &quot[1], strlen(quot));
+			}
+		}
+		arg = ptr;
+	}
+
+	if (mode >= 2)
+		path = compose_abspath(ctrl, arg);
+	else
+		path = compose_path(ctrl, arg);
+	if (!path) {
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+
+	ctrl->list_mode = mode;
+	ctrl->file = strdup(arg ? arg : "");
+	ctrl->i = 0;
+	ctrl->d_num = scandir(path, &ctrl->d, NULL, alphasort);
+	DBG("Reading directory %s ... %d number of entries", path, ctrl->d_num);
+
+	if (ctrl->data_sd > -1) {
+		send_msg(ctrl->sd, "125 Data connection already open; transfer starting.\r\n");
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
+		return;
+	}
+
+	do_PORT(ctrl, 1);
+}
+
+static void handle_LIST(ctrl_t *ctrl, char *arg)
+{
+	list(ctrl, arg, 0);
+}
+
+static void handle_NLST(ctrl_t *ctrl, char *arg)
+{
+	list(ctrl, arg, 1);
+}
+
+static void handle_MLST(ctrl_t *ctrl, char *arg)
+{
+	list(ctrl, arg, 2);
+}
+
+static void handle_MLSD(ctrl_t *ctrl, char *arg)
+{
+	list(ctrl, arg, 3);
+}
+
+static void do_pasv_connection(uev_t *w, void *arg, int events)
+{
+	ctrl_t *ctrl = (ctrl_t *)arg;
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		DBG("error on data_listen_sd ...");
+		uev_io_start(w);
+		return;
+	}
+	DBG("Event on data_listen_sd ...");
+	uev_io_stop(&ctrl->data_watcher);
+	if (open_data_connection(ctrl))
+		return;
+
+	switch (ctrl->pending) {
+	case 3:
+		/* fall-through */
+	case 2:
+		if (ctrl->offset)
+			fseek(ctrl->fp, ctrl->offset, SEEK_SET);
+		/* fall-through */
+	case 1:
+		break;
+
+	default:
+		DBG("No pending command, waiting ...");
+		return;
+	}
+
+	switch (ctrl->pending) {
+	case 3:			/* STOR */
+		DBG("Pending STOR, starting ...");
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
+		break;
+
+	case 2:			/* RETR */
+		DBG("Pending RETR, starting ...");
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+
+	case 1:			/* LIST */
+		DBG("Pending LIST, starting ...");
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+	}
+
+	if (ctrl->pending == 1 && ctrl->list_mode == 2)
+		send_msg(ctrl->sd, "150 Opening ASCII mode data connection for MLSD.\r\n");
+	else
+		send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
+	ctrl->pending = 0;
+}
+
+static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *len)
+{
 	struct sockaddr_in server;
-	struct sockaddr_in data;
-	socklen_t len = sizeof(struct sockaddr);
 
 	if (ctrl->data_sd > 0) {
 		close(ctrl->data_sd);
@@ -423,46 +875,56 @@ void handle_PASV(ctrl_t *ctrl)
 	if (ctrl->data_listen_sd > 0)
 		close(ctrl->data_listen_sd);
 
-	ctrl->data_listen_sd = socket(AF_INET, SOCK_STREAM, 0);
+	ctrl->data_listen_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (ctrl->data_listen_sd < 0) {
 		ERR(errno, "Failed opening data server socket");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
-		return;
+		return 1;
 	}
 
 	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;
 	server.sin_addr.s_addr = inet_addr(ctrl->serveraddr);
 	server.sin_port        = htons(0);
-	if (bind(ctrl->data_listen_sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) < 0) {
+	if (bind(ctrl->data_listen_sd, (struct sockaddr *)&server, sizeof(server)) < 0) {
 		ERR(errno, "Failed binding to client socket");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
 
-	show_log("Data server port estabished.  Waiting for client connnect ...");
+	INFO("Data server port estabished.  Waiting for client connnect ...");
 	if (listen(ctrl->data_listen_sd, 1) < 0) {
 		ERR(errno, "Client data connection failure");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
 
-	memset(&data, 0, sizeof(data));
-	if (-1 == getsockname(ctrl->data_listen_sd, (struct sockaddr *)&data, &len)) {
+	memset(data, 0, sizeof(*data));
+	if (-1 == getsockname(ctrl->data_listen_sd, data, len)) {
 		ERR(errno, "Cannot determine our address, need it if client should connect to us");
 		close(ctrl->data_listen_sd);
 		ctrl->data_listen_sd = -1;
-		return;
+		return 1;
 	}
 
-	port = ntohs(data.sin_port);
-	snprintf(buf, sizeof(buf), "Port %d\n", port);
-	show_log(buf);
+	uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_pasv_connection, ctrl, ctrl->data_listen_sd, UEV_READ);
 
+	return 0;
+}
+
+static void handle_PASV(ctrl_t *ctrl, char *arg)
+{
+	struct sockaddr_in data;
+	socklen_t len = sizeof(data);
+	char *msg, *p, buf[200];
+	int port;
+
+	if (do_PASV(ctrl, arg, (struct sockaddr *)&data, &len))
+		return;
 
 	/* Convert server IP address and port to comma separated list */
 	msg = strdup(ctrl->serveraddr);
@@ -474,6 +936,7 @@ void handle_PASV(ctrl_t *ctrl)
 	while ((p = strchr(p, '.')))
 		*p++ = ',';
 
+	port = ntohs(data.sin_port);
 	snprintf(buf, sizeof(buf), "227 Entering Passive Mode (%s,%d,%d)\r\n",
 		 msg, port / 256, port % 256);
 	send_msg(ctrl->sd, buf);
@@ -481,286 +944,635 @@ void handle_PASV(ctrl_t *ctrl)
 	free(msg);
 }
 
-void handle_RETR(ctrl_t *ctrl, char *file)
+static void handle_EPSV(ctrl_t *ctrl, char *arg)
 {
-	int result = 0;
-	FILE *fp = NULL;
-	char *buf;
-	char *path = compose_path(ctrl, file);
-	size_t len = BUFFER_SIZE * sizeof(char);
+	struct sockaddr_in data;
+	socklen_t len = sizeof(data);
+	char buf[200];
 
-	buf = malloc(len);
-	if (!buf) {
-		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+	if (string_valid(arg) && string_case_compare(arg, "ALL")) {
+		send_msg(ctrl->sd, "200 Command OK\r\n");
+		return;
+	}
+
+	if (do_PASV(ctrl, arg, (struct sockaddr *)&data, &len))
+		return;
+
+	snprintf(buf, sizeof(buf), "229 Entering Extended Passive Mode (|||%d|)\r\n", ntohs(data.sin_port));
+	send_msg(ctrl->sd, buf);
+}
+
+static void do_RETR(uev_t *w, void *arg, int events)
+{
+	ctrl_t *ctrl = (ctrl_t *)arg;
+	struct timeval tv;
+	ssize_t bytes;
+	size_t num;
+	char buf[BUFFER_SIZE];
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		DBG("error on data_sd ...");
+		uev_io_start(w);
+		return;
+	}
+
+	if (!ctrl->fp) {
+		DBG("no fp for RETR, bailing.");
+		return;
+	}
+
+	num = fread(buf, sizeof(char), sizeof(buf), ctrl->fp);
+	if (!num) {
+		if (feof(ctrl->fp))
+			INFO("User %s from %s downloaded %s", ctrl->name, ctrl->clientaddr, ctrl->file);
+		else if (ferror(ctrl->fp))
+			ERR(0, "Error while reading %s", ctrl->file);
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+		return;
+	}
+
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
+
+	gettimeofday(&tv, NULL);
+	if (tv.tv_sec - ctrl->tv.tv_sec > 3) {
+		DBG("Sending %d bytes of %s to %s ...", num, ctrl->file, ctrl->clientaddr);
+		ctrl->tv.tv_sec = tv.tv_sec;
+	}
+
+	bytes = send(ctrl->data_sd, buf, num, 0);
+	if (-1 == bytes) {
+		if (ECONNRESET == errno)
+			DBG("Connection reset by client.");
+		else
+			ERR(errno, "Failed sending file %s to client", ctrl->file);
+
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
+	}
+}
+
+/*
+ * Check if previous command was PORT, then connect to client and
+ * transfer file/listing similar to what's done for PASV conns.
+ */
+static void do_PORT(ctrl_t *ctrl, int pending)
+{
+	if (!ctrl->data_address[0]) {
+		/* Check if previous command was PASV */
+		if (ctrl->data_sd == -1 && ctrl->data_listen_sd == -1) {
+			if (pending == 1 && ctrl->d_num == -1)
+				do_MLST(ctrl);
+			return;
+		}
+
+		ctrl->pending = pending;
+		return;
+	}
+
+	if (open_data_connection(ctrl)) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+		return;
+	}
+
+	if (pending != 1 || ctrl->list_mode != 2)
+		send_msg(ctrl->sd, "150 Data connection opened; transfer starting.\r\n");
+
+	switch (pending) {
+	case 3:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
+		break;
+
+	case 2:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+
+	case 1:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+	}
+
+	ctrl->pending = 0;
+}
+
+static void handle_RETR(ctrl_t *ctrl, char *file)
+{
+	FILE *fp;
+	char *path;
+	struct stat st;
+
+	path = compose_abspath(ctrl, file);
+	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
+		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}
 
 	fp = fopen(path, "rb");
 	if (!fp) {
-		ERR(errno, "Failed opening file %s for RETR", path);
-		free(buf);
+		if (errno != ENOENT)
+			ERR(errno, "Failed RETR %s for %s", path, ctrl->clientaddr);
 		send_msg(ctrl->sd, "451 Trouble to RETR file.\r\n");
 		return;
 	}
 
-	if (open_data_connection(ctrl)) {
-		fclose(fp);
-		free(buf);
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+	ctrl->fp = fp;
+	ctrl->file = strdup(file);
+
+	if (ctrl->data_sd > -1) {
+		send_msg(ctrl->sd, "125 Data connection already open; transfer starting.\r\n");
+
+		if (ctrl->offset) {
+			DBG("Previous REST %ld of file size %ld", ctrl->offset, st.st_size);
+			fseek(fp, ctrl->offset, SEEK_SET);
+		}
+
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
 		return;
 	}
 
-	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
-
-	while (!feof(fp) && !result) {
-		int n = fread(buf, sizeof(char), len, fp);
-		int j = 0;
-
-		while (j < n) {
-			ssize_t bytes = send(ctrl->data_sd, buf + j, n - j, 0);
-
-			if (-1 == bytes) {
-				ERR(errno, "Failed sending file %s to client", path);
-				result = 1;
-				break;
-			}
-			j += bytes;
-		}
-	}
-
-	if (result) {
-		send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
-	} else {
-		LOG("User %s from %s downloaded file %s", ctrl->name, ctrl->clientaddr, path);
-		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
-	}
-
-	close_data_connection(ctrl);
-	fclose(fp);
-	free(buf);
+	do_PORT(ctrl, 2);
 }
 
-void handle_STOR(ctrl_t *ctrl, char *file)
+static void handle_MDTM(ctrl_t *ctrl, char *file)
 {
-	int result = 0;
-	FILE *fp = NULL;
-	char *buf, *path = compose_path(ctrl, file);
-	size_t len = BUFFER_SIZE * sizeof(char);
+	struct stat st;
+	struct tm *tm;
+	char *path, *ptr;
+	char *mtime = NULL;
+	char buf[80];
 
-	DBG("STOR %s", path);
+	/* Request to set mtime, ncftp does this */
+	ptr = strchr(file, ' ');
+	if (ptr) {
+		*ptr++ = 0;
+		mtime = file;
+		file  = ptr;
+	}
 
-	buf = malloc(len);
-	if (!buf) {
-		send_msg(ctrl->sd, "426 Internal server error.\r\n");
+	path = compose_abspath(ctrl, file);
+	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
+		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}
 
+	if (mtime) {
+		struct timespec times[2] = {
+			{ 0, UTIME_OMIT },
+			{ 0, 0 }
+		};
+		struct tm tm;
+		int rc;
+
+		if (!strptime(mtime, "%Y%m%d%H%M%S", &tm)) {
+		fail:
+			send_msg(ctrl->sd, "550 Invalid time format\r\n");
+			return;
+		}
+
+		times[1].tv_sec = mktime(&tm);
+		rc = utimensat(0, path, times, 0);
+		if (rc) {
+			ERR(errno, "Failed setting MTIME %s of %s", mtime, file);
+			goto fail;
+		}
+		stat(path, &st);
+	}
+
+	tm = gmtime(&st.st_mtime);
+	strftime(buf, sizeof(buf), "213 %Y%m%d%H%M%S\r\n", tm);
+
+	send_msg(ctrl->sd, buf);
+}
+
+static void do_STOR(uev_t *w, void *arg, int events)
+{
+	ctrl_t *ctrl = (ctrl_t *)arg;
+	struct timeval tv;
+	ssize_t bytes;
+	size_t num;
+	char buf[BUFFER_SIZE];
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		DBG("error on data_sd ...");
+		uev_io_start(w);
+		return;
+	}
+
+	if (!ctrl->fp) {
+		DBG("no fp for STOR, bailing.");
+		return;
+	}
+
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
+
+	bytes = recv(ctrl->data_sd, buf, sizeof(buf), 0);
+	if (bytes < 0) {
+		if (ECONNRESET == errno)
+			DBG("Connection reset by client.");
+		else
+			ERR(errno, "Failed receiving file %s from client", ctrl->file);
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
+		return;
+	}
+	if (bytes == 0) {
+		INFO("User %s at %s uploaded file %s", ctrl->name, ctrl->clientaddr, ctrl->file);
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
+		return;
+	}
+
+	gettimeofday(&tv, NULL);
+	if (tv.tv_sec - ctrl->tv.tv_sec > 3) {
+		DBG("Receiving %zd bytes of %s from %s ...", bytes, ctrl->file, ctrl->clientaddr);
+		ctrl->tv.tv_sec = tv.tv_sec;
+	}
+
+	num = fwrite(buf, 1, bytes, ctrl->fp);
+	if ((size_t)bytes != num)
+		ERR(errno, "552 Disk full.");
+}
+
+static void handle_STOR(ctrl_t *ctrl, char *file)
+{
+	FILE *fp = NULL;
+	char *path;
+
+	path = compose_abspath(ctrl, file);
+	if (!path) {
+		ERR(errno, "Invalid path for %s", file);
+		goto fail;
+	}
+
+	DBG("Trying to write to %s ...", path);
 	fp = fopen(path, "wb");
 	if (!fp) {
-		free(buf);
+		ERR(errno, "Failed writing %s", path);
+	fail:
 		send_msg(ctrl->sd, "451 Trouble storing file.\r\n");
+		do_abort(ctrl);
 		return;
 	}
 
-	if (open_data_connection(ctrl)) {
-		fclose(fp);
-		free(buf);
-		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+	ctrl->fp = fp;
+	ctrl->file = strdup(file);
+
+	if (ctrl->data_sd > -1) {
+		send_msg(ctrl->sd, "125 Data connection already open; transfer starting.\r\n");
+
+		if (ctrl->offset)
+			fseek(fp, ctrl->offset, SEEK_SET);
+
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
 		return;
 	}
 
-	send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
-	while (1) {
-		int j = recv(ctrl->data_sd, buf, len, 0);
+	do_PORT(ctrl, 3);
+}
 
-		if (j < 0) {
-			ERR(errno, "Failed receiving file %s/%s from client", ctrl->cwd, path);
-			result = 1;
-			break;
+static void handle_DELE(ctrl_t *ctrl, char *file)
+{
+	char *path;
+
+	path = compose_abspath(ctrl, file);
+	if (!path) {
+		ERR(errno, "Cannot find %s", file);
+		goto fail;
+	}
+
+	if (remove(path)) {
+		if (ENOENT == errno)
+		fail:	send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		else if (EPERM == errno)
+			send_msg(ctrl->sd, "550 Not allowed to remove file or directory.\r\n");
+		else
+			send_msg(ctrl->sd, "550 Unknown error.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->sd, "200 Command OK\r\n");
+}
+
+static void handle_MKD(ctrl_t *ctrl, char *arg)
+{
+	char *path;
+
+	path = compose_abspath(ctrl, arg);
+	if (!path) {
+		ERR(errno, "Invalid path for %s", arg);
+		goto fail;
+	}
+
+	if (mkdir(path, 0755)) {
+		if (EPERM == errno)
+		fail:	send_msg(ctrl->sd, "550 Not allowed to create directory.\r\n");
+		else
+			send_msg(ctrl->sd, "550 Unknown error.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->sd, "200 Command OK\r\n");
+}
+
+static void handle_RMD(ctrl_t *ctrl, char *arg)
+{
+	handle_DELE(ctrl, arg);
+}
+
+static void handle_REST(ctrl_t *ctrl, char *arg)
+{
+	const char *errstr;
+	char buf[80];
+
+	if (!string_valid(arg)) {
+		send_msg(ctrl->sd, "550 Invalid argument.\r\n");
+		return;
+	}
+
+	ctrl->offset = strtonum(arg, 0, INT64_MAX, &errstr);
+	snprintf(buf, sizeof(buf), "350 Restarting at %ld.  Send STOR or RETR to continue transfer.\r\n", ctrl->offset);
+	send_msg(ctrl->sd, buf);
+}
+
+static size_t num_nl(char *file)
+{
+	FILE *fp;
+	char buf[80];
+	size_t len, num = 0;
+
+	fp = fopen(file, "r");
+	if (!fp)
+		return 0;
+
+	do {
+		char *ptr = buf;
+
+		len = fread(buf, sizeof(char), sizeof(buf) - 1, fp);
+		if (len > 0) {
+			buf[len] = 0;
+			while ((ptr = strchr(ptr, '\n'))) {
+				ptr++;
+				num++;
+			}
 		}
-		if (j == 0)
-			break;
-
-		fwrite(buf, 1, j, fp);
-	}
-
-	if (result) {
-		send_msg(ctrl->sd, "426 TCP connection was established but then broken\r\n");
-	} else {
-		LOG("User %s at %s uploaded file %s/%s", ctrl->name, ctrl->clientaddr, ctrl->cwd, path);
-		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
-	}
-
-	close_data_connection(ctrl);
+	} while (len > 0);
 	fclose(fp);
-	free(buf);
+
+	return num;
 }
 
-void handle_DELE(ctrl_t *UNUSED(ctrl), char *UNUSED(file))
+static void handle_SIZE(ctrl_t *ctrl, char *file)
 {
-
-}
-
-//
-void handle_MKD(ctrl_t *UNUSED(ctrl))
-{
-
-}
-
-//
-void handle_RMD(ctrl_t *UNUSED(ctrl))
-{
-
-}
-
-//
-void handle_SIZE(ctrl_t *ctrl, char *file)
-{
-	char *path = compose_path(ctrl, file);
+	char *path;
+	char buf[80];
+	size_t extralen = 0;
 	struct stat st;
+
+	path = compose_abspath(ctrl, file);
+	if (!path || stat(path, &st) || S_ISDIR(st.st_mode)) {
+		send_msg(ctrl->sd, "550 No such file, or argument is a directory.\r\n");
+		return;
+	}
 
 	DBG("SIZE %s", path);
 
-	if (-1 == stat(path, &st)) {
-		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
-		return;
-	}
+	if (ctrl->type == TYPE_A)
+		extralen = num_nl(path);
 
-	sprintf(path, "213 %"  PRIu64 "\r\n", (uint64_t)st.st_size);
-	send_msg(ctrl->sd, path);
+	snprintf(buf, sizeof(buf), "213 %"  PRIu64 "\r\n", (uint64_t)(st.st_size + extralen));
+	send_msg(ctrl->sd, buf);
 }
 
-//
-void handle_RNFR(ctrl_t *UNUSED(ctrl))
+/* No operation - used as session keepalive by clients. */
+static void handle_NOOP(ctrl_t *ctrl, char *arg)
 {
-
+	send_msg(ctrl->sd, "200 NOOP OK.\r\n");
 }
 
-//
-void handle_RNTO(ctrl_t *UNUSED(ctrl))
+#if 0
+static void handle_RNFR(ctrl_t *ctrl, char *arg)
 {
-
 }
 
-//
-void handle_QUIT(ctrl_t *ctrl)
+static void handle_RNTO(ctrl_t *ctrl, char *arg)
+{
+}
+#endif
+
+static void handle_QUIT(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "221 Goodbye.\r\n");
+	uev_exit(ctrl->ctx);
 }
 
-//
-void handle_CLNT(ctrl_t *ctrl)
+static void handle_CLNT(ctrl_t *ctrl, char *arg)
 {
 	send_msg(ctrl->sd, "200 CLNT\r\n");
 }
 
-//
-void handle_OPTS(ctrl_t *ctrl)
+static void handle_OPTS(ctrl_t *ctrl, char *arg)
 {
-	send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
+	/* OPTS MLST type;size;modify;perm; */
+	if (strstr(arg, "MLST")) {
+		size_t i = 0;
+		char *ptr;
+		char buf[42] = "200 MLST OPTS ";
+		char facts[10] = { 0 };
+
+		ptr = strtok(arg + 4, " \t;");
+		while (ptr && i < sizeof(facts) - 1) {
+			if (!strcmp(ptr, "modify") ||
+			    !strcmp(ptr, "perm")   ||
+			    !strcmp(ptr, "size")   ||
+			    !strcmp(ptr, "type")) {
+				facts[i++] = ptr[0];
+				strlcat(buf, ptr, sizeof(buf));
+				strlcat(buf, ";", sizeof(buf));
+			}
+
+			ptr = strtok(NULL, ";");
+		}
+		strlcat(buf, "\r\n", sizeof(buf));
+
+		DBG("New MLSD facts: %s", facts);
+		strlcpy(ctrl->facts, facts, sizeof(ctrl->facts));
+		send_msg(ctrl->sd, buf);
+	} else
+		send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
 }
 
-
-void ftp_command(ctrl_t *ctrl)
+static void handle_HELP(ctrl_t *ctrl, char *arg)
 {
-	size_t len = BUFFER_SIZE * sizeof(char);
-	char *buffer;
-	char *cmd;
-	char *argument;
-	struct sigaction sa;
+	int i = 0;
+	char buf[80];
+	ftp_cmd_t *cmd;
 
-	buffer = malloc(len);
-	if (!buffer) {
-                perror("Out of memory");
-                exit(1);
+	if (string_valid(arg) && !string_compare(arg, "SITE")) {
+		send_msg(ctrl->sd, "500 command HELP does not take any arguments on this server.\r\n");
+		return;
 	}
 
-	snprintf(buffer, len, "220 %s (%s) ready.\r\n", __progname, VERSION);
-	send_msg(ctrl->sd, buffer);
+	snprintf(ctrl->buf, ctrl->bufsz, "214-The following commands are recognized.");
+	for (cmd = &supported[0]; cmd->command; cmd++, i++) {
+		if (i % 14 == 0)
+			strlcat(ctrl->buf, "\r\n", ctrl->bufsz);
+		snprintf(buf, sizeof(buf), " %s", cmd->command);
+		strlcat(ctrl->buf, buf, ctrl->bufsz);
+	}
+	snprintf(buf, sizeof(buf), "\r\n214 Help OK.\r\n");
+	strlcat(ctrl->buf, buf, ctrl->bufsz);
 
-	SETSIG(sa, SIGALRM, sigalrm_handler, SA_RESTART);
+	send_msg(ctrl->sd, ctrl->buf);
+}
 
-	while (1) {
-		alarm(INACTIVITY_TIMER);
+static void handle_FEAT(ctrl_t *ctrl, char *arg)
+{
+	snprintf(ctrl->buf, ctrl->bufsz, "211-Features:\r\n"
+		 " EPSV\r\n"
+		 " PASV\r\n"
+		 " SIZE\r\n"
+		 " UTF8\r\n"
+		 " REST STREAM\r\n"
+		 " MLST modify*;perm*;size*;type*;\r\n"
+		 "211 End\r\n");
+	send_msg(ctrl->sd, ctrl->buf);
+}
 
-		if (recv_msg(ctrl->sd, buffer, len, &cmd, &argument))
-			break;
+static void handle_UNKNOWN(ctrl_t *ctrl, char *command)
+{
+	char buf[128];
 
-		alarm(0);
+	snprintf(buf, sizeof(buf), "500 command '%s' not recognized by server.\r\n", command);
+	send_msg(ctrl->sd, buf);
+}
 
-		show_log(cmd);
-		show_log(argument);
-		if (strcmp("USER", cmd) == 0) {
-			handle_USER(ctrl, argument);
-		} else if (strcmp("PASS", cmd) == 0) {
-			handle_PASS(ctrl, argument);
-		} else if (strcmp("SYST", cmd) == 0) {
-			handle_SYST(ctrl);
-		} else if (strcmp("TYPE", cmd) == 0) {
-			handle_TYPE(ctrl, argument);
-		} else if (strcmp("PORT", cmd) == 0) {
-			handle_PORT(ctrl, argument);
-		} else if (strcmp("RETR", cmd) == 0) {
-			handle_RETR(ctrl, argument);
-		} else if (strcmp("PASV", cmd) == 0) {
-			handle_PASV(ctrl);
-		} else if (strcmp("QUIT", cmd) == 0) {
-			handle_QUIT(ctrl);
-			break;
-		} else if (strcmp("LIST", cmd) == 0) {
-			handle_LIST(ctrl);
-		} else if (strcmp("CLNT", cmd) == 0) {
-			handle_CLNT(ctrl);
-		} else if (strcmp("OPTS", cmd) == 0) {
-			handle_OPTS(ctrl);
-		} else if (strcmp("PWD", cmd) == 0) {
-			handle_PWD(ctrl);
-		} else if (strcmp("STOR", cmd) == 0) {
-			handle_STOR(ctrl, argument);
-		} else if (strcmp("CWD", cmd) == 0) {
-			handle_CWD(ctrl, argument);
-		} else if (strcmp("SIZE", cmd) == 0) {
-			handle_SIZE(ctrl, argument);
-		} else if (strcmp("NOOP", cmd) == 0) {
-			send_msg(ctrl->sd, "200 NOOP OK.\r\n");
-		} else {
-			char buf[100];
+#define COMMAND(NAME) { #NAME, handle_ ## NAME }
 
-			snprintf(buf, sizeof(buf), "500 %s command not recognized by server\r\n", cmd);
-			send_msg(ctrl->sd, buf);
+static ftp_cmd_t supported[] = {
+	COMMAND(ABOR),
+	COMMAND(DELE),
+	COMMAND(USER),
+	COMMAND(PASS),
+	COMMAND(SYST),
+	COMMAND(TYPE),
+	COMMAND(PORT),
+	COMMAND(EPRT),
+	COMMAND(RETR),
+	COMMAND(MKD),
+	COMMAND(RMD),
+	COMMAND(REST),
+	COMMAND(MDTM),
+	COMMAND(PASV),
+	COMMAND(EPSV),
+	COMMAND(QUIT),
+	COMMAND(LIST),
+	COMMAND(NLST),
+	COMMAND(MLST),
+	COMMAND(MLSD),
+	COMMAND(CLNT),
+	COMMAND(OPTS),
+	COMMAND(PWD),
+	COMMAND(STOR),
+	COMMAND(CWD),
+	COMMAND(CDUP),
+	COMMAND(SIZE),
+	COMMAND(NOOP),
+	COMMAND(HELP),
+	COMMAND(FEAT),
+	{ NULL, NULL }
+};
+
+static void child_exit(uev_t *w, void *arg, int events)
+{
+	uev_exit(w->ctx);
+}
+
+static void read_client_command(uev_t *w, void *arg, int events)
+{
+	char *command, *argument;
+	ctrl_t *ctrl = (ctrl_t *)arg;
+	ftp_cmd_t *cmd;
+
+	if (UEV_ERROR == events || UEV_HUP == events) {
+		uev_io_start(w);
+		return;
+	}
+
+	/* Reset inactivity timer. */
+	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
+
+	if (recv_msg(w->fd, ctrl->buf, ctrl->bufsz, &command, &argument)) {
+		uev_exit(ctrl->ctx);
+		return;
+	}
+
+	if (!string_valid(command))
+		return;
+
+	if (string_match(command, "FF F4")) {
+		DBG("Ignoring IAC command, client should send ABOR as well.");
+		return;
+	}
+
+	for (cmd = &supported[0]; cmd->command; cmd++) {
+		if (string_compare(command, cmd->command)) {
+			cmd->cb(ctrl, argument);
+			return;
 		}
 	}
 
-	free(buffer);
-	close(ctrl->sd);
+	handle_UNKNOWN(ctrl, command);
 }
 
-int ftp_session(int sd)
+static void ftp_command(ctrl_t *ctrl)
+{
+	uev_t sigterm_watcher;
+
+	ctrl->bufsz = BUFFER_SIZE * sizeof(char);
+	ctrl->buf   = malloc(ctrl->bufsz);
+	if (!ctrl->buf) {
+                WARN(errno, "FTP session failed allocating buffer");
+                exit(1);
+	}
+
+	snprintf(ctrl->buf, ctrl->bufsz, "220 %s (%s) ready.\r\n", prognm, VERSION);
+	send_msg(ctrl->sd, ctrl->buf);
+
+	uev_signal_init(ctrl->ctx, &sigterm_watcher, child_exit, NULL, SIGTERM);
+	uev_io_init(ctrl->ctx, &ctrl->io_watcher, read_client_command, ctrl, ctrl->sd, UEV_READ);
+	uev_run(ctrl->ctx, 0);
+}
+
+int ftp_session(uev_ctx_t *ctx, int sd)
 {
 	int pid = 0;
 	ctrl_t *ctrl;
 	socklen_t len;
 
-	ctrl = new_session(sd, &pid);
+	ctrl = new_session(ctx, sd, &pid);
 	if (!ctrl) {
-		if (-1 == pid)
-			return -1;
-		return 0;
+		if (pid < 0) {
+			shutdown(sd, SHUT_RDWR);
+			close(sd);
+		}
+
+		return pid;
 	}
 
 	len = sizeof(ctrl->server_sa);
 	if (-1 == getsockname(sd, (struct sockaddr *)&ctrl->server_sa, &len)) {
-		free(ctrl);
-		perror("Cannot determine our address");
-		return -1;
+		ERR(errno, "Cannot determine our address");
+		goto fail;
 	}
 	convert_address(&ctrl->server_sa, ctrl->serveraddr, sizeof(ctrl->serveraddr));
 
 	len = sizeof(ctrl->client_sa);
 	if (-1 == getpeername(sd, (struct sockaddr *)&ctrl->client_sa, &len)) {
-		free(ctrl);
-		perror("Cannot determine client address");
-		return -1;
+		ERR(errno, "Cannot determine client address");
+		goto fail;
 	}
 	convert_address(&ctrl->client_sa, ctrl->clientaddr, sizeof(ctrl->clientaddr));
 
@@ -770,19 +1582,22 @@ int ftp_session(int sd)
 	ctrl->name[0] = 0;
 	ctrl->pass[0] = 0;
 	ctrl->data_address[0] = 0;
+	strlcpy(ctrl->facts, "mpst", sizeof(ctrl->facts));
 
 	INFO("Client connection from %s", ctrl->clientaddr);
 	ftp_command(ctrl);
 
-	DBG("Exiting ...");
-	del_session(ctrl);
+	exit(del_session(ctrl, 1));
+fail:
+	free(ctrl);
+	shutdown(sd, SHUT_RDWR);
+	close(sd);
 
-	exit(0);
+	return -1;
 }
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "linux"
  * End:

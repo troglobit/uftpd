@@ -1199,10 +1199,16 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 	char *path;
 
 	path = compose_abspath(ctrl, file);
+	if (!path) {
+		ERR(errno, "Invalid path for %s", file);
+		goto fail;
+	}
+
 	DBG("Trying to write to %s ...", path);
 	fp = fopen(path, "wb");
 	if (!fp) {
 		ERR(errno, "Failed writing %s", path);
+	fail:
 		send_msg(ctrl->sd, "451 Trouble storing file.\r\n");
 		do_abort(ctrl);
 		return;

@@ -2,9 +2,9 @@ AC_INIT([uftpd], [2.5-pre], [https://github.com/troglobit/uftpd/issues])
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 AM_SILENT_RULES([yes])
 
-AC_CONFIG_SRCDIR([uftpd.c])
+AC_CONFIG_SRCDIR([src/uftpd.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 
 AC_PROG_CC
 AC_PROG_LN_S

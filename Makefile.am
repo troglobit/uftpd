@@ -1,35 +1,6 @@
-sbin_PROGRAMS      = uftpd
-dist_man8_MANS     = uftpd.8
-uftpd_SOURCES      = uftpd.c uftpd.h common.c ftpcmd.c tftpcmd.c log.c
-uftpd_CPPFLAGS     = -D_GNU_SOURCE -D_BSD_SOURCE -D_DEFAULT_SOURCE
-uftpd_CFLAGS       = -W -Wall -Wextra -Wno-unused-parameter -std=gnu99
-uftpd_CFLAGS      += $(uev_CFLAGS) $(lite_CFLAGS)
-uftpd_LDADD        = $(uev_LIBS)   $(lite_LIBS)
-SYMLINK            = in.ftpd in.tftpd
+SUBDIRS            = src man
 doc_DATA           = README.md LICENSE
 EXTRA_DIST         = README.md LICENSE ChangeLog.md
-
-# Hook in install to add uftpd --> in.ftpd, in.tftpd symlinks
-install-exec-hook:
-	@for file in $(SYMLINK); do \
-		link=$(DESTDIR)$(sbindir)/$$file; \
-		test -e $$link && continue; \
-		$(LN_S) $(sbin_PROGRAMS) $$link; \
-	done
-
-# Hook in install to add uftpd.8 --> in.ftpd.8, in.tftpd.8 symlinks
-install-data-hook:
-	@for file in $(SYMLINK); do \
-		link=$(DESTDIR)$(man8dir)/$$file.8; \
-		test -e $$link && continue; \
-		$(LN_S) $(dist_man8_MANS) $$link; \
-	done
-
-uninstall-hook:
-	@for file in $(SYMLINK); do \
-		$(RM) $(DESTDIR)$(sbindir)/$$file; \
-		$(RM) $(DESTDIR)$(man8dir)/$$file.8; \
-	done
 
 ## Generate .deb package
 package build-deb:

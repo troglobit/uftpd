@@ -31,17 +31,16 @@ release-hook:
 		echo;									\
 	fi
 
-
 ## Target to run when building a release
-release: distcheck release-hook md5-dist
+release: distcheck release-hook md5-dist package
 	@echo
 	@echo "Resulting release files:"
 	@echo "================================================================="
 	@for file in $(DIST_ARCHIVES); do						\
-		printf "$$file    \tDistribution tarball\n";				\
-		printf "$$file.md5\t"; cat $$file.md5 | cut -f1 -d' ';			\
+		printf "%-30s   Distribution tarball\n" $$file;				\
+		printf "%-30s   " $$file.md5; cat $$file.md5 | cut -f1 -d' ';		\
 		mv $$file* ../;								\
 	done
-#	@for file in `ls ../$(PACKAGE)_$(VERSION)-*`; do				\
-#		printf "$$file    \tDebian/Ubuntu file\n";				\
-#	done
+	@for file in `(cd ..; ls $(PACKAGE)_$(VERSION)*)`; do				\
+		printf "%-30s   Debian/Ubuntu file\n" $$file;				\
+	done

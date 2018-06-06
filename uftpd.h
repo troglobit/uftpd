@@ -121,6 +121,7 @@ typedef struct {
 	char    *buf;		/* Pointer to segment buffer */
 	size_t   bufsz;		/* Size of buf */
 
+	char     facts[10];
 	char     pending; 	/* Pending op: LIST, RETR, STOR */
 	char     list_mode;	/* Current LIST mode */
 	char    *file;	        /* Current file name to fetch */

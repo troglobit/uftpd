@@ -500,7 +500,42 @@ static const char *mlsd_type(char *name, int mode)
 	return S_ISDIR(mode) ? "dir" : "file";
 }
 
-static void mlsd_printf(char *buf, size_t len, char *path, char *name, struct stat *st)
+void mlsd_fact(char fact, char *buf, size_t len, char *name, char *perms, struct stat *st)
+{
+	char size[20];
+
+	switch (fact) {
+	case 'm':
+		strlcat(buf, "modify=", len);
+		strlcat(buf, mlsd_time(st->st_mtime), len);
+		break;
+
+	case 'p':
+		strlcat(buf, "perm=", len);
+		strlcat(buf, perms, len);
+		break;
+
+	case 't':
+		strlcat(buf, "type=", len);
+		strlcat(buf, mlsd_type(name, st->st_mode), len);
+		break;
+
+
+	case 's':
+		if (S_ISDIR(st->st_mode))
+			return;
+		snprintf(size, sizeof(size), "size=%" PRIu64, st->st_size);
+		strlcat(buf, size, len);
+		break;
+
+	default:
+		return;
+	}
+
+	strlcat(buf, ";", len);
+}
+
+static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name, struct stat *st)
 {
 	char perms[10] = "";
 	int ro = !access(path, R_OK);
@@ -512,25 +547,20 @@ static void mlsd_printf(char *buf, size_t len, char *path, char *name, struct st
 			strlcat(perms, "le", sizeof(perms));
 		if (rw)
 			strlcat(perms, "pc", sizeof(perms)); /* 'd' RMD, 'm' MKD */
-		snprintf(buf, len,
-			 "modify=%s;perm=%s;type=%s; %s\r\n",
-			 mlsd_time(st->st_mtime),
-			 "le",
-			 mlsd_type(name, st->st_mode),
-			 name);
 	} else {
 		if (ro)
 			strlcat(perms, "r", sizeof(perms));
 		if (rw)
 			strlcat(perms, "w", sizeof(perms)); /* 'f' RNFR, 'd' DELE */
-		snprintf(buf, len,
-			 "modify=%s;perm=%s;size=%" PRIu64 ";type=%s; %s\r\n",
-			 mlsd_time(st->st_mtime),
-			 perms,
-			 (uint64_t)st->st_size,
-			 mlsd_type(name, st->st_mode),
-			 name);
 	}
+
+	memset(buf, 0, len);
+	for (int i = 0; ctrl->facts[i]; i++)
+		mlsd_fact(ctrl->facts[i], buf, len, name, perms, st);
+
+	strlcat(buf, " ", len);
+	strlcat(buf, name, len);
+	strlcat(buf, "\r\n", len);
 }
 
 static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name)
@@ -552,7 +582,7 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 
 	switch (mode) {
 	case 2:			/* MLSD */
-		mlsd_printf(buf, len, path, name, &st);
+		mlsd_printf(ctrl, buf, len, path, name, &st);
 		break;
 
 	case 1:			/* NLST */
@@ -1236,9 +1266,32 @@ static void handle_CLNT(ctrl_t *ctrl, char *arg)
 
 static void handle_OPTS(ctrl_t *ctrl, char *arg)
 {
-	if (strstr(arg, "MLST"))
-		send_msg(ctrl->sd, "550 MLST OPTS not supported\r\n");
-	else
+	/* OPTS MLST type;size;modify;perm; */
+	if (strstr(arg, "MLST")) {
+		size_t i = 0;
+		char *ptr;
+		char buf[42] = "200 MLST OPTS ";
+		char facts[10] = { 0 };
+
+		ptr = strtok(arg + 4, " \t;");
+		while (ptr && i < sizeof(facts) - 1) {
+			if (!strcmp(ptr, "modify") ||
+			    !strcmp(ptr, "perm")   ||
+			    !strcmp(ptr, "size")   ||
+			    !strcmp(ptr, "type")) {
+				facts[i++] = ptr[0];
+				strlcat(buf, ptr, sizeof(buf));
+				strlcat(buf, ";", sizeof(buf));
+			}
+
+			ptr = strtok(NULL, ";");
+		}
+		strlcat(buf, "\r\n", sizeof(buf));
+
+		DBG("New MLSD facts: %s", facts);
+		strlcpy(ctrl->facts, facts, sizeof(ctrl->facts));
+		send_msg(ctrl->sd, buf);
+	} else
 		send_msg(ctrl->sd, "200 UTF8 OPTS ON\r\n");
 }
 
@@ -1417,6 +1470,7 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 	ctrl->name[0] = 0;
 	ctrl->pass[0] = 0;
 	ctrl->data_address[0] = 0;
+	strlcpy(ctrl->facts, "mpst", sizeof(ctrl->facts));
 
 	INFO("Client connection from %s", ctrl->clientaddr);
 	ftp_command(ctrl);

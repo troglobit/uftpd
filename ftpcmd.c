@@ -800,7 +800,6 @@ static void do_pasv_connection(uev_t *w, void *arg, int events)
 	ctrl->pending = 0;
 }
 
-/* XXX: Audit this, does it really work with multiple interfaces? */
 static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *len)
 {
 	struct sockaddr_in server;
@@ -819,8 +818,6 @@ static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *le
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		return 1;
 	}
-
-	set_nonblock(ctrl->data_listen_sd);
 
 	memset(&server, 0, sizeof(server));
 	server.sin_family      = AF_INET;

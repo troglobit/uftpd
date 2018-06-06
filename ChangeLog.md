@@ -15,7 +15,11 @@ The VLC Android app release.
 - Support for `EPSV` and `EPSV ALL` FTP commands, issue #11
 - Basic support for `MLST` and `MLSD` FTP commands to provide support
   for the VLC android app., issue #9 and #12
+- Add `OPTS MLST <ARG>` to let client manage order of facts listed
+  in `MLST` and `MLSD` calls
 - Add `CDUP` FTP convenience command, alias to `CWD ..`
+- Add `DELE` FTP command to delete files
+- Add `MKD` and `RMD` FTP commands to create and remove directories
 - Refactor `LIST`, `RETR`, `STOR` and `PASV` FTP commands for speed
 
 ### Fixes

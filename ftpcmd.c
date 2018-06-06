@@ -25,6 +25,7 @@ typedef struct {
 
 static ftp_cmd_t supported[];
 
+static void do_PORT(ctrl_t *ctrl, int pending);
 static void do_LIST(uev_t *w, void *arg, int events);
 static void do_RETR(uev_t *w, void *arg, int events);
 static void do_STOR(uev_t *w, void *arg, int events);
@@ -157,6 +158,8 @@ static int open_data_connection(ctrl_t *ctrl)
 
 	/* Previous PORT command from client */
 	if (ctrl->data_address[0]) {
+		int rc;
+
 		ctrl->data_sd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if (-1 == ctrl->data_sd) {
 			ERR(errno, "Failed creating data socket");
@@ -168,7 +171,8 @@ static int open_data_connection(ctrl_t *ctrl)
 		sin.sin_port = htons(ctrl->data_port);
 		inet_aton(ctrl->data_address, &(sin.sin_addr));
 
-		if (connect(ctrl->data_sd, (struct sockaddr *)&sin, len) == -1) {
+		rc = connect(ctrl->data_sd, (struct sockaddr *)&sin, len);
+		if (rc == -1 && EINPROGRESS != errno) {
 			ERR(errno, "Failed connecting data socket to client");
 			close(ctrl->data_sd);
 			ctrl->data_sd = -1;
@@ -724,7 +728,7 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		return;
 	}
 
-	ctrl->pending = 1;
+	do_PORT(ctrl, 1);
 }
 
 static void handle_LIST(ctrl_t *ctrl, char *arg)
@@ -950,6 +954,42 @@ static void do_RETR(uev_t *w, void *arg, int events)
 	}
 }
 
+/*
+ * Check if previous command was PORT, then connect to client and
+ * transfer file/listing similar to what's done for PASV conns.
+ */
+static void do_PORT(ctrl_t *ctrl, int pending)
+{
+	if (!ctrl->data_address[0]) {
+		ctrl->pending = pending;
+		return;
+	}
+
+	if (open_data_connection(ctrl)) {
+		do_abort(ctrl);
+		send_msg(ctrl->sd, "425 TCP connection cannot be established.\r\n");
+		return;
+	}
+
+	send_msg(ctrl->sd, "150 Data connection opened; transfer starting.\r\n");
+
+	switch (pending) {
+	case 3:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
+		break;
+
+	case 2:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+
+	case 1:
+		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+	}
+
+	ctrl->pending = 0;
+}
+
 static void handle_RETR(ctrl_t *ctrl, char *file)
 {
 	FILE *fp;
@@ -985,7 +1025,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	ctrl->pending = 2;
+	do_PORT(ctrl, 2);
 }
 
 static void handle_MDTM(ctrl_t *ctrl, char *file)
@@ -1084,7 +1124,7 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	ctrl->pending = 3;
+	do_PORT(ctrl, 3);
 }
 
 #if 0

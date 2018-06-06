@@ -533,9 +533,10 @@ static void mlsd_printf(char *buf, size_t len, char *path, char *name, struct st
 	}
 }
 
-static int list_printf(int mode, char *buf, size_t len, char *path, char *name)
+static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name)
 {
 	int dirs;
+	int mode = ctrl->list_mode;
 	struct stat st;
 
 	if (stat(path, &st))
@@ -594,7 +595,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	memset(buf, 0, sizeof(buf));
 
 	if (ctrl->d_num == -1) {
-		if (list_printf(ctrl->list_mode, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
+		if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
 			do_abort(ctrl);
 			send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 			return;
@@ -604,11 +605,11 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		goto done;
 	}
 
+	ctrl->list_mode |= (ctrl->pending ? 0 : 0x80);
 	while (ctrl->i < ctrl->d_num) {
 		struct dirent *entry;
 		char *name, *path;
 		char cwd[PATH_MAX];
-		int mode = ctrl->list_mode | (ctrl->pending ? 0 : 0x80);
 
 		entry = ctrl->d[ctrl->i++];
 		name  = entry->d_name;
@@ -626,7 +627,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 			continue;
 		}
 
-		switch (list_printf(mode, buf, sizeof(buf), path, name)) {
+		switch (list_printf(ctrl, buf, sizeof(buf), path, name)) {
 		case -1:
 			goto fail;
 		case 1:
@@ -655,6 +656,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 
 		return;
 	}
+	ctrl->list_mode &= 0x0F;
 
 	/* Rewind and list files */
 	if (ctrl->pending == 0) {
@@ -717,7 +719,7 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 	} else if (ctrl->d_num == -1) {
 		char buf[512];
 
-		if (list_printf(mode, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
+		if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
 			do_abort(ctrl);
 			send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 			return;

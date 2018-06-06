@@ -4,7 +4,7 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.5][] - 2018-06-xx
+[v2.5][] - 2018-06-06
 ---------------------
 
 The VLC Android app release.
@@ -370,7 +370,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.4...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.5...HEAD
+[v2.5]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.5
 [v2.4]:          https://github.com/troglobit/uftpd/compare/v2.3...v2.4
 [v2.3]:          https://github.com/troglobit/uftpd/compare/v2.2...v2.3
 [v2.2]:          https://github.com/troglobit/uftpd/compare/v2.1...v2.2

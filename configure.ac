@@ -1,4 +1,4 @@
-AC_INIT([uftpd], [2.5-rc1], [https://github.com/troglobit/uftpd/issues])
+AC_INIT([uftpd], [2.5], [https://github.com/troglobit/uftpd/issues])
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 AM_SILENT_RULES([yes])
 

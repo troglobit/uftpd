@@ -310,9 +310,6 @@ int del_session(ctrl_t *ctrl, int isftp)
 		free(ctrl->ctx);
 	free(ctrl);
 
-	if (!inetd)
-		return uev_exit(ctx);
-
 	return 0;
 }
 

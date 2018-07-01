@@ -1501,6 +1501,7 @@ static ftp_cmd_t supported[] = {
 
 static void child_exit(uev_t *w, void *arg, int events)
 {
+	DBG("Child exiting ...");
 	uev_exit(w->ctx);
 }
 
@@ -1519,6 +1520,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
 
 	if (recv_msg(w->fd, ctrl->buf, ctrl->bufsz, &command, &argument)) {
+		DBG("Short read, exiting.");
 		uev_exit(ctrl->ctx);
 		return;
 	}
@@ -1601,6 +1603,7 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 	INFO("Client connection from %s", ctrl->clientaddr);
 	ftp_command(ctrl);
 
+	DBG("Client exiting, bye");
 	exit(del_session(ctrl, 1));
 fail:
 	free(ctrl);

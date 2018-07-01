@@ -51,6 +51,7 @@ void logit(int severity, const char *fmt, ...)
 		if (loglevel == LOG_DEBUG)
 			fprintf(file, "%d> ", getpid());
 		vfprintf(file, fmt, args);
+		fflush(file);
 	}
         va_end(args);
 }

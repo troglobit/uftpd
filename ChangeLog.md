@@ -3,6 +3,15 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+[v2.6][UNRELEASED]
+------------------
+
+Bug fix release.
+
+### Fixes
+
+- Issue #16: 100% CPU when client session exits.
+
 
 [v2.5][] - 2018-06-06
 ---------------------

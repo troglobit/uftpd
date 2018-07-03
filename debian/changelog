@@ -1,3 +1,11 @@
+uftpd (2.6) unstable; urgency=medium
+
+  * Bug fix release
+  * Really fix 100% CPU issue, take two.  Some clients managed to trigger
+    a bug caused by calling `uev_exit()` twice on client session exit
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Tue, 03 Jul 2018 17:14:00 +0200
+
 uftpd (2.5) unstable; urgency=critical
 
   * Really fix 100% CPU issue

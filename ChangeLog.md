@@ -10,7 +10,8 @@ Bug fix release.
 
 ### Fixes
 
-- Issue #16: 100% CPU when client session exits.
+- Issue #16: 100% CPU when client session exits
+- Flush stdout logging when running in the foreground
 
 
 [v2.5][] - 2018-06-06

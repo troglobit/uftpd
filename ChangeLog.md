@@ -9,8 +9,8 @@ All notable changes to the project are documented in this file.
 Bug fix release.
 
 ### Fixes
-
 - Issue #16: 100% CPU when client session exits
+- Add missing include file for `gettimeofday()`
 - Flush stdout logging when running in the foreground
 
 

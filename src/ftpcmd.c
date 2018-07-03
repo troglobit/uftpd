@@ -17,6 +17,9 @@
 
 #include "uftpd.h"
 #include <arpa/ftp.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
 
 typedef struct {
 	char *command;

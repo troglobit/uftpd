@@ -12,7 +12,8 @@ AC_PROG_INSTALL
 
 # Configuration.
 AC_HEADER_STDC
-AC_CHECK_FUNCS(strstr getopt getsubopt)
+AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_FUNCS(strstr getopt getsubopt gettimeofday)
 
 # Check for uint[8,16,32]_t
 AC_TYPE_UINT8_T

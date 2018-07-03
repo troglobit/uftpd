@@ -280,13 +280,10 @@ fail:
 
 int del_session(ctrl_t *ctrl, int isftp)
 {
-	uev_ctx_t *ctx;
-
 	DBG("%sFTP Client session ended.", isftp ? "": "T" );
 
 	if (!ctrl)
 		return -1;
-	ctx = ctrl->ctx;
 
 	if (isftp && ctrl->sd > 0) {
 		shutdown(ctrl->sd, SHUT_RDWR);

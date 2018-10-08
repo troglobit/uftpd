@@ -1,4 +1,4 @@
-AC_INIT([uftpd], [2.6], [https://github.com/troglobit/uftpd/issues])
+AC_INIT([uftpd], [2.7-dev], [https://github.com/troglobit/uftpd/issues])
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 AM_SILENT_RULES([yes])
 
@@ -21,7 +21,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 
 # Check for required libraries
-PKG_CHECK_MODULES([uev],  [libuev >= 2.1.0])
+PKG_CHECK_MODULES([uev],  [libuev >= 2.2.0])
 PKG_CHECK_MODULES([lite], [libite >= 1.5.0])
 
 AC_OUTPUT

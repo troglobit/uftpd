@@ -3,6 +3,14 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+
+[v2.7][UNRELEASED]
+------------------
+
+### Changes
+- Require libuEv v2.2, or later.
+
+
 [v2.6][] - 2018-07-03
 ---------------------
 

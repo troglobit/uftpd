@@ -147,7 +147,7 @@ static int security_check(char *home)
 		return 1;
 	}
 
-	if (!do_insecure && access(home, W_OK)) {
+	if (!do_insecure && !access(home, W_OK)) {
 		ERR(0, "FTP root %s writable, possible security violation!", home);
 		return 1;
 	}

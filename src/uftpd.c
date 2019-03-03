@@ -354,17 +354,11 @@ int main(int argc, char **argv)
 	}
 
 	if (optind < argc) {
-		size_t len;
-
-		home = strdup(argv[optind]);
+		home = realpath(argv[optind], NULL);
 		if (!home) {
-			ERR(errno, "Failed allocating memory");
+			ERR(errno, "Invalid FTP root");
 			return 1;
 		}
-
-		len = strlen(home) - 1;
-		if (home[len] == '/')
-			home[len] = 0;
 	}
 
 	/* Inetd mode enforces foreground and syslog */

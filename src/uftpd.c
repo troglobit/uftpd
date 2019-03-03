@@ -52,7 +52,7 @@ static int usage(int code)
 	if (is_inetd)
 		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", prognm);
 	else
-		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]\n\n", prognm);
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]\n\n", prognm);
 
 	printf("  -h         Show this help text\n"
 	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");

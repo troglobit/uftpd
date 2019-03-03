@@ -4,8 +4,8 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.7][UNRELEASED]
-------------------
+[v2.7][] - 2019-03-03
+---------------------
 
 ### Changes
 - Documentation updates, commands added in v2.5 and `writable` opt
@@ -392,7 +392,7 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.6...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.7...HEAD
 [v2.7]:          https://github.com/troglobit/uftpd/compare/v2.6...v2.7
 [v2.6]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.6
 [v2.5]:          https://github.com/troglobit/uftpd/compare/v2.4...v2.5

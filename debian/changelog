@@ -1,3 +1,10 @@
+uftpd (2.7) unstable; urgency=medium
+
+  * Bug fix release
+  * Fix running uftpd as unpriviliged user using a relative FTP root
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 03 Mar 2019 11:39:03 +0100
+
 uftpd (2.6) unstable; urgency=medium
 
   * Bug fix release

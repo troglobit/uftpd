@@ -8,7 +8,11 @@ All notable changes to the project are documented in this file.
 ------------------
 
 ### Changes
-- Require libuEv v2.2, or later.
+- Documentation updates, commands added in v2.5 and `writable` opt
+- Require libuEv v2.2, or later
+
+### Fixes
+- Issue #17: Issues with relative FTP root when running unpriviliged
 
 
 [v2.6][] - 2018-07-03
@@ -389,7 +393,8 @@ First official uftpd release! :-)
 
 
 [UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.6...HEAD
-[v2.5]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.6
+[v2.7]:          https://github.com/troglobit/uftpd/compare/v2.6...v2.7
+[v2.6]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.6
 [v2.5]:          https://github.com/troglobit/uftpd/compare/v2.4...v2.5
 [v2.4]:          https://github.com/troglobit/uftpd/compare/v2.3...v2.4
 [v2.3]:          https://github.com/troglobit/uftpd/compare/v2.2...v2.3

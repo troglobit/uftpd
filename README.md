@@ -18,31 +18,11 @@ Features
 * Possible to have group writable FTP home directory
 
 
-Caveat
-------
-
-uftpd is primarily not targetted at secure installations, it is targeted
-at home users and developers in need of a simple FTP/TFTP server.  uftpd
-allows symlinks to outside the FTP home, as well as a group writable FTP
-home directory &mdash; user-friendly features that potentially can cause
-security breaches, but also very useful for people who just want their
-FTP server to work.
-
-*Seriously*, we do not advise you to ignore any security aspect of your
-installation.  If security is a concern for you, consider using another
-FTP/TFTP server!
-
-That being said, a lot of care has been taken to lock down and secure
-uftpd by default.  So, if you refrain from symlinking stuff from your
-home directory and take care to set up strict permissions, then uftpd is
-likely as secure as any other FTP/TFTP server.
-
-
 Usage
 -----
 
 ```
-uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT] [PATH]
+uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]
 
   -h         Show this help text
   -l LEVEL   Set log level: none, err, info, notice (default), debug
@@ -72,11 +52,16 @@ i.e. `< 1024`:
 
     sudo setcap cap_net_bind_service+ep uftpd
 
-To change port on either FTP or TFTP, use
+To change port on either FTP or TFTP, use:
 
     uftpd -o ftp=PORT,tftp=PORT
 
 Set `PORT` to zero (0) to disable either service.
+
+By default, uftpd will exit if it detects the FTP root is writable.  To
+allow writable FTP root:
+
+    uftpd -o writable PATH
 
 
 Running from inetd
@@ -98,6 +83,19 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 
     inetd ftp/tcp   nowait /usr/sbin/in.ftpd  -- The uftpd FTP server
     inetd tftp/udp    wait /usr/sbin/in.tfptd -- The uftpd TFTP server
+
+
+Caveat
+------
+
+uftpd is primarily not targetted at secure installations, it is targeted
+at users in need of a *simple* FTP/TFTP server.
+
+uftpd allows symlinks outside the FTP root, as well as a group writable
+FTP home directory &mdash; user-friendly features that potentially can
+cause security breaches, but also very useful for people who just want
+their FTP server to work.  A lot of care has been taken, however, to
+lock down and secure uftpd by default.
 
 
 Build & Install

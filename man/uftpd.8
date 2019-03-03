@@ -13,9 +13,9 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd Sep 03, 2017
+.Dd Mar 03, 2019
 .Dt UFTPD 8
-.Os "uftpd (2.4)"
+.Os "uftpd (2.7)"
 .Sh NAME
 .Nm uftpd
 .Nd
@@ -24,7 +24,7 @@ No nonsense TFTP/FTP Server
 .Nm
 .Op Fl hnsv
 .Op Fl l Ar LVL
-.Op Fl o Ar ftp=PORT,tftp=PORT
+.Op Fl o Ar ftp=PORT,tftp=PORT,writable
 .Op Ar PATH
 .Sh DESCRIPTION
 .Nm
@@ -59,7 +59,7 @@ Run in foreground, do not detach from controlling terminal
 .It Fl o
 Set
 .Nm
-option:
+option, seprate multiple options with comma:
 .Bl -tag
 .It Ar ftp=PORT
 .It Ar tftp=PORT
@@ -74,8 +74,8 @@ to zero (0) to disable a service.
 .Pp
 The
 .Ar writable
-option is to enable writable FTP root, which is not recommended.  Some
-people want this, but it is recommended to instead rely on a writable
+option enables writable FTP root, which is not recommended.  Some people
+want this, but it is recommended to instead rely on a writable
 sub-directory, like
 .Ar upload/ ,
 or similar.
@@ -85,7 +85,10 @@ background
 .It Fl v
 Show program version
 .It Ar PATH
-Root directory. The default is to serve files from the FTP user's $HOME
+Root directory. The default is to serve files from the FTP user's $HOME.
+When started as root
+.Nm
+will chroot to this directory as a security measure.
 .El
 .Pp
 .Sh Inetd
@@ -131,13 +134,18 @@ The case of the requests is ignored.
 .It ABOR Ta "abort current transfer"
 .It CDUP Ta "shorthand for CD .. command"
 .It CWD Ta "change working directory"
+.It CLNT Ta "accepted and ignored by server"
 .It DELE Ta "delete a file"
+.It EPRT Ta "RFC 2428, extended PORT command"
 .It EPSV Ta "extended PASV command, used by VLC for Android"
+.It FEAT Ta "list supported features"
+.It HELP Ta "show help text"
 .It LIST Ta "give list files in a directory" Pq Dq Li "ls -lgA"
-.It NLST Ta "like LIST, but much less verbose"
+.It MDTM Ta "RFC 3659, return the last-modified time of a file"
 .It MLST Ta "RFC 3659 extension to LIST"
 .It MLSD Ta "RFC 3659 extension to LIST"
 .It MKD Ta "make a directory"
+.It NLST Ta "like LIST, but much less verbose"
 .It NOOP Ta "do nothing, used for keep-alive"
 .It PASS Ta "specify password"
 .It PASV Ta "prepare for server-to-server transfer"
@@ -172,8 +180,9 @@ The TFTP server currently supports the following requests.
 .El
 .Pp
 .Nm
-supports TFTP blocksize negotiation, according to RFC2348.
-Support for WRQ is not yet implemented, patches welcome!
+supports TFTP blocksize negotiation, according to RFC2348, so full sized
+Ethernet frames can be used, which greatly speeds up transfers.  Support
+for WRQ is not yet implemented, patches welcome!
 .Pp
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact

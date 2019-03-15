@@ -755,12 +755,15 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		/* Check if client sends ls arguments ... */
 		ptr = arg;
 		while (*ptr) {
-			if (*ptr == ' ')
+			if (isspace(*ptr))
 				ptr++;
-			if (string_match(ptr, "-l"))
-				ptr += 2;
-			else
-				break;
+
+			if (*ptr == '-') {
+				while (*ptr && !isspace(*ptr))
+					ptr++;
+			}
+
+			break;
 		}
 
 		/* Strip any "" from "<arg>" */

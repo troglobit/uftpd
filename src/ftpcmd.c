@@ -792,8 +792,13 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 	ctrl->file = strdup(arg ? arg : "");
 	ctrl->i = 0;
 	ctrl->d_num = scandir(path, &ctrl->d, NULL, alphasort);
-	DBG("Reading directory %s ... %d number of entries", path, ctrl->d_num);
+	if (ctrl->d_num == -1) {
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		DBG("Failed reading directory '%s': %s", path, strerror(errno));
+		return;
+	}
 
+	DBG("Reading directory %s ... %d number of entries", path, ctrl->d_num);
 	if (ctrl->data_sd > -1) {
 		send_msg(ctrl->sd, "125 Data connection already open; transfer starting.\r\n");
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);

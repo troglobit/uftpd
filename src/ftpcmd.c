@@ -16,6 +16,7 @@
  */
 
 #include "uftpd.h"
+#include <ctype.h>
 #include <arpa/ftp.h>
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
@@ -148,6 +149,9 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 	ptr = strpbrk(ptr, "\r\n");
 	if (ptr)
 		*ptr = 0;
+
+	/* Convert command to std ftp upper case, issue #18 */
+	for (ptr = msg; *ptr; ++ptr) *ptr = toupper(*ptr);
 
 	DBG("Recv: %s %s", *cmd, *argument ?: "");
 

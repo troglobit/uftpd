@@ -398,7 +398,7 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	 * entry is a file or directory.
 	 */
 	dir = compose_abspath(ctrl, path);
-	if (!dir || stat(dir, &st) || !S_ISDIR(st.st_mode)) {
+	if (!dir || stat(dir, &st) || !S_ISDIR(st.st_mode) || strlen(home) > strlen(dir)) {
 		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;
 	}
@@ -408,9 +408,9 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 
 		DBG("non-chrooted CWD, home:%s, dir:%s, len:%zd, dirlen:%zd",
 		    home, dir, len, strlen(dir));
-		if (len <= strlen(dir))
-			dir += len;
+		dir += len;
 	}
+
 	snprintf(ctrl->cwd, sizeof(ctrl->cwd), "%s", dir);
 done:
 	DBG("New CWD: '%s'", ctrl->cwd);

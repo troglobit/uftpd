@@ -412,6 +412,9 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	}
 
 	snprintf(ctrl->cwd, sizeof(ctrl->cwd), "%s", dir);
+	if (ctrl->cwd[0] == 0)
+		snprintf(ctrl->cwd, sizeof(ctrl->cwd), "/");
+
 done:
 	DBG("New CWD: '%s'", ctrl->cwd);
 	send_msg(ctrl->sd, "250 OK\r\n");

@@ -4,6 +4,13 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.8][UNRELEASED]
+---------------------
+
+### Fixes
+- Fix #18: KDE Dolphin, FTP client interop problems.
+
+
 [v2.7][] - 2019-03-03
 ---------------------
 

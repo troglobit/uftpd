@@ -1,3 +1,11 @@
+uftpd (2.8) unstable; urgency=medium
+
+  * Fix off-by-one regression introduced in v2.5
+  * Convert all commands from user to uppercase for processing
+  * Skip any and *all* FTP LIST options
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 26 May 2019 22:09:40 +0200
+
 uftpd (2.7) unstable; urgency=medium
 
   * Bug fix release

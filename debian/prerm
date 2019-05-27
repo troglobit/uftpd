@@ -2,7 +2,7 @@
 
 set -e
 
-update-inetd --pattern '/usr/sbin/in.ftpd' --multi --disable ftp
-update-inetd --pattern '/usr/sbin/in.tftpd' --multi --disable tftp
+update-inetd --pattern 'in.ftpd' --multi --disable ftp
+update-inetd --pattern 'in.tftpd' --multi --disable tftp
 
 #DEBHELPER#

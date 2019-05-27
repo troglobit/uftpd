@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	if (optind < argc) {
 		home = realpath(argv[optind], NULL);
 		if (!home) {
-			ERR(errno, "Invalid FTP root");
+			ERR(errno, "Invalid FTP root %s", argv[optind]);
 			return 1;
 		}
 	}

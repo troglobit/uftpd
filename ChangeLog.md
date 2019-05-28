@@ -4,8 +4,14 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.8][UNRELEASED]
+[v2.8][] - 2019-05-28
 ---------------------
+
+### Changes
+- The FTP command processor now always converts all inbound commands
+  to uppercase to handle clients sending commands in lowercase
+- Any arguments to the FTP `LIST` command are now ignored
+- Improved user feedback on bad FTP root error message
 
 ### Fixes
 - Fix #18: KDE Dolphin, FTP client interop problems.
@@ -399,7 +405,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.7...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.8...HEAD
+[v2.8]:          https://github.com/troglobit/uftpd/compare/v2.7...v2.8
 [v2.7]:          https://github.com/troglobit/uftpd/compare/v2.6...v2.7
 [v2.6]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.6
 [v2.5]:          https://github.com/troglobit/uftpd/compare/v2.4...v2.5

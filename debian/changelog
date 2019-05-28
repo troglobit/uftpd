@@ -5,7 +5,7 @@ uftpd (2.8) unstable; urgency=medium
   * Skip any and *all* FTP LIST options
   * Enable users group writable FTP root in /etc/inetd.conf
 
- -- Joachim Nilsson <troglobit@gmail.com>  Mon, 27 May 2019 20:55:32 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Tue, 28 May 2019 06:22:18 +0200
 
 uftpd (2.7) unstable; urgency=medium
 

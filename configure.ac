@@ -11,7 +11,6 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 
 # Configuration.
-AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_FUNCS(strstr getopt getsubopt gettimeofday)
 

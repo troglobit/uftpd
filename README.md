@@ -105,6 +105,13 @@ Build & Install
 and [lite][].  See their respective README for details, there should be
 no real surprises, both use the familiar configure, make, make install.
 
+To find the two libraries uftpd depends on `pkg-config`.  The package
+name for your Linux distribution varies, on Debian/Ubuntu systems:
+
+```shell
+user@example:~/> sudo apt install pkg-config
+```
+
 uftpd, as well as its dependencies, can be built as `.deb` packages on
 Debian or Ubuntu based distributions.  Simply download each source
 component and run

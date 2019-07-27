@@ -1,8 +1,4 @@
-#!/bin/sh
-
-set -e
+#!/bin/sh -e
 
 update-inetd --pattern 'in.ftpd' --multi --disable ftp
 update-inetd --pattern 'in.tftpd' --multi --disable tftp
-
-#DEBHELPER#

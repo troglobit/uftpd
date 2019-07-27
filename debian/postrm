@@ -1,6 +1,4 @@
-#!/bin/sh
-
-set -e
+#!/bin/sh -e
 
 if [ "$1" = "purge" ]; then
 	if command -v update-inetd >/dev/null 2>&1; then
@@ -18,7 +16,5 @@ if [ "$1" = "purge" ]; then
 fi
 
 deluser ftp || true
-
-#DEBHELPER#
 
 exit 0

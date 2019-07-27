@@ -1,45 +1,15 @@
 #!/usr/bin/make -f
-# Simple debian/rules that uses debhelper(7).
-# GNU copyright 1997 by Joey Hess.
-.PHONY: build clean binary-indep binary-arch binary install
+# export DH_VERBOSE=1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-build:
-	dh_testdir
-	dh_auto_configure
-	dh_auto_build
+%:
+	dh $@ --with autoreconf,systemd
 
-clean:
-	dh_testdir
-	dh_testroot
-	dh_clean
+override_dh_installchangelogs:
+	dh_installchangelogs ChangeLog.md
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
+# Remove LICENSE and ChangeLog.md per Debian Policy
+override_dh_auto_install:
 	dh_auto_install
-
-binary-indep: build install
-	dh_installdocs
-	dh_installdebconf
-	dh_installman
-	dh_installchangelogs
-
-binary-arch: build install
-	dh_strip
-	rm -f debian/uftpd/usr/share/doc/uftpd/LICENSE
-	rm -f debian/uftpd/usr/share/doc/uftpd/ChangeLog.md
-	dh_compress
-	dh_fixperms
-	dh_installdebconf
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-source diff:                                                                  
-	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
-
-binary: binary-indep binary-arch
+	rm -v debian/uftpd/usr/share/doc/uftpd/LICENSE
+	rm -v debian/uftpd/usr/share/doc/uftpd/ChangeLog.md

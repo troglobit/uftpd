@@ -4,6 +4,19 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.9][UNRELEASED] - 2019-mm-dd
+-------------------------------
+
+### Changes
+- Reduced log level for "Invalid path" and "Failed realpath()" syslog
+  messages.  Only relevant when debugging.  For use on the Internet it
+  will otherwise cause excessive amount of logs due to GXHLGSL.txt
+- Debian packaging fixes and updates
+
+### Fixes
+- Issue #21: Check for `pkg-config` before lookging for deps.
+
+
 [v2.8][] - 2019-05-28
 ---------------------
 

@@ -1,0 +1,8 @@
+autoreconf.*
+debhelper-build-stamp
+files
+uftpd.debhelper.log
+uftpd.post*
+uftpd.pre*
+uftpd.substvars
+uftpd/

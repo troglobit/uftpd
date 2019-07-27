@@ -1231,13 +1231,14 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 
 	path = compose_abspath(ctrl, file);
 	if (!path) {
-		ERR(errno, "Invalid path for %s", file);
+		INFO("Invalid path for %s: %m", file);
 		goto fail;
 	}
 
 	DBG("Trying to write to %s ...", path);
 	fp = fopen(path, "wb");
 	if (!fp) {
+		/* If EACCESS client is trying to do something disallowed */
 		ERR(errno, "Failed writing %s", path);
 	fail:
 		send_msg(ctrl->sd, "451 Trouble storing file.\r\n");
@@ -1294,7 +1295,7 @@ static void handle_MKD(ctrl_t *ctrl, char *arg)
 
 	path = compose_abspath(ctrl, arg);
 	if (!path) {
-		ERR(errno, "Invalid path for %s", arg);
+		INFO("Invalid path for %s: %m", arg);
 		goto fail;
 	}
 

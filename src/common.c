@@ -83,7 +83,7 @@ check:
 
 		memset(rpath, 0, sizeof(rpath));
 		if (!realpath(ptr, rpath)) {
-			ERR(errno, "Failed realpath(%s)", ptr);
+			INFO("Failed realpath(%s): %m", ptr);
 			return NULL;
 		}
 

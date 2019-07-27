@@ -2,9 +2,9 @@ Source: uftpd
 Section: net
 Priority: extra
 Maintainer: Joachim Nilsson <troglobit@gmail.com>
-Build-Depends: debhelper (>= 7.0.0)
-Standards-Version: 3.9.3
-Homepage: http://troglobit.com/uftpd.html
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.3.0
+Homepage: https://troglobit.com/uftpd.html
 
 Package: uftpd
 Architecture: any

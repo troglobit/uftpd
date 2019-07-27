@@ -1,5 +1,5 @@
 SUBDIRS            = src man
-doc_DATA           = README.md LICENSE
+doc_DATA           = README.md LICENSE ChangeLog.md
 EXTRA_DIST         = README.md LICENSE ChangeLog.md
 
 ## Generate .deb package

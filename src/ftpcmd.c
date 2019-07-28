@@ -399,6 +399,8 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 	 */
 	dir = compose_abspath(ctrl, path);
 	if (!dir || stat(dir, &st) || !S_ISDIR(st.st_mode)) {
+		DBG("chrooted:%d, ctrl->cwd: %s, home:%s, dir:%s, len:%zd, dirlen:%zd",
+		    chrooted, ctrl->cwd, home, dir, strlen(home), strlen(dir));
 		send_msg(ctrl->sd, "550 No such directory.\r\n");
 		return;
 	}

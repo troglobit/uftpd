@@ -11,10 +11,16 @@ All notable changes to the project are documented in this file.
 - Reduced log level for "Invalid path" and "Failed realpath()" syslog
   messages.  Only relevant when debugging.  For use on the Internet it
   will otherwise cause excessive amount of logs due to GXHLGSL.txt
-- Debian packaging fixes and updates
+- Debian packaging fixes and updates:
+  - Reverts `-o writable`, due to fixing issue #22
+  - Fixes failing `dpkg -P uftpd` due to bug in postrm script
 
 ### Fixes
 - Issue #21: Check for `pkg-config` before lookging for deps.
+- Issue #22: Check FTP root security *after* having dropped privs.
+  This means no longer having to run with `-o writable` by default
+- Issue #23: FTP command `CWD /` does not work, affects all clients.
+  This is a regression introduced in v2.8 while fixing #18
 
 
 [v2.8][] - 2019-05-28

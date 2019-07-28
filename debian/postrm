@@ -9,12 +9,12 @@ if [ "$1" = "purge" ]; then
 
 	# Remove uftpd entries from db
 	if [ -f /usr/share/debconf/confmodule ]; then
-		. /usr/share/debconf/confmodule
+		. /usr/share/debconf/confmodule db_purge
 		db_purge uftpd/ftp
 		db_purge uftpd/tftp
 	fi
 fi
 
-deluser ftp || true
+deluser --quiet --system ftp
 
 exit 0

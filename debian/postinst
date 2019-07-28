@@ -5,8 +5,8 @@
 # Source debconf library.
 . /usr/share/debconf/confmodule
 
-FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	in.ftpd -o writable"
-TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	in.tftpd -o writable"
+FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	in.ftpd"
+TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	in.tftpd"
 
 if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
 	cat <<-TEXT

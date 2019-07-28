@@ -2,6 +2,7 @@ uftpd (2.9) unstable; urgency=medium
 
   * Minor fixes only
   * Update debian packaging to policy 4.3.0
+  * Revert insecure default: "writable FTP root", introduced in v2.8
 
  -- Joachim Nilsson <troglobit@gmail.com>  Sat, 27 Jul 2019 18:01:40 +0200
 

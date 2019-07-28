@@ -260,6 +260,15 @@ ctrl_t *new_session(uev_ctx_t *ctx, int sd, int *rc)
 		if (!fail1 && !fail2)
 			INFO("Successfully dropped privilges to %d:%d (uid:gid)", pw->pw_uid, pw->pw_gid);
 
+		/*
+		 * Check we don't have write access to the FTP root,
+		 * unless explicitly allowed
+		 */
+		if (!do_insecure && !access(home, W_OK)) {
+			ERR(0, "FTP root %s writable, possible security violation, aborting session!", home);
+			goto fail;
+		}
+
 		/* On failure, we tried at least.  Only warn once. */
 		privs_dropped = 1;
 	}

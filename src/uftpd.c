@@ -139,25 +139,6 @@ static int find_port(char *service, char *proto, int fallback)
 	return port;
 }
 
-/*
- * Check that we don't have write access to the FTP root,
- * unless explicitly allowed
- */
-static int security_check(char *home)
-{
-	if (access(home, F_OK)) {
-		ERR(errno, "Cannot access FTP root %s", home);
-		return 1;
-	}
-
-	if (!do_insecure && !access(home, W_OK)) {
-		ERR(0, "FTP root %s writable, possible security violation!", home);
-		return 1;
-	}
-
-	return 0;
-}
-
 static int init(uev_ctx_t *ctx)
 {
 	/* Figure out FTP/TFTP ports */
@@ -178,8 +159,10 @@ static int init(uev_ctx_t *ctx)
 		}
 	}
 
-	if (!home || security_check(home))
+	if (!home || access(home, F_OK)) {
+		ERR(errno, "Cannot access FTP root %s", home ? home : "NIL");
 		return 1;
+	}
 
 	return uev_init(ctx);
 }

@@ -1,10 +1,14 @@
 uftpd (2.9) unstable; urgency=medium
 
-  * Minor fixes only
-  * Update debian packaging to policy 4.3.0
+  * Check FTP root security after dropping privileges, issue #22
   * Revert insecure default: "writable FTP root", introduced in v2.8
+  * Revert part of issue #18 to fix issue #23; "CWD /" doesn't work
+  * Update debian packaging to policy 4.3.0
+  * Fix failing postrm script, causing dpkg -P uftpd to fail hard
+  * Fix spelling errors found by Lintian
+  * Fix package description, more formal and less personal, thanks Lintian
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sat, 27 Jul 2019 18:01:40 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Sat, 28 Jul 2019 13:01:40 +0200
 
 uftpd (2.8) unstable; urgency=medium
 

@@ -100,7 +100,7 @@ static void sigchld_cb(uev_t *w, void *arg, int events)
  */
 static void sigquit_cb(uev_t *w, void *arg, int events)
 {
-	INFO("Recieved signal %d, exiting ...", w->signo);
+	INFO("Received signal %d, exiting ...", w->signo);
 
 	/* Forward signal to any children in this process group. */
 	if (killpg(getpgrp(), SIGTERM))

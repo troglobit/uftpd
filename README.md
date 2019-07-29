@@ -113,12 +113,16 @@ user@example:~/> sudo apt install pkg-config
 ```
 
 uftpd, as well as its dependencies, can be built as `.deb` packages on
-Debian or Ubuntu based distributions.  Simply download each source
-component and run
+Debian or Ubuntu based distributions.  Download and install each of the
+dependencies, and then run
 
     ./autogen.sh      <--- Only needed if using GIT sources
     ./configure
     make package
+
+The `.deb` package takes care of setting up `/etc/inetd.conf`, create an
+`ftp` user and an `/srv/ftp` home directory with write permissions for
+all members of the `users` group.
 
 If you are using a different Linux or UNIX distribution, check the
 output from `./configure --help`, followed by `make all install`.

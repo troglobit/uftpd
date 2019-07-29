@@ -4,13 +4,13 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.9][UNRELEASED] - 2019-mm-dd
--------------------------------
+[v2.9][] - 2019-07-29
+---------------------
 
 ### Changes
 - Reduced log level for "Invalid path" and "Failed realpath()" syslog
   messages.  Only relevant when debugging.  For use on the Internet it
-  will otherwise cause excessive amount of logs due to GXHLGSL.txt
+  will otherwise cause an excessive amount of logs due to GXHLGSL.txt
 - Debian packaging fixes and updates:
   - Reverts `-o writable`, due to fixing issue #22
   - Fixes failing `dpkg -P uftpd` due to bug in postrm script
@@ -424,7 +424,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.8...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.9...HEAD
+[v2.9]:          https://github.com/troglobit/uftpd/compare/v2.8...v2.9
 [v2.8]:          https://github.com/troglobit/uftpd/compare/v2.7...v2.8
 [v2.7]:          https://github.com/troglobit/uftpd/compare/v2.6...v2.7
 [v2.6]:          https://github.com/troglobit/uftpd/compare/v2.5...v2.6

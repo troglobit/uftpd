@@ -8,7 +8,7 @@ uftpd (2.9) unstable; urgency=medium
   * Fix spelling errors found by Lintian
   * Fix package description, more formal and less personal, thanks Lintian
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sat, 28 Jul 2019 13:01:40 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Mon, 29 Jul 2019 10:52:49 +0200
 
 uftpd (2.8) unstable; urgency=medium
 

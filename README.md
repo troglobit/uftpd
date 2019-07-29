@@ -58,8 +58,8 @@ To change port on either FTP or TFTP, use:
 
 Set `PORT` to zero (0) to disable either service.
 
-By default, uftpd will exit if it detects the FTP root is writable.  To
-allow writable FTP root:
+New sessions are droppbed by default if uftpd detects the FTP root is
+writable.  To allow writable FTP root:
 
     uftpd -o writable PATH
 

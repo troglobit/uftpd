@@ -99,10 +99,13 @@ static int send_OACK(ctrl_t *ctrl)
 	return do_send(ctrl, ptr - ctrl->buf);
 }
 
-static int send_ERROR(ctrl_t *ctrl, int code)
+static int send_ERROR(ctrl_t *ctrl, int code, char *str)
 {
-	char   *str = strerror(code);
-	size_t  len = strlen(str);
+	size_t len;
+
+	if (!str)
+		str = strerror(code);
+	len = strlen(str);
 
 	memset(ctrl->buf, 0, ctrl->segsize);
 
@@ -110,6 +113,7 @@ static int send_ERROR(ctrl_t *ctrl, int code)
 	ctrl->th->th_opcode = htons(ERROR);
 	ctrl->th->th_code   = htons(code);
 	strlcpy(ctrl->th->th_msg, str, len);
+	DBG("ERR %d: %s", code, str);
 
 	/* Error is ASCIIZ string, hence +1 */
 	return do_send(ctrl, len + 1);
@@ -146,7 +150,7 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 	/* First opt is always filename */
 	ctrl->file = strdup(buf);
 	if (!ctrl->file)
-		return send_ERROR(ctrl, ENOMEM);
+		return send_ERROR(ctrl, EUNDEF, NULL);
 
 	do {
 		/* Prepare to read options */
@@ -167,7 +171,7 @@ static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
 
 			if (alloc_buf(ctrl, sz)) {
 				ERR(errno, "Failed reallocating TFTP buffer memory");
-				return send_ERROR(ctrl, ENOMEM);
+				return send_ERROR(ctrl, EUNDEF, NULL);
 			}
 
 			setbit(&ctrl->tftp_options, 1);
@@ -184,13 +188,13 @@ static int handle_RRQ(ctrl_t *ctrl)
 	path = compose_path(ctrl, ctrl->file);
 	if (!path) {
 		ERR(errno, "%s: Invalid path to file %s", ctrl->clientaddr, ctrl->file);
-		return send_ERROR(ctrl, ENOTFOUND);
+		return send_ERROR(ctrl, ENOTFOUND, NULL);
 	}
 
 	ctrl->fp = fopen(path, "r");
 	if (!ctrl->fp) {
 		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
-		return send_ERROR(ctrl, ENOTFOUND);
+		return send_ERROR(ctrl, ENOTFOUND, NULL);
 	}
 
 	return !send_DATA(ctrl, 0);

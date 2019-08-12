@@ -105,9 +105,6 @@ static int send_OACK(ctrl_t *ctrl)
 {
 	char *ptr;
 
-	if (!ctrl->tftp_options)
-		return 0;
-
 	memset(ctrl->buf, 0, ctrl->bufsz);
 
 	/* Create message */
@@ -204,6 +201,9 @@ static int parse_RWRQ(ctrl_t *ctrl, char *buf, size_t len)
 		}
 	} while (len);
 
+	if (!ctrl->tftp_options)
+		return 0;
+
 	return send_OACK(ctrl);
 }
 
@@ -242,6 +242,9 @@ static int handle_WRQ(ctrl_t *ctrl)
 		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
 		return send_ERROR(ctrl, ENOTFOUND, NULL);
 	}
+
+	if (ctrl->tftp_options)
+		return 0;
 
 	return send_ACK(ctrl, 0);
 }

@@ -174,15 +174,18 @@ often used for net booting diskless devices, e.g., BOOTP and PXEBOOT.
 .Pp
 The TFTP server currently supports the following requests.
 .Bl -column "Request" -offset indent
-.It RRQ
-.It ERROR
-.It ACK
+.It Sy Request Ta Sy Description
+.It RRQ     Ta Read Request for file, may have options
+.It WRQ     Ta Write Request for file, may have options
+.It DATA    Ta File data, preceeded by block n:o
+.It ERROR   Ta Error, end of session
+.It ACK     Ta ACKnowledge DATA or WRQ without options
+.It OACK    Ta Option acknowleged, sent as response to RRQ/WRQ
 .El
 .Pp
 .Nm
 supports TFTP blocksize negotiation, according to RFC2348, so full sized
-Ethernet frames can be used, which greatly speeds up transfers.  Support
-for WRQ is not yet implemented, patches welcome!
+Ethernet frames can be used, which greatly speeds up transfers.
 .Pp
 .Sh FILES
 .Bl -tag -width /etc/ftpwelcome -compact

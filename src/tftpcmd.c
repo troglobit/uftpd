@@ -32,7 +32,7 @@ static int do_send(ctrl_t *ctrl, size_t len)
 	if (ctrl->th->th_opcode == OACK)
 		hdrsz = ctrl->th->th_stuff - ctrl->buf;
 
-	DBG("tftp sending %zd + %zd bytes ...", hdrsz, len);
+	DBG("SND %c: header size: %zd, data len: %zd ...", ctrl->th->th_code, hdrsz, len);
 	result = sendto(ctrl->sd, ctrl->buf, hdrsz + len, 0, (struct sockaddr *)&ctrl->client_sa, salen);
 	if (-1 == result)
 		return 1;
@@ -262,7 +262,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 		active = 0;
 		break;
 
-	case ACK:
+	case ACK:		/* Sent for each DATA we send in a RRQ */
 		DBG("tftp ACK, block # %hu", block);
 		active = handle_ACK(ctrl, block);
 		break;

@@ -4,6 +4,17 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.10][UNRELEASED]
+---------------------
+
+### Changes
+- Issue #25: Add support for TFTP write support (WRQ)
+
+### Fixes
+- Minor fix to TFTP error codes, only use standardized codes, and
+  code 0 + custom error message for everything else
+
+
 [v2.9][] - 2019-07-29
 ---------------------
 

@@ -13,9 +13,9 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd Jul 29, 2019
+.Dd Aug 12, 2019
 .Dt UFTPD 8
-.Os "uftpd (2.9)"
+.Os "uftpd (2.10)"
 .Sh NAME
 .Nm uftpd
 .Nd
@@ -23,7 +23,7 @@ No nonsense TFTP/FTP Server
 .Sh SYNOPSIS
 .Nm
 .Op Fl hnsv
-.Op Fl l Ar LVL
+.Op Fl l Ar LOG
 .Op Fl o Ar ftp=PORT,tftp=PORT,writable
 .Op Ar PATH
 .Sh DESCRIPTION
@@ -50,7 +50,7 @@ Available command line options:
 .Bl -tag -width Ds
 .It Fl h
 Show built-in help text
-.It Fl l Ar LVL
+.It Fl l Ar LOG
 Set log level: none, err, info,
 .Ar notice ,
 debug
@@ -130,7 +130,7 @@ prints it when that directory is entered.
 The FTP server currently supports the following requests.
 The case of the requests is ignored.
 .Bl -column "Request" -offset indent
-.It Request Ta "Description"
+.It Sy Request Ta Sy "Description"
 .It ABOR Ta "abort current transfer"
 .It CDUP Ta "shorthand for CD .. command"
 .It CWD Ta "change working directory"

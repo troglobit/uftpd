@@ -127,7 +127,7 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 		*cmd      = msg;
 		*argument = NULL;
 
-		DBG("Recv: [%s], %d bytes", msg, bytes);
+		DBG("Recv: [%s], %zd bytes", msg, bytes);
 
 		return 0;
 	}
@@ -1023,7 +1023,7 @@ static void do_RETR(uev_t *w, void *arg, int events)
 
 	gettimeofday(&tv, NULL);
 	if (tv.tv_sec - ctrl->tv.tv_sec > 3) {
-		DBG("Sending %d bytes of %s to %s ...", num, ctrl->file, ctrl->clientaddr);
+		DBG("Sending %zd bytes of %s to %s ...", num, ctrl->file, ctrl->clientaddr);
 		ctrl->tv.tv_sec = tv.tv_sec;
 	}
 

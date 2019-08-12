@@ -197,7 +197,7 @@ static int parse_RWRQ(ctrl_t *ctrl, char *buf, size_t len)
 				return send_ERROR(ctrl, EUNDEF, NULL);
 			}
 
-			DBG("Negotiated blksize %d", sz);
+			DBG("Negotiated blksize %zd", sz);
 			setbit(&ctrl->tftp_options, 1);
 		}
 	} while (len);

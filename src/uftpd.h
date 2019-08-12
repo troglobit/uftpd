@@ -126,7 +126,7 @@ typedef struct {
 	char     pending; 	/* Pending op: LIST, RETR, STOR */
 	char     list_mode;	/* Current LIST mode */
 	char    *file;	        /* Current file name to fetch */
-	off_t    offset;	/* Offset in current file, for REST */
+	off_t    offset;	/* Offset/block in current file, for REST/WRQ */
 	FILE    *fp;		/* Current file in operation */
 	int      i;		/* i of d_num in 'd' */
 	int      d_num;		/* Number of entries in 'd' */

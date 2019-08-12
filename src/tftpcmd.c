@@ -19,6 +19,28 @@
 #include <poll.h>
 #include <arpa/tftp.h>
 
+/*
+ * Theory of operation, from RFC1350:
+ *
+ * Client gets file, RRQ:
+ *
+ *      client                     server
+ *        |----------- RRQ ---------->|
+ *        |<--------- DATA -----------|
+ *        |----------- ACK ---------->|
+ *        |                           |
+ *
+ * Client puts file, WRQ:
+ *
+ *      client                     server
+ *        |----------- WRQ ---------->|
+ *        |<---------- ACK -----------|
+ *        |---------- DATA ---------->|
+ *        |<---------- ACK -----------|
+ *        |                           |
+ *
+ */
+
 /* Send @len bytes data in @ctrl->buf */
 static int do_send(ctrl_t *ctrl, size_t len)
 {
@@ -67,12 +89,16 @@ static int send_DATA(ctrl_t *ctrl, int block)
 	return do_send(ctrl, len);
 }
 
-#if 0 /* TODO, for client op */
-static int send_ACK(ctrl_t *ctrl)
+static int send_ACK(ctrl_t *ctrl, int block)
 {
-	return 0;
+	memset(ctrl->buf, 0, ctrl->bufsz);
+
+	ctrl->th->th_opcode = htons(ACK);
+	ctrl->th->th_block  = htons(block);
+	DBG("ACK block %d", block);
+
+	return do_send(ctrl, 4);
 }
-#endif
 
 /* Acknowledge options sent by client */
 static int send_OACK(ctrl_t *ctrl)
@@ -142,8 +168,8 @@ static int alloc_buf(ctrl_t *ctrl, size_t segsize)
 	return 0;
 }
 
-/* Parse TFTP payload in RRQ to get filename and optional blksize & timeout */
-static int parse_RRQ(ctrl_t *ctrl, char *buf, size_t len)
+/* Parse TFTP payload in WRQ/RRQ for filename and optional blksize+timeout */
+static int parse_RWRQ(ctrl_t *ctrl, char *buf, size_t len)
 {
 	size_t opt_len = strlen(buf) + 1;
 
@@ -200,6 +226,52 @@ static int handle_RRQ(ctrl_t *ctrl)
 	return !send_DATA(ctrl, 0);
 }
 
+static int handle_WRQ(ctrl_t *ctrl)
+{
+	char *path;
+
+	path = compose_path(ctrl, ctrl->file);
+	if (!path) {
+		ERR(errno, "%s: Invalid path to file %s", ctrl->clientaddr, ctrl->file);
+		return send_ERROR(ctrl, ENOTFOUND, NULL);
+	}
+
+	ctrl->offset = 1;	/* First expected block */
+	ctrl->fp = fopen(path, "w");
+	if (!ctrl->fp) {
+		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
+		return send_ERROR(ctrl, ENOTFOUND, NULL);
+	}
+
+	return send_ACK(ctrl, 0);
+}
+
+static int handle_DATA(ctrl_t *ctrl, size_t len)
+{
+	char errmsg[80];
+	int block;
+
+	block = ntohs(ctrl->th->th_block);
+	if (block != ctrl->offset) {
+		snprintf(errmsg, sizeof(errmsg), "Expected block %ld, "
+			 "got DATA for block %d", ctrl->offset, block);
+		return !send_ERROR(ctrl, EUNDEF, errmsg);
+	}
+
+	DBG("tftp block %d writing %zd bytes ...", ctrl->th->th_block, len);
+	if (len != fwrite(ctrl->th->th_data, sizeof(char), len, ctrl->fp)) {
+		snprintf(errmsg, sizeof(errmsg), "Failed writing file: %s",
+			 strerror(errno));
+		return !send_ERROR(ctrl, ENOSPACE, errmsg);
+	}
+
+	ctrl->offset++;
+	if (send_ACK(ctrl, block) || len < ctrl->segsize)
+		return 0;
+
+	return 1;
+}
+
 /* TODO: Add support for ACK timeout and resend */
 static int handle_ACK(ctrl_t *ctrl, int block)
 {
@@ -247,7 +319,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 	switch (op) {
 	case RRQ:
 		len -= ctrl->th->th_stuff - ctrl->buf;
-		if (parse_RRQ(ctrl, ctrl->th->th_stuff, len)) {
+		if (parse_RWRQ(ctrl, ctrl->th->th_stuff, len)) {
 			ERR(errno, "Failed parsing TFTP RRQ");
 			active = 0;
 			break;
@@ -255,6 +327,24 @@ static void read_client_command(uev_t *w, void *arg, int events)
 		DBG("tftp RRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		active = handle_RRQ(ctrl);
 		free(ctrl->file);
+		break;
+
+	case WRQ:
+		len -= ctrl->th->th_stuff - ctrl->buf;
+		if (parse_RWRQ(ctrl, ctrl->th->th_stuff, len)) {
+			ERR(errno, "Failed parsing TFTP WRQ");
+			active = 0;
+			break;
+		}
+		DBG("tftp WRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		handle_WRQ(ctrl);
+		free(ctrl->file);
+		break;
+
+	case DATA:		/* Received data after WRQ */
+		DBG("tftp DATA %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		len -= ctrl->th->th_data - ctrl->buf;
+		active = handle_DATA(ctrl, len);
 		break;
 
 	case ERROR:

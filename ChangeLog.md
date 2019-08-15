@@ -4,11 +4,12 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.10][UNRELEASED]
----------------------
+[v2.10][] - 2019-08-15
+----------------------
 
 ### Changes
 - Issue #25: Add support for TFTP write support (WRQ)
+- Slightly improved debug messages.
 
 ### Fixes
 - Minor fix to TFTP error codes, only use standardized codes, and
@@ -27,7 +28,7 @@ All notable changes to the project are documented in this file.
   - Fixes failing `dpkg -P uftpd` due to bug in postrm script
 
 ### Fixes
-- Issue #21: Check for `pkg-config` before lookging for deps.
+- Issue #21: Check for `pkg-config` before looking for deps.
 - Issue #22: Check FTP root security *after* having dropped privs.
   This means no longer having to run with `-o writable` by default
 - Issue #23: FTP command `CWD /` does not work, affects all clients.
@@ -55,7 +56,7 @@ All notable changes to the project are documented in this file.
 - Require libuEv v2.2, or later
 
 ### Fixes
-- Issue #17: Issues with relative FTP root when running unpriviliged
+- Issue #17: Issues with relative FTP root when running unprivileged
 
 
 [v2.6][] - 2018-07-03
@@ -101,7 +102,7 @@ Bug fix release.
 
 ### Changes
 - Handle non-chrooted use-cases better, ensure CWD starts with /
-- Increased default inactivty timer: 20 sec --> 180 sec
+- Increased default inactivity timer: 20 sec --> 180 sec
 - Ensure FTP `PASV` and `PORT` sockets are set non-blocking to prevent
   blocking the event loop
 - [README.md][] updates, add usage section and improve build + install
@@ -186,7 +187,7 @@ Minor fix release.
 [v2.0][] - 2016-01-22
 ---------------------
 
-Sleak, smart, simple ... UNIX
+Sleek, smart, simple ... UNIX
 
 ### Changes
 - Greatly simplified command line syntax
@@ -231,7 +232,7 @@ built-in FTP client and wget.
 - Major refactor of both FTP and TFTP servers to use libuEv better.
 - Move to use [libite][] v1.0.0 for `strlcpy()`, `strlcat()`, `pidfile()`
   and more.
-- Add proper session timout to TFTP, like what FTP already has.
+- Add proper session timeout to TFTP, like what FTP already has.
 - Add support for `NLST` FTP command, needed for multiple get operations.
   This fixes issue #2, thanks to @oz123 on GitHub for pointing this out!
 - Add support for `FEAT` and `HELP` FTP commands used by some clients.
@@ -312,7 +313,7 @@ roll your own build of this release from the GIT source tree.
 ### Fixes
 - Fix nasty invalid `sizeof()` argument to `recv()` causing uftpd to
   only read 4/8 bytes (32/64 bit arch) at a time from the FTP socket.
-  This should greatly reduce CPU utilisation and improve xfer speeds.
+  This should greatly reduce CPU utilization and improve xfer speeds.
   Found by [Coverity Scan][].
 - Fix minor resource leak in `ftp_session()` when `getsockname()` or
   `getpeername()` fail.  Minor fix because the session exits and the OS
@@ -360,7 +361,7 @@ roll your own build of this release from the GIT source tree.
 - Incompatible changes to the command line arguments, compared to v1.2!
 - Add libuEv as a GIT submodule, handles signals, timers, and all I/O.
 - Refactor all signal handling, timers, and socket `poll()` calls to
-  use libuEv instead.  Much cleaner and maintaiable code as a result.
+  use libuEv instead.  Much cleaner and maintainable code as a result.
 - Clarify copyright claims, not much remains of the original [FtpServer][]
   code, by [Xu Wang][].
 
@@ -435,7 +436,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.9...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.10...HEAD
+[v2.10]:         https://github.com/troglobit/uftpd/compare/v2.9...v2.10
 [v2.9]:          https://github.com/troglobit/uftpd/compare/v2.8...v2.9
 [v2.8]:          https://github.com/troglobit/uftpd/compare/v2.7...v2.8
 [v2.7]:          https://github.com/troglobit/uftpd/compare/v2.6...v2.7

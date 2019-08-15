@@ -1,10 +1,10 @@
 uftpd (2.10) unstable; urgency=medium
 
-  * Add suport for TFTP WRQ, i.e. support for sending files to server
+  * Add support for TFTP WRQ, i.e. for clients sending files to server
   * Fix invalid TFTP error codes, now uses custom error string to code 0
-  * Slightly improved debug messages.
+  * Slightly improved debug messages
 
- -- Joachim Nilsson <troglobit@gmail.com>  Mon, 12 Aug 2019 11:50:42 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Thu, 15 Aug 2019 08:59:35 +0200
 
 uftpd (2.9) unstable; urgency=medium
 
@@ -30,7 +30,7 @@ uftpd (2.8) unstable; urgency=medium
 uftpd (2.7) unstable; urgency=medium
 
   * Bug fix release
-  * Fix running uftpd as unpriviliged user using a relative FTP root
+  * Fix running uftpd as unprivileged user using a relative FTP root
 
  -- Joachim Nilsson <troglobit@gmail.com>  Sun, 03 Mar 2019 11:39:03 +0100
 
@@ -81,7 +81,7 @@ uftpd (2.2-3) stable; urgency=low
 
     A user must now be member of the users group to share files over
     TFTP/FTP.  Simply add a user to 'users' and they can upload their
-    files to /srv/ftp.  The TFT/FTP server itself has no rights to
+    files to /srv/ftp.  The TFTP/FTP server itself has no rights to
     write there.  Add an uploads/ sub-directory with write perms for
     the 'ftp' user if you want to enable anonymous uploads via FTP.
 
@@ -142,7 +142,7 @@ uftpd (1.8-1) unstable; urgency=low
 
   * New upstream release:
     - Fix insecure chroot(), reported by Coverity Scan, CID #54523
-    - Minor updates to README and a new CHANGLOG file
+    - Minor updates to README and a new CHANGELOG file
 
  -- Joachim Nilsson <troglobit@gmail.com>  Sun,  2 Feb 2015 06:45:06 +0100
 

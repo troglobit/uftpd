@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Joachim Nilsson <troglobit@gmail.com>
 Build-Depends: debhelper (>= 10)
 Standards-Version: 4.3.0
-Homepage: https://troglobit.com/uftpd.html
+Homepage: https://troglobit.com/projects/uftpd/
 
 Package: uftpd
 Architecture: any
@@ -13,12 +13,14 @@ Depends: openbsd-inetd | inet-superserver, debconf (>= 0.2.17), ${shlibs:Depends
 Provides: ftp-server
 Conflicts: ftp-server, tftpd, tftpd-hpa
 Description: No nonsense TFTP/FTP server
- uftpd is a very simple TFTP and FTP server intended for small and local
- LANs.  It works on the Internet, although it is not recommended, and is
- set up in a read-only configuration by default.  It has no users, no
- configuration file, and is started on-demand by the UNIX inetd super
- server, neatly tcpwrapped for your safety.
+ uftpd is a small and simple TFTP and FTP server intended for LANs.  Its
+ author runs it on the Internet, although this is not recommended.
+ .
+ uftpd is set up in a read-only configuration by default.  It has no
+ users, except for anonymous, no configuration file, and is started
+ on-demand by the UNIX inetd super server, neatly tcpwrapped for your
+ safety.
  .
  Hardcore Internet users and anyone concerned about security should
  probably consider a separate TFTP server and for FTP look at one of:
- vsftpd, proftpd or pure-ftpd.
+ vsftpd, proftpd, or pure-ftpd.

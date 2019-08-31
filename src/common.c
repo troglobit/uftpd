@@ -87,6 +87,8 @@ check:
 			return NULL;
 		}
 
+		DBG("realpath(%s) => %s", ptr, rpath);
+
 		if (rpath[1] != 0)
 			strlcat(rpath, "/", sizeof(rpath));
 		strlcat(rpath, name, sizeof(rpath));
@@ -96,6 +98,8 @@ check:
 		DBG("Failed non-chroot dir:%s vs home:%s", dir, home);
 		return NULL;
 	}
+
+	DBG("Final path to file: %s", rpath);
 
 	return rpath;
 }

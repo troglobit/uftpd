@@ -92,7 +92,7 @@ check:
 		strlcat(rpath, name, sizeof(rpath));
 	}
 
-	if (!chrooted && strncmp(dir, home, strlen(home))) {
+	if (!chrooted && strncmp(rpath, home, strlen(home))) {
 		DBG("Failed non-chroot dir:%s vs home:%s", dir, home);
 		return NULL;
 	}

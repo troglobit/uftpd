@@ -444,6 +444,11 @@ static void handle_PORT(ctrl_t *ctrl, char *str)
 		ctrl->data_sd = -1;
 	}
 
+        if (!str) {
+                send_msg(ctrl->sd, "500 No PORT specified.\r\n");
+                return;
+        }
+
 	/* Convert PORT command's argument to IP address + port */
 	sscanf(str, "%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &e, &f);
 	snprintf(addr, sizeof(addr), "%d.%d.%d.%d", a, b, c, d);

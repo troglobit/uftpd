@@ -333,6 +333,11 @@ static void handle_PASS(ctrl_t *ctrl, char *pass)
 		return;
 	}
 
+        if (!pass) {
+                send_msg(ctrl->sd, "503 No password given.\r\n");
+                return;
+        }
+
 	strlcpy(ctrl->pass, pass, sizeof(ctrl->pass));
 	if (check_user_pass(ctrl) < 0) {
 		LOG("User %s from %s, invalid password!", ctrl->name, ctrl->clientaddr);

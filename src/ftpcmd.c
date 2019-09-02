@@ -783,11 +783,11 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 			char *ptr2;
 
 			ptr2 = strchr(&quot[1], '"');
-			if (ptr2) {
-				memmove(ptr2, &ptr2[1], strlen(ptr2));
-				memmove(quot, &quot[1], strlen(quot));
-			} else
-                                break;
+			if (!ptr2)
+				break;
+
+			memmove(ptr2, &ptr2[1], strlen(ptr2));
+			memmove(quot, &quot[1], strlen(quot));
 		}
 		arg = ptr;
 	}

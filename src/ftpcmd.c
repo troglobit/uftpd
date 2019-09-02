@@ -333,6 +333,11 @@ static void handle_PASS(ctrl_t *ctrl, char *pass)
 		return;
 	}
 
+        if (!pass) {
+                send_msg(ctrl->sd, "503 No password given.\r\n");
+                return;
+        }
+
 	strlcpy(ctrl->pass, pass, sizeof(ctrl->pass));
 	if (check_user_pass(ctrl) < 0) {
 		LOG("User %s from %s, invalid password!", ctrl->name, ctrl->clientaddr);
@@ -438,6 +443,11 @@ static void handle_PORT(ctrl_t *ctrl, char *str)
 		close(ctrl->data_sd);
 		ctrl->data_sd = -1;
 	}
+
+        if (!str) {
+                send_msg(ctrl->sd, "500 No PORT specified.\r\n");
+                return;
+        }
 
 	/* Convert PORT command's argument to IP address + port */
 	sscanf(str, "%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &e, &f);
@@ -776,7 +786,8 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 			if (ptr2) {
 				memmove(ptr2, &ptr2[1], strlen(ptr2));
 				memmove(quot, &quot[1], strlen(quot));
-			}
+			} else
+                                break;
 		}
 		arg = ptr;
 	}
@@ -1133,12 +1144,14 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 	char buf[80];
 
 	/* Request to set mtime, ncftp does this */
+        if (file) {
 	ptr = strchr(file, ' ');
-	if (ptr) {
-		*ptr++ = 0;
-		mtime = file;
-		file  = ptr;
-	}
+        	if (ptr) {
+        		*ptr++ = 0;
+        		mtime = file;
+        		file  = ptr;
+        	}
+        }
 
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
@@ -1411,7 +1424,7 @@ static void handle_CLNT(ctrl_t *ctrl, char *arg)
 static void handle_OPTS(ctrl_t *ctrl, char *arg)
 {
 	/* OPTS MLST type;size;modify;perm; */
-	if (strstr(arg, "MLST")) {
+	if (arg && strstr(arg, "MLST")) {
 		size_t i = 0;
 		char *ptr;
 		char buf[42] = "200 MLST OPTS ";

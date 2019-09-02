@@ -1134,12 +1134,14 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 	char buf[80];
 
 	/* Request to set mtime, ncftp does this */
+        if (file) {
 	ptr = strchr(file, ' ');
-	if (ptr) {
-		*ptr++ = 0;
-		mtime = file;
-		file  = ptr;
-	}
+        	if (ptr) {
+        		*ptr++ = 0;
+        		mtime = file;
+        		file  = ptr;
+        	}
+        }
 
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {

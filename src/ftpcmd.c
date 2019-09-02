@@ -1135,6 +1135,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	do_PORT(ctrl, 2);
 }
 
+/* Request to set mtime, ncftp does this */
 static void handle_MDTM(ctrl_t *ctrl, char *file)
 {
 	struct stat st;
@@ -1143,18 +1144,19 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 	char *mtime = NULL;
 	char buf[80];
 
-	/* Request to set mtime, ncftp does this */
-        if (file) {
+        if (!file)
+		goto missing;
+
 	ptr = strchr(file, ' ');
-        	if (ptr) {
-        		*ptr++ = 0;
-        		mtime = file;
-        		file  = ptr;
-        	}
+	if (ptr) {
+		*ptr++ = 0;
+		mtime = file;
+		file  = ptr;
         }
 
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
+	missing:
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}

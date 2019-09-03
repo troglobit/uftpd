@@ -4,6 +4,17 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.11][UNRELEASED]
+-------------------
+
+### Fixes
+- Fix buffer overflow in FTP PORT parser, reported by Aaron Esau
+- Fix TFTP/FTP directory traversal regression , reported by Aaron Esau
+- Fix potential DOS thourh non-busy loop and segfault, by Aaron Esau
+- Fix potential segfault through empty FTP password, by Aaron Esau
+- Fix potential segfault through FTP PORT command, by Aaron Esau
+
+
 [v2.10][] - 2019-08-15
 ----------------------
 

@@ -88,7 +88,7 @@ Like the inetd that comes built-in to [Finit][], in `/etc/finit.conf`:
 Caveat
 ------
 
-uftpd is primarily not targetted at secure installations, it is targeted
+uftpd is primarily not targeted at secure installations, it is targeted
 at users in need of a *simple* FTP/TFTP server.
 
 uftpd allows symlinks outside the FTP root, as well as a group writable

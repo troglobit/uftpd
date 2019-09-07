@@ -12,6 +12,7 @@ group: travis_latest
 # Test build with both GCC and Clang (LLVM)
 compiler:
   - gcc
+  - clang
 
 env:
   global:

@@ -59,7 +59,7 @@ Run in foreground, do not detach from controlling terminal
 .It Fl o
 Set
 .Nm
-option, seprate multiple options with comma:
+option, separate multiple options with comma:
 .Bl -tag
 .It Ar ftp=PORT
 .It Ar tftp=PORT
@@ -177,10 +177,10 @@ The TFTP server currently supports the following requests.
 .It Sy Request Ta Sy Description
 .It RRQ     Ta Read Request for file, may have options
 .It WRQ     Ta Write Request for file, may have options
-.It DATA    Ta File data, preceeded by block n:o
+.It DATA    Ta File data, preceded by block n:o
 .It ERROR   Ta Error, end of session
 .It ACK     Ta ACKnowledge DATA or WRQ without options
-.It OACK    Ta Option acknowleged, sent as response to RRQ/WRQ
+.It OACK    Ta Option acknowledged, sent as response to RRQ/WRQ
 .El
 .Pp
 .Nm

@@ -931,7 +931,7 @@ static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *le
 		return 1;
 	}
 
-	INFO("Data server port estabished.  Waiting for client to connect ...");
+	INFO("Data server port established.  Waiting for client to connect ...");
 	if (listen(ctrl->data_listen_sd, 1) < 0) {
 		ERR(errno, "Client data connection failure");
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");

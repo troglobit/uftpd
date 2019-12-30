@@ -220,7 +220,7 @@ static int handle_RRQ(ctrl_t *ctrl)
 
 	ctrl->fp = fopen(path, "r");
 	if (!ctrl->fp) {
-		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
+		ERR(errno, "%s: Failed opening '%s'", ctrl->clientaddr, path);
 		return send_ERROR(ctrl, ENOTFOUND, NULL);
 	}
 
@@ -240,7 +240,7 @@ static int handle_WRQ(ctrl_t *ctrl)
 	ctrl->offset = 1;	/* First expected block */
 	ctrl->fp = fopen(path, "w");
 	if (!ctrl->fp) {
-		ERR(errno, "%s: Failed opening %s", ctrl->clientaddr, path);
+		ERR(errno, "%s: Failed opening '%s'", ctrl->clientaddr, path);
 		return send_ERROR(ctrl, ENOTFOUND, NULL);
 	}
 
@@ -328,7 +328,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 			active = 0;
 			break;
 		}
-		DBG("tftp RRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		INFO("tftp RRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		active = handle_RRQ(ctrl);
 		free(ctrl->file);
 		break;
@@ -340,13 +340,13 @@ static void read_client_command(uev_t *w, void *arg, int events)
 			active = 0;
 			break;
 		}
-		DBG("tftp WRQ %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		INFO("tftp WRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		handle_WRQ(ctrl);
 		free(ctrl->file);
 		break;
 
 	case DATA:		/* Received data after WRQ */
-		DBG("tftp DATA %s from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		INFO("tftp DATA '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		len -= ctrl->th->th_data - ctrl->buf;
 		active = handle_DATA(ctrl, len);
 		break;

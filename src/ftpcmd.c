@@ -1021,7 +1021,7 @@ static void do_RETR(uev_t *w, void *arg, int events)
 	num = fread(buf, sizeof(char), sizeof(buf), ctrl->fp);
 	if (!num) {
 		if (feof(ctrl->fp))
-			INFO("User %s from %s downloaded %s", ctrl->name, ctrl->clientaddr, ctrl->file);
+			INFO("User %s from %s downloaded '%s'", ctrl->name, ctrl->clientaddr, ctrl->file);
 		else if (ferror(ctrl->fp))
 			ERR(0, "Error while reading %s", ctrl->file);
 		do_abort(ctrl);
@@ -1101,7 +1101,13 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 	struct stat st;
 
 	path = compose_abspath(ctrl, file);
-	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
+	if (!path || stat(path, &st)) {
+		INFO("%s: Failed opening '%s'. No such file or directory", ctrl->clientaddr, path);
+		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+		return;
+	}
+	if (!S_ISREG(st.st_mode)) {
+		INFO("%s: Failed opening '%s'. Not a regular file", ctrl->clientaddr, path);
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}

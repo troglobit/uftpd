@@ -1102,12 +1102,12 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st)) {
-		INFO("%s: Failed opening '%s'. No such file or directory", ctrl->clientaddr, path);
+		LOG("%s: Failed opening '%s'. No such file or directory", ctrl->clientaddr, path);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}
 	if (!S_ISREG(st.st_mode)) {
-		INFO("%s: Failed opening '%s'. Not a regular file", ctrl->clientaddr, path);
+		LOG("%s: Failed opening '%s'. Not a regular file", ctrl->clientaddr, path);
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}

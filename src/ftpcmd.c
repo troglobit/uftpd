@@ -1021,7 +1021,7 @@ static void do_RETR(uev_t *w, void *arg, int events)
 	num = fread(buf, sizeof(char), sizeof(buf), ctrl->fp);
 	if (!num) {
 		if (feof(ctrl->fp))
-			INFO("User %s from %s downloaded '%s'", ctrl->name, ctrl->clientaddr, ctrl->file);
+			LOG("User %s from %s downloaded '%s'", ctrl->name, ctrl->clientaddr, ctrl->file);
 		else if (ferror(ctrl->fp))
 			ERR(0, "Error while reading %s", ctrl->file);
 		do_abort(ctrl);
@@ -1187,6 +1187,8 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 			ERR(errno, "Failed setting MTIME %s of %s", mtime, file);
 			goto fail;
 		}
+
+		LOG("User %s from %s changed mtime of %s", ctrl->name, ctrl->clientaddr, file);
 		(void)stat(path, &st);
 	}
 
@@ -1229,7 +1231,7 @@ static void do_STOR(uev_t *w, void *arg, int events)
 		return;
 	}
 	if (bytes == 0) {
-		INFO("User %s at %s uploaded file %s", ctrl->name, ctrl->clientaddr, ctrl->file);
+		LOG("User %s from %s uploaded file %s", ctrl->name, ctrl->clientaddr, ctrl->file);
 		do_abort(ctrl);
 		send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 		return;
@@ -1304,11 +1306,14 @@ static void handle_DELE(ctrl_t *ctrl, char *file)
 		fail:	send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		else if (EPERM == errno)
 			send_msg(ctrl->sd, "550 Not allowed to remove file or directory.\r\n");
+		else if (ENOTEMPTY == errno)
+			send_msg(ctrl->sd, "550 Not allowed to remove directory, not empty.\r\n");
 		else
 			send_msg(ctrl->sd, "550 Unknown error.\r\n");
 		return;
 	}
 
+	LOG("User %s from %s deleted %s", ctrl->name, ctrl->clientaddr, file);
 	send_msg(ctrl->sd, "200 Command OK\r\n");
 }
 
@@ -1330,6 +1335,7 @@ static void handle_MKD(ctrl_t *ctrl, char *arg)
 		return;
 	}
 
+	LOG("User %s from %s created directory %s", ctrl->name, ctrl->clientaddr, arg);
 	send_msg(ctrl->sd, "200 Command OK\r\n");
 }
 

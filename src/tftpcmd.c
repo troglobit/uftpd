@@ -328,7 +328,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 			active = 0;
 			break;
 		}
-		INFO("tftp RRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		LOG("tftp RRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		active = handle_RRQ(ctrl);
 		free(ctrl->file);
 		break;
@@ -340,7 +340,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 			active = 0;
 			break;
 		}
-		INFO("tftp WRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
+		LOG("tftp WRQ '%s' from %s:%d", ctrl->file, ctrl->clientaddr, port);
 		handle_WRQ(ctrl);
 		free(ctrl->file);
 		break;

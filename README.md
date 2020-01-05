@@ -63,6 +63,9 @@ writable.  To allow writable FTP root:
 
     uftpd -o writable PATH
 
+> **Note:** since v2.11 uftpd logs a lot more events by default.  Set up
+> your syslogd to redirect `LOG_FTP` to a separate log file, or reduce
+> the log level of uftpd using `-l error` to only log errors and higher.
 
 Running from inetd
 ------------------

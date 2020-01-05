@@ -41,8 +41,7 @@ serves both FTP and TFTP and automatically backgrounds itself.  Usually
 .Nm
 this means listen to port 21 (FTP) and port 69 (TFTP), serve files from
 .Pa /srv/ftp ,
-and log anything out of the ordinary to syslog.  Messages are written to
-the syslog using the
+and log to syslog.  Messages are written to the syslog using the
 .Nm LOG_FTP
 facility.
 .Pp
@@ -51,9 +50,18 @@ Available command line options:
 .It Fl h
 Show built-in help text
 .It Fl l Ar LOG
-Set log level: none, err, info,
+Set log level: none, err,
 .Ar notice ,
-debug
+info, debug.  By default the log level is
+.Ar notice ,
+which is less verbose than
+.Ar info ,
+but still logs all relevant events: users logging in, uploading,
+downloading, creating and removing directories, etc.  To reduce
+the log level, start
+.Nm
+with
+.Cm Fl l Ar error .
 .It Fl n
 Run in foreground, do not detach from controlling terminal
 .It Fl o

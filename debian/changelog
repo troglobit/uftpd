@@ -1,3 +1,15 @@
+uftpd (2.11) unstable; urgency=medium
+
+  * Increased logging at default log level.  Now all relevant interaction
+    is logged.  See the man page for how to adjust.
+  * Fix buffer overflow in FTP PORT parser
+  * Fix TFTP/FTP directory traversal regression
+  * Fix potential DOS through non-busy loop and segfault
+  * Fix potential segfault through empty FTP password
+  * Fix potential segfault through FTP PORT command
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 05 Jan 2020 08:49:56 +0100
+
 uftpd (2.10) unstable; urgency=medium
 
   * Add support for TFTP WRQ, i.e. for clients sending files to server

@@ -4,13 +4,18 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.11][UNRELEASED]
--------------------
+[v2.11][] - 2020-01-05
+----------------------
+
+### Changes
+- Increased logging at default log level.  Now users logging in,
+  downloading, uploading, directory creation/removal is logged by
+  default.  Start with `-l error` to silence uftpd again
 
 ### Fixes
 - Fix buffer overflow in FTP PORT parser, reported by Aaron Esau
 - Fix TFTP/FTP directory traversal regression , reported by Aaron Esau
-- Fix potential DOS thourh non-busy loop and segfault, by Aaron Esau
+- Fix potential DOS through non-busy loop and segfault, by Aaron Esau
 - Fix potential segfault through empty FTP password, by Aaron Esau
 - Fix potential segfault through FTP PORT command, by Aaron Esau
 
@@ -447,7 +452,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.10...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.11...HEAD
+[v2.11]:         https://github.com/troglobit/uftpd/compare/v2.10...v2.11
 [v2.10]:         https://github.com/troglobit/uftpd/compare/v2.9...v2.10
 [v2.9]:          https://github.com/troglobit/uftpd/compare/v2.8...v2.9
 [v2.8]:          https://github.com/troglobit/uftpd/compare/v2.7...v2.8

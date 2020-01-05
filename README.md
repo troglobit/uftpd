@@ -25,7 +25,7 @@ Usage
 uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]
 
   -h         Show this help text
-  -l LEVEL   Set log level: none, err, info, notice (default), debug
+  -l LEVEL   Set log level: none, err, notice (default), info, debug
   -n         Run in foreground, do not detach from controlling terminal
   -o OPT     Options:
                       ftp=PORT

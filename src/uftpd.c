@@ -55,7 +55,7 @@ static int usage(int code)
 		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]\n\n", prognm);
 
 	printf("  -h         Show this help text\n"
-	       "  -l LEVEL   Set log level: none, err, info, notice (default), debug\n");
+	       "  -l LEVEL   Set log level: none, err, notice (default), info, debug\n");
 	if (!is_inetd)
 		printf("  -n         Run in foreground, do not detach from controlling terminal\n"
 		       "  -o OPT     Options:\n"

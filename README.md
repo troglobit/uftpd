@@ -104,6 +104,14 @@ lock down and secure uftpd by default.
 Build & Install
 ---------------
 
+### Debian/Ubuntu
+
+    curl -sS https://deb.troglobit.com/pubkey.gpg | sudo apt-key add -
+    echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" | sudo tee /etc/apt/sources.list.d/troglobit.list
+    sudo apt-get update && sudo apt-get install uftpd
+
+### Building from Source
+
 `uftpd` depends on two other projects to build from source, [libuEv][]
 and [lite][].  See their respective README for details, there should be
 no real surprises, both use the familiar configure, make, make install.

@@ -29,7 +29,7 @@ addons:
       name: "troglobit/uftpd"
       description: "uftpd -- the no nonsense (T)FTP server"
     notification_email: troglobit@gmail.com
-    build_command_prepend: "./autogen.sh && PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=/tmp"
+    build_command_prepend: "./autogen.sh && PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix="
     build_command: "make -j5 clean all"
     branch_pattern: dev
 
@@ -43,10 +43,10 @@ install:
 
 script:
   - ./autogen.sh
-  - PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=/tmp
+  - PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=
   - make clean
   - make -j5
-  - make install-strip
-  - tree /tmp
-  - ldd /tmp/sbin/uftpd
-  - LD_LIBRARY_PATH=/tmp/lib /tmp/sbin/uftpd -h
+  - DESTDIR=~/tmp make install-strip
+  - tree ~/tmp
+  - ldd ~/tmp/sbin/uftpd
+  - LD_LIBRARY_PATH=/tmp/lib ~/tmp/sbin/uftpd -h

@@ -410,13 +410,8 @@ static void handle_CWD(ctrl_t *ctrl, char *path)
 		return;
 	}
 
-	if (!chrooted) {
-		size_t len = strlen(home);
-
-		DBG("non-chrooted CWD, home:%s, dir:%s, len:%zd, dirlen:%zd",
-		    home, dir, len, strlen(dir));
-		dir += len;
-	}
+	if (!chrooted)
+		dir += strlen(home);
 
 	snprintf(ctrl->cwd, sizeof(ctrl->cwd), "%s", dir);
 	if (ctrl->cwd[0] == 0)

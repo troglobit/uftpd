@@ -711,7 +711,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		path = compose_path(ctrl, cwd);
 		if (!path) {
 		fail:
-			LOGIT(LOG_INFO, errno, "Failed reading status for %s", path ? path : name);
+			INFO("%s: LIST: Failed reading status for %s: %m", ctrl->clientaddr, path ? path : name);
 			continue;
 		}
 
@@ -757,6 +757,18 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
 
+static const char *mode2op(int mode)
+{
+	switch (mode) {
+	case 0: return "LIST";
+	case 1: return "NLST";
+	case 2: return "MLST";
+	case 3: return "MLSD";
+	}
+
+	return "LST?";
+}
+
 static void list(ctrl_t *ctrl, char *arg, int mode)
 {
 	char *path;
@@ -797,6 +809,7 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 	else
 		path = compose_path(ctrl, arg);
 	if (!path) {
+		INFO("%s: %s: invalid path to %s: %m", ctrl->clientaddr, mode2op(mode), arg);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}
@@ -1102,7 +1115,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st)) {
-		LOG("%s: Failed opening '%s'. No such file or directory", ctrl->clientaddr, path);
+		INFO("%s: RETR: invalid path to %s: %m", ctrl->clientaddr, file);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
 	}
@@ -1163,6 +1176,7 @@ static void handle_MDTM(ctrl_t *ctrl, char *file)
 	path = compose_abspath(ctrl, file);
 	if (!path || stat(path, &st) || !S_ISREG(st.st_mode)) {
 	missing:
+		INFO("MDTM: invalid path to %s: %m", file);
 		send_msg(ctrl->sd, "550 Not a regular file.\r\n");
 		return;
 	}
@@ -1256,7 +1270,7 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 
 	path = compose_abspath(ctrl, file);
 	if (!path) {
-		INFO("Invalid path for %s: %m", file);
+		INFO("STOR: invalid path to %s: %m", file);
 		goto fail;
 	}
 
@@ -1297,7 +1311,7 @@ static void handle_DELE(ctrl_t *ctrl, char *file)
 
 	path = compose_abspath(ctrl, file);
 	if (!path) {
-		ERR(errno, "Cannot find %s", file);
+		INFO("DELE: invalid path to %s: %m", file);
 		goto fail;
 	}
 
@@ -1323,7 +1337,7 @@ static void handle_MKD(ctrl_t *ctrl, char *arg)
 
 	path = compose_abspath(ctrl, arg);
 	if (!path) {
-		INFO("Invalid path for %s: %m", arg);
+		INFO("MKD: invalid path to %s: %m", arg);
 		goto fail;
 	}
 

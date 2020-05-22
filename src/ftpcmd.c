@@ -735,7 +735,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 				ERR(errno, "Failed sending file %s to client", ctrl->file);
 
 			while (ctrl->i < ctrl->d_num) {
-				struct dirent *entry = ctrl->d[ctrl->i++];
+				entry = ctrl->d[ctrl->i++];
 				free(entry);
 			}
 			do_abort(ctrl);

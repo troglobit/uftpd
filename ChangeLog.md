@@ -4,6 +4,22 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.12][] - 2020-05-25
+----------------------
+
+### Changes
+- Use common log message format and log level when user enters an
+  invalid path.  This unfortunately affects changes introduced in
+  [v2.11][] to increase logging at default log level.
+
+### Fixes
+- Issue #30: When entering an invalid directory with the FTP command CWD,
+  a NULL ptr was deref. in a DBG() message even though the log level is
+  set to a value lower than `LOG_DEBUG`.  This caused uftpd to crash
+  and cause denial of service.  Depending on the init/inetd system used
+  this could be permanent.
+
+
 [v2.11][] - 2020-01-05
 ----------------------
 

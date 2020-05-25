@@ -1,3 +1,10 @@
+uftpd (2.12) stable; urgency=medium
+
+  * Fix issue #30: uftpd crashes when an invalid CWD is entered
+  * Use common log message format and log level for all path refs.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Mon, 25 May 2020 18:08:32 +0200
+
 uftpd (2.11) unstable; urgency=medium
 
   * Increased logging at default log level.  Now all relevant interaction

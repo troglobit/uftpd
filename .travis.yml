@@ -20,6 +20,8 @@ addons:
   apt:
     packages:
       - tree
+      - ftp
+      - tftp-hpa
   coverity_scan:
     project:
       name: "troglobit/uftpd"

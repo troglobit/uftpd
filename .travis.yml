@@ -44,6 +44,7 @@ script:
   - PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=
   - make clean
   - make -j5
+  - tftp -h
   - make check || cat tests/tftp.log
   - DESTDIR=~/tmp make install-strip
   - tree ~/tmp

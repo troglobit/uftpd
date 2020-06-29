@@ -32,7 +32,7 @@ addons:
     branch_pattern: dev
 
 install:
-  - wget https://github.com/troglobit/libuev/releases/download/v2.2.0/libuev-2.3.1.tar.xz
+  - wget https://github.com/troglobit/libuev/releases/download/v2.3.1/libuev-2.3.1.tar.xz
   - wget https://github.com/troglobit/libite/releases/download/v2.2.0/libite-2.2.0.tar.xz
   - tar xf libuev-2.3.1.tar.xz
   - tar xf libite-2.2.0.tar.xz

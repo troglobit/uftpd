@@ -11,6 +11,7 @@ Makefile.in
 aclocal.m4
 ar-lib
 autom4te.cache/*
+aux/
 compile
 config.*
 configure

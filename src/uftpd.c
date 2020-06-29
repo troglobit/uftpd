@@ -110,6 +110,9 @@ static void sigquit_cb(uev_t *w, void *arg, int events)
 	while (wait(NULL) != -1)
 		;
 
+	if (home)
+		free(home);
+
 	/* Leave main loop. */
 	uev_exit(w->ctx);
 }

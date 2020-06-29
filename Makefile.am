@@ -1,4 +1,4 @@
-SUBDIRS            = src man
+SUBDIRS            = src man tests
 doc_DATA           = README.md LICENSE ChangeLog.md
 EXTRA_DIST         = README.md LICENSE ChangeLog.md
 

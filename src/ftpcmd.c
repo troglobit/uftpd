@@ -1626,10 +1626,9 @@ int ftp_session(uev_ctx_t *ctx, int sd)
 
 	ctrl = new_session(ctx, sd, &pid);
 	if (!ctrl) {
-		if (pid < 0) {
+		if (pid < 0)
 			shutdown(sd, SHUT_RDWR);
-			close(sd);
-		}
+		close(sd);
 
 		return pid;
 	}

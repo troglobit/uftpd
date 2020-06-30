@@ -31,7 +31,7 @@ jobs:
     - name: check unit tests
       run: |
         ulimit -n 1024
-        LD_LIBRARY_PATH=/tmp/lib make check
+        LD_LIBRARY_PATH=/tmp/lib make check || cat tests/start.log tests/tftp.log 
         cat tests/test-suite.log
     - name: install uftpd
       run: |

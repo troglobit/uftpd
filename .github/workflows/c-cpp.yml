@@ -28,10 +28,11 @@ jobs:
         PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=
     - name: build uftpd
       run: make -j5
-    - name: check
+    - name: check unit tests
       run: |
         ulimit -n 1024
         LD_LIBRARY_PATH=/tmp/lib make check
+        cat tests/test-suite.log
     - name: install uftpd
       run: |
         DESTDIR=~/tmp make install-strip

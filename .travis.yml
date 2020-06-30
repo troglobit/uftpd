@@ -45,7 +45,7 @@ script:
   - make clean
   - make -j5
   - tftp -h
-  - make check || cat tests/tftp.log
+  - make check || cat tests/start.log tests/tftp.log
   - DESTDIR=~/tmp make install-strip
   - tree ~/tmp
   - ldd ~/tmp/sbin/uftpd

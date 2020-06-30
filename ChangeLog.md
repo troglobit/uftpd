@@ -3,6 +3,18 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+[v2.13][] - 2020-06-30
+----------------------
+
+### Changes
+- Unit test framework in place, with regression test for issue #31
+
+### Fixes
+- Issue #31: Socket leak in daemon accept() handling causing "Too many
+  open files".  Effectively causing denial of service
+- Minor memory leak fixed, only allocated once at startup.  Affects
+  only non-MMU systems
+
 
 [v2.12][] - 2020-05-25
 ----------------------

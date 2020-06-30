@@ -1,3 +1,11 @@
+uftpd (2.13) unstable; urgency=medium
+
+  * Fix issue #31: Socket leak in daemon accept(), causing denial of
+    service in standalone daemon setups.  Does not affect .deb install.
+  * Fix minor memory leak, only affects non-MMU systems.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Tue, 30 Jun 2020 23:36:35 +0200
+
 uftpd (2.12) stable; urgency=medium
 
   * Fix issue #30: uftpd crashes when an invalid CWD is entered

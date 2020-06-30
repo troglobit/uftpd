@@ -8,16 +8,35 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: ./autogen.sh && ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
+    - name: Install libuEv
+      run: |
+        wget https://github.com/troglobit/libuev/releases/download/v2.3.1/libuev-2.3.1.tar.xz
+        tar xf libuev-2.3.1.tar.xz
+        (cd libuev-2.3.1 && ./configure --prefix=/tmp && make && make install-strip)
+    - name: Install libite (-lite)
+      run: |
+        wget https://github.com/troglobit/libite/releases/download/v2.2.0/libite-2.2.0.tar.xz
+        tar xf libite-2.2.0.tar.xz
+        (cd libite-2.2.0 && ./configure --prefix=/tmp && make && make install-strip)
+    - name: configure uftpd
+      run: |
+        ./autogen.sh
+        PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=
+    - name: build uftpd
+      run: make -j5
+    - name: check
+      run: |
+        ulimit -n 1024
+        LD_LIBRARY_PATH=/tmp/lib make check
+    - name: install uftpd
+      run: |
+        DESTDIR=~/tmp make install-strip
+        tree ~/tmp
+        ldd ~/tmp/sbin/uftpd
+        LD_LIBRARY_PATH=/tmp/lib ~/tmp/sbin/uftpd -h
+    - name: distcheck uftpd
       run: make distcheck

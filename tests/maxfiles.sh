@@ -2,7 +2,8 @@
 set -e
 cd /tmp
 
-max=`ulimit -n`
+#max=`ulimit -n`
+max=1040
 
 # check beyond max to verify uftpd doesn't leak descriptors
 max=$(($max + 20))

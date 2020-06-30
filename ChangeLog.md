@@ -480,7 +480,9 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.11...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.13...HEAD
+[v2.13]:         https://github.com/troglobit/uftpd/compare/v2.12...v2.13
+[v2.12]:         https://github.com/troglobit/uftpd/compare/v2.11...v2.12
 [v2.11]:         https://github.com/troglobit/uftpd/compare/v2.10...v2.11
 [v2.10]:         https://github.com/troglobit/uftpd/compare/v2.9...v2.10
 [v2.9]:          https://github.com/troglobit/uftpd/compare/v2.8...v2.9

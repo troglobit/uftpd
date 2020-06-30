@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install tools for unit tests
+      run: sudo apt-get -y install tree ftp tftp-hpa
     - name: Install libuEv
       run: |
         wget https://github.com/troglobit/libuev/releases/download/v2.3.1/libuev-2.3.1.tar.xz
@@ -22,22 +24,21 @@ jobs:
         wget https://github.com/troglobit/libite/releases/download/v2.2.0/libite-2.2.0.tar.xz
         tar xf libite-2.2.0.tar.xz
         (cd libite-2.2.0 && ./configure --prefix=/tmp && make && make install-strip)
-    - name: configure uftpd
+    - name: configure
       run: |
         ./autogen.sh
         PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./configure --disable-silent-rules --prefix=
-    - name: build uftpd
+    - name: build
       run: make -j5
-    - name: check unit tests
+    - name: run unit tests
       run: |
         ulimit -n 1024
-        LD_LIBRARY_PATH=/tmp/lib make check || cat tests/start.log tests/tftp.log 
-        cat tests/test-suite.log
-    - name: install uftpd
+        LD_LIBRARY_PATH=/tmp/lib make check
+    - name: install
       run: |
         DESTDIR=~/tmp make install-strip
         tree ~/tmp
         ldd ~/tmp/sbin/uftpd
         LD_LIBRARY_PATH=/tmp/lib ~/tmp/sbin/uftpd -h
-    - name: distcheck uftpd
+    - name: distcheck
       run: make distcheck

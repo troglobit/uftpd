@@ -41,4 +41,6 @@ jobs:
         ldd ~/tmp/sbin/uftpd
         LD_LIBRARY_PATH=/tmp/lib ~/tmp/sbin/uftpd -h
     - name: distcheck
-      run: PKG_CONFIG_PATH=/tmp/lib/pkgconfig make distcheck
+      run: |
+        uname -n 1024
+        PKG_CONFIG_PATH=/tmp/lib/pkgconfig LD_LIBRARY_PATH=/tmp/lib make distcheck

@@ -49,4 +49,5 @@ jobs:
       - name: Test
         run: |
           ulimit -n 1024
-          LD_LIBRARY_PATH=/tmp/lib make check
+          # Tests must currently not run in parallel
+          LD_LIBRARY_PATH=/tmp/lib make -j1 check

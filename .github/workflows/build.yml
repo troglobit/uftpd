@@ -1,0 +1,51 @@
+name: Bob the Builder
+
+# Run on all branches, including all pull requests, except the 'dev'
+# branch since that's where we run Coverity Scan (limited tokens/day)
+on:
+  push:
+    branches:
+      - '**'
+      - '!dev'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    # Verify we can build on latest Ubuntu with both gcc and clang
+    name: ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+      fail-fast: false
+    env:
+      MAKEFLAGS: -j3
+      CC: ${{ matrix.compiler }}
+    steps:
+    - name: Install dependencies
+      run: |
+        curl -sS https://deb.troglobit.com/pubkey.gpg | sudo apt-key add -
+        echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
+             | sudo tee /etc/apt/sources.list.d/troglobit.list
+        sudo apt-get -y update
+        sudo apt-get -y install tree ftp tftp-hpa libuev-dev libite-dev
+    - name: Configure
+      run: |
+        ./autogen.sh
+        ./configure --prefix=
+    - name: Build
+      run: |
+        make V=1
+    - name: Install
+      run: |
+        DESTDIR=~/tmp make install-strip
+        tree ~/tmp
+        ldd ~/tmp/sbin/uftpd
+        size ~/tmp/sbin/uftpd
+        ~/tmp/sbin/uftpd -h
+    - name: Test
+      run: |
+        ulimit -n 1024
+        LD_LIBRARY_PATH=/tmp/lib make check

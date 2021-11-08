@@ -971,7 +971,10 @@ static void handle_PASV(ctrl_t *ctrl, char *arg)
 		return;
 
 	/* Convert server IP address and port to comma separated list */
-	msg = strdup(ctrl->serveraddr);
+	if (pasv_addr)
+		msg = strdup(pasv_addr);
+	else
+		msg = strdup(ctrl->serveraddr);
 	if (!msg) {
 		send_msg(ctrl->sd, "426 Internal server error.\r\n");
 		exit(1);

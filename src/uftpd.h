@@ -97,6 +97,7 @@ extern int   loglevel;
 extern int   do_syslog;         /* Bool: False at daemon start      */
 extern int   do_ftp;            /* Port: FTP port, or disabled      */
 extern int   do_tftp;           /* Port: TFTP port, or disabled     */
+extern char *pasv_addr;	/* Address passed to client in pasv mode */
 extern int   do_insecure;	/* Bool: Allow writable root or not */
 extern struct passwd *pw;       /* FTP user's passwd entry          */
 

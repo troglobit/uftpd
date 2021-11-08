@@ -25,6 +25,7 @@ int   background  = 1;
 int   do_syslog   = 1;
 int   do_ftp      = FTP_DEFAULT_PORT;
 int   do_tftp     = TFTP_DEFAULT_PORT;
+char *pasv_addr   = NULL;
 int   do_insecure = 0;
 pid_t tftp_pid    = 0;
 struct passwd *pw = NULL;
@@ -62,6 +63,7 @@ static int usage(int code)
 		       "                      ftp=PORT\n"
 		       "                      tftp=PORT\n"
 		       "                      writable\n"
+		       "                      pasv_addr=ADDR\n"
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
 
 	printf("  -v         Show program version\n\n");
@@ -270,15 +272,18 @@ int main(int argc, char **argv)
 		FTP_OPT = 0,
 		TFTP_OPT,
 		SEC_OPT,
+		PASV_OPT
 	};
 	char *subopts;
 	char *const token[] = {
 		[FTP_OPT]  = "ftp",
 		[TFTP_OPT] = "tftp",
 		[SEC_OPT]  = "writable",
+		[PASV_OPT] = "pasv_addr",
 		NULL
 	};
 	uev_ctx_t ctx;
+	struct in_addr in_pasv_addr;
 
 	prognm = progname(argv[0]);
 	while ((c = getopt(argc, argv, "hl:no:sv")) != EOF) {
@@ -318,7 +323,17 @@ int main(int argc, char **argv)
 					}
 					do_tftp = atoi(value);
 					break;
-
+				case PASV_OPT:
+					if (!value) {
+						fprintf(stderr, "Missing PASV address argument to -o pasv_addr=ADDR");
+						return usage(1);
+					}
+					if (!inet_aton(value,&in_pasv_addr)) {
+						fprintf(stderr, "Value specified to pasv_addr is not a valid IPv4 address");
+						return usage(1);
+					}
+					pasv_addr = strdup(value);
+					break;
 				case SEC_OPT:
 					do_insecure = 1;
 					break;

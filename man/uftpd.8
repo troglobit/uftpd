@@ -73,6 +73,7 @@ option, separate multiple options with comma:
 .It Ar ftp=PORT
 .It Ar tftp=PORT
 .It Ar writable
+.It Ar pasv_addr=ADDR
 .El
 .Pp
 Override Internet ports otherwise derived from
@@ -88,6 +89,12 @@ want this, but it is recommended to instead rely on a writable
 sub-directory, like
 .Ar upload/ ,
 or similar.
+.Pp
+An address passed to the client in passive mode can be overridden with
+the
+.Ar pasv_addr
+option (real data socket address remains unchanged). This may be useful
+for passing through some types of NAT.
 .It Fl p Ar FILE
 File to store process ID for signaling
 .Nm .

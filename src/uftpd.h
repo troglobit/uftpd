@@ -48,7 +48,11 @@
 #include <unistd.h>
 
 #include <uev/uev.h>
-#include <lite/lite.h>
+#ifdef _LIBITE_LITE
+# include <libite/lite.h>
+#else
+# include <lite/lite.h>
+#endif
 
 #define FTP_DEFAULT_PORT  21
 #define FTP_SERVICE_NAME  "ftp"

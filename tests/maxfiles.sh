@@ -1,7 +1,10 @@
 #!/bin/sh
+set -x
 
-# shellcheck source=/dev/null
-. "$(dirname "$0")/lib.sh"
+if [ x"${srcdir}" = x ]; then
+    srcdir=.
+fi
+. ${srcdir}/lib.sh
 
 #max=`ulimit -n`
 max=1040
@@ -11,12 +14,14 @@ max=$((max + 20))
 
 get()
 {
-    ftp -n 127.0.0.1 9013 <<-END
+    ftp -n 127.0.0.1 <<-END
     	user anonymous a@b
         get testfile.txt
 	bye
 	END
 }
+
+check_dep ftp
 
 i=1
 while [ $i -lt $max ]; do

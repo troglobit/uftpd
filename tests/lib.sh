@@ -37,6 +37,18 @@ OK()
 	exit 0
 }
 
+# shellcheck disable=SC2068
+check_dep()
+{
+    if [ -n "$2" ]; then
+	if ! $@; then
+	    SKIP "$* is not supported on this system."
+	fi
+    elif ! command -v "$1" >/dev/null; then
+	SKIP "Cannot find $1, skipping test."
+    fi
+}
+
 # Stop all lingering collectors and other tools
 kill_pids()
 {
@@ -77,12 +89,14 @@ trapit()
 
 setup()
 {
-	cp /etc/passwd "${DIR}/testfile.txt"
-	../src/uftpd -n -o ftp=9013,tftp=6969 -l none "${DIR}" &
-	echo $! >> "$DIR/PIDs"
-
-	cd "${CDIR}" || exit 1
+	bindir=$(pwd)/../src
+	ls -l $bindir
+	ip link set lo up
 	sleep 1
+	cp /etc/passwd "${DIR}/testfile.txt"
+	"${bindir}/uftpd" -l debug "$DIR" -p "$DIR/pid" >"$DIR/log"
+	cd "${CDIR}" || exit 1
+	return 0
 }
 
 # Runs once when including lib.sh

@@ -1,17 +1,27 @@
 #!/bin/sh
+#set -x
 
-# shellcheck source=/dev/null
-. "$(dirname "$0")/lib.sh"
+if [ x"${srcdir}" = x ]; then
+    srcdir=.
+fi
+. ${srcdir}/lib.sh
 
 get()
 {
-    ftp -n 127.0.0.1 9013 <<-END
+    ftp -n 127.0.0.1 <<-END
 	verbose on
     	user anonymous a@b
 	bin
-	get testfile.txt
+	get $1 
 	bye
 	END
+    sleep 1
 }
 
-get
+check_dep ftp
+get testfile.txt
+
+ls -la
+[ -s testfile.txt ] && OK
+FAIL
+

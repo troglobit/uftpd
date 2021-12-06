@@ -13,9 +13,9 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd June 30, 2020
+.Dd December 6, 2021
 .Dt UFTPD 8
-.Os "uftpd (2.10)"
+.Os "uftpd (2.14)"
 .Sh NAME
 .Nm uftpd
 .Nd
@@ -25,6 +25,7 @@ No nonsense TFTP/FTP Server
 .Op Fl hnsv
 .Op Fl l Ar LOG
 .Op Fl o Ar ftp=PORT,tftp=PORT,writable
+.Op Fl p Ar FILE
 .Op Ar PATH
 .Sh DESCRIPTION
 .Nm
@@ -87,6 +88,14 @@ want this, but it is recommended to instead rely on a writable
 sub-directory, like
 .Ar upload/ ,
 or similar.
+.It Fl p Ar FILE
+File to store process ID for signaling
+.Nm .
+The default depends on how
+.Nm
+was configured at build time, and also the UNIX system it runs on,
+but often it is found in
+.Pa /var/run/uftpd.pid .
 .It Fl s
 Use syslog, even if running in foreground, default when running in the
 background
@@ -204,6 +213,12 @@ Message of the day, presented after successful FTP login.
 .It Pa /etc/nologin
 Displayed to user attempting to connect.  Access is refused if this
 file exists.
+.It Pa /var/run/uftpd.pid
+Program default PID file, created only when
+.Nm
+is ready with its internal setup and able to service signals.  Note,
+.Nm
+exits on most signals.  So no special processing is done atm.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,

@@ -19,6 +19,7 @@
 
 /* Global daemon settings */
 char *prognm      = PACKAGE_NAME;
+char *pidfn       = NULL;
 char *home        = NULL;
 int   inetd       = 0;
 int   background  = 1;
@@ -52,7 +53,7 @@ static int usage(int code)
 	if (is_inetd)
 		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", prognm);
 	else
-		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]\n\n", prognm);
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [-p FILE] [PATH]\n\n", prognm);
 
 	printf("  -h         Show this help text\n"
 	       "  -l LEVEL   Set log level: none, err, notice (default), info, debug\n");
@@ -62,7 +63,9 @@ static int usage(int code)
 		       "                      ftp=PORT\n"
 		       "                      tftp=PORT\n"
 		       "                      writable\n"
-		       "  -s         Use syslog, even if running in foreground, default w/o -n\n");
+		       "  -p FILE    File to store process ID for signaling %s\n"
+		       "  -s         Use syslog, even if running in foreground, default w/o -n\n",
+		       prognm);
 
 	printf("  -v         Show program version\n\n");
 	printf("The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'\n"
@@ -243,7 +246,7 @@ static int serve_files(uev_ctx_t *ctx)
 	sig_init(ctx);
 
 	/* We're now up and running, save pid file. */
-	pidfile(NULL);
+	pidfile(pidfn);
 
 	INFO("Serving files from %s ...", home);
 
@@ -280,8 +283,8 @@ int main(int argc, char **argv)
 	};
 	uev_ctx_t ctx;
 
-	prognm = progname(argv[0]);
-	while ((c = getopt(argc, argv, "hl:no:sv")) != EOF) {
+	pidfn = prognm = progname(argv[0]);
+	while ((c = getopt(argc, argv, "hl:no:p:sv")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -328,6 +331,10 @@ int main(int argc, char **argv)
 					return usage(1);
 				}
 			}
+			break;
+
+		case 'p':
+			pidfn = optarg;
 			break;
 
 		case 's':

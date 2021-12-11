@@ -584,22 +584,12 @@ static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *n
 
 static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *name)
 {
-	int dirs;
-	int mode = ctrl->list_mode;
 	struct stat st;
 
 	if (stat(path, &st))
 		return -1;
 
-	dirs = mode & 0xF0;
-	mode = mode & 0x0F;
-
-	if (dirs && !S_ISDIR(st.st_mode))
-		return 1;
-	if (!dirs && S_ISDIR(st.st_mode))
-		return 1;
-
-	switch (mode) {
+	switch (ctrl->list_mode & 0x0F) {
 	case 3:			/* MLSD */
 		/* fallthrough */
 	case 2:			/* MLST */
@@ -623,9 +613,11 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 
 static void do_MLST(ctrl_t *ctrl)
 {
-	size_t len = 0;
 	char buf[512] = { 0 };
+	char cwd[PATH_MAX];
 	int sd = ctrl->sd;
+	size_t len = 0;
+	char *path;
 
 	if (ctrl->data_sd != -1)
 		sd = ctrl->data_sd;
@@ -633,7 +625,13 @@ static void do_MLST(ctrl_t *ctrl)
 	snprintf(buf, sizeof(buf), "250- Listing %s\r\n", ctrl->file);
 	len = strlen(buf);
 
-	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, ctrl->file, basename(ctrl->file))) {
+	strlcpy(cwd, ctrl->file, sizeof(cwd));
+	path = compose_path(ctrl, cwd);
+	if (!path)
+		goto abort;
+
+	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, path, basename(path))) {
+	abort:
 		do_abort(ctrl);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
@@ -646,8 +644,16 @@ static void do_MLST(ctrl_t *ctrl)
 static void do_MLSD(ctrl_t *ctrl)
 {
 	char buf[512] = { 0 };
+	char cwd[PATH_MAX];
+	char *path;
 
-	if (list_printf(ctrl, buf, sizeof(buf), ctrl->file, basename(ctrl->file))) {
+	strlcpy(cwd, ctrl->file, sizeof(cwd));
+	path = compose_path(ctrl, cwd);
+	if (!path)
+		goto abort;
+
+	if (list_printf(ctrl, buf, sizeof(buf), path, basename(path))) {
+	abort:
 		do_abort(ctrl);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
 		return;
@@ -1069,7 +1075,7 @@ static void do_PORT(ctrl_t *ctrl, int pending)
 	if (!ctrl->data_address[0]) {
 		/* Check if previous command was PASV */
 		if (ctrl->data_sd == -1 && ctrl->data_listen_sd == -1) {
-			if (pending == 1 && ctrl->d_num == -1)
+			if (pending == 1 && ctrl->d_num != -1)
 				do_MLST(ctrl);
 			return;
 		}

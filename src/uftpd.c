@@ -44,6 +44,10 @@ static uev_t sigquit_watcher;
 static int version(void)
 {
 	printf("%s\n", PACKAGE_VERSION);
+	printf("\nBug report address: %s\n", PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+	printf("Project homepage: %s\n", PACKAGE_URL);
+#endif
 	return 0;
 }
 
@@ -70,11 +74,7 @@ static int usage(int code)
 		       prognm);
 
 	printf("  -v         Show program version\n\n");
-	printf("The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'\n"
-	       "Bug report address: %-40s\n", PACKAGE_BUGREPORT);
-#ifdef PACKAGE_URL
-	printf("Project homepage: %s\n", PACKAGE_URL);
-#endif
+	printf("The optional 'PATH' defaults to the $HOME of the /etc/passwd user 'ftp'\n");
 
 	return code;
 }

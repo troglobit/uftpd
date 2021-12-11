@@ -705,6 +705,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		struct dirent *entry;
 		char cwd[PATH_MAX];
 		char *name, *path;
+		size_t len;
 
 		entry = ctrl->d[ctrl->i++];
 		name  = entry->d_name;
@@ -713,8 +714,10 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		if ((!strcmp(name, ".") || !strcmp(name, "..")) && ctrl->list_mode < 2)
 			continue;
 
+		len = strlen(ctrl->file);
 		snprintf(cwd, sizeof(cwd), "%s%s%s", ctrl->file,
-			 ctrl->file[strlen(ctrl->file) - 1] == '/' ? "" : "/", name);
+			 ctrl->file[len > 0 ? len - 1 : len] == '/' ? "" : "/", name);
+
 		path = compose_path(ctrl, cwd);
 		if (!path) {
 		fail:

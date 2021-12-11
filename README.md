@@ -151,11 +151,11 @@ Origin & References
 -------------------
 
 uftpd was originally based on [FtpServer][] by [Xu Wang][], but is now a
-complete rewrite with TFTP support by [Joachim Nilsson][], maintained at
+complete rewrite with TFTP support by [Joachim Wiberg][], maintained at
 [GitHub][].
 
 
-[Joachim Nilsson]: http://troglobit.com
+[Joachim Wiberg]: http://troglobit.com
 [the FTP]:         http://ftp.troglobit.com/uftpd/
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer

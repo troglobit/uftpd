@@ -3,6 +3,7 @@
 *.d
 *.map
 .deps
+.gdb_history
 .libs
 .stamp
 .unpacked
@@ -22,6 +23,7 @@ ltmain.sh
 missing
 stamp-h1
 TAGS
+ID
 GPATH
 GRTAGS
 GSYMS

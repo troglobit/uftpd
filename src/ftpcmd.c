@@ -269,8 +269,13 @@ static int do_abort(ctrl_t *ctrl)
 {
 	if (ctrl->d || ctrl->d_num) {
 		uev_io_stop(&ctrl->data_watcher);
-		if (ctrl->d_num > 0)
+		if (ctrl->d_num > 0) {
+			int i;
+
+			for (i = 0; i < ctrl->d_num; i++)
+				free(ctrl->d[i]);
 			free(ctrl->d);
+		}
 		ctrl->d_num = 0;
 		ctrl->d = NULL;
 		ctrl->i = 0;
@@ -638,6 +643,7 @@ static void do_MLST(ctrl_t *ctrl)
 	}
 
 	strlcat(buf, "250 End.\r\n", sizeof(buf));
+	do_abort(ctrl);
 	send_msg(sd, buf);
 }
 
@@ -660,6 +666,7 @@ static void do_MLSD(ctrl_t *ctrl)
 	}
 
 	send_msg(ctrl->data_sd, buf);
+	do_abort(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }
 
@@ -725,7 +732,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		}
 
 		DBG("LIST %s", buf);
-		free(entry);
 
 		bytes = send(ctrl->data_sd, buf, strlen(buf), 0);
 		if (-1 == bytes) {

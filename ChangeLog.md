@@ -3,6 +3,24 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+[v2.14][] - 2021-12-11
+----------------------
+
+### Changes
+- Add support for `-o pasv_addr=ADDR` command line argument to override
+- Add support for `-p PIDFILE` command line argument
+  the address passed to the client in passive mode, useful for some
+  types of NAT setup
+- Add support for new libite (-lite) library header namespace
+- Restored .tar.gz release archives
+- Replaced Travis-CI with GitHub Actions
+
+### Fixes
+- Issue #36: MLST command without any argument blocks
+- Fix memory leak in MLST/MLSD, only affects no-MMU systems where the
+  kernel cannot free memory of processes on exit
+
+
 [v2.13][] - 2020-06-30
 ----------------------
 
@@ -480,7 +498,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.13...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.14...HEAD
+[v2.14]:         https://github.com/troglobit/uftpd/compare/v2.13...v2.14
 [v2.13]:         https://github.com/troglobit/uftpd/compare/v2.12...v2.13
 [v2.12]:         https://github.com/troglobit/uftpd/compare/v2.11...v2.12
 [v2.11]:         https://github.com/troglobit/uftpd/compare/v2.10...v2.11

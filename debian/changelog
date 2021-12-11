@@ -1,3 +1,15 @@
+uftpd (2.14) stable; urgency=medium
+
+  * Add support for `-o pasv_addr=ADDR` command line argument to override
+  * Add support for `-p PIDFILE` command line argument
+    the address passed to the client in passive mode, useful for some
+    types of NAT setup
+  * Fix issue #36: MLST command without any argument blocks
+  * Fix memory leak in MLST/MLSD, only affects no-MMU systems where the
+    kernel cannot free memory of processes on exit
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Sat, 11 Dec 2021 11:27:57 +0100
+
 uftpd (2.13) unstable; urgency=medium
 
   * Fix issue #31: Socket leak in daemon accept(), causing denial of

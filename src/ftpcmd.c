@@ -161,7 +161,7 @@ static int recv_msg(int sd, char *msg, size_t len, char **cmd, char **argument)
 static int open_data_connection(ctrl_t *ctrl)
 {
 	socklen_t len = sizeof(struct sockaddr);
-	struct sockaddr_in sin;
+	struct sockaddr_in sin = { 0 };
 
 	/* Previous PORT command from client */
 	if (ctrl->data_address[0]) {

@@ -54,7 +54,7 @@ static int usage(int code)
 	if (is_inetd)
 		printf("\nUsage: %s [-hv] [-l LEVEL] [PATH]\n\n", prognm);
 	else
-		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [-p FILE] [PATH]\n\n", prognm);
+		printf("\nUsage: %s [-hnsv] [-l LEVEL] [-o OPTS] [-p FILE] [PATH]\n\n", prognm);
 
 	printf("  -h         Show this help text\n"
 	       "  -l LEVEL   Set log level: none, err, notice (default), info, debug\n");
@@ -63,8 +63,8 @@ static int usage(int code)
 		       "  -o OPT     Options:\n"
 		       "                      ftp=PORT\n"
 		       "                      tftp=PORT\n"
-		       "                      writable\n"
 		       "                      pasv_addr=ADDR\n"
+		       "                      writable\n"
 		       "  -p FILE    File to store process ID for signaling %s\n"
 		       "  -s         Use syslog, even if running in foreground, default w/o -n\n",
 		       prognm);

@@ -22,7 +22,7 @@ Usage
 -----
 
 ```
-uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]
+uftpd [-hnsv] [-l LEVEL] [-o OPTS] [PATH]
 
   -h         Show this help text
   -l LEVEL   Set log level: none, err, notice (default), info, debug
@@ -30,6 +30,7 @@ uftpd [-hnsv] [-l LEVEL] [-o ftp=PORT,tftp=PORT,writable] [PATH]
   -o OPT     Options:
                       ftp=PORT
                       tftp=PORT
+                      pasv_addr=ADDR
                       writable
   -s         Use syslog, even if running in foreground, default w/o -n
   -v         Show program version
@@ -66,6 +67,7 @@ writable.  To allow writable FTP root:
 > **Note:** since v2.11 uftpd logs a lot more events by default.  Set up
 > your syslogd to redirect `LOG_FTP` to a separate log file, or reduce
 > the log level of uftpd using `-l error` to only log errors and higher.
+
 
 Running from inetd
 ------------------

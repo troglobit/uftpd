@@ -1,6 +1,6 @@
 No Nonsense FTP/TFTP Server
 ===========================
-[![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
+[![License Badge][]][License] [![GitHub Status][]][GitHub] [![Coverity Status][]][Coverity Scan]
 
 uftpd is a UNIX daemon with sane built-in defaults.  It just works.
 
@@ -154,20 +154,20 @@ Origin & References
 
 uftpd was originally based on [FtpServer][] by [Xu Wang][], but is now a
 complete rewrite with TFTP support by [Joachim Wiberg][], maintained at
-[GitHub][].
+[GitHub][home].
 
 
 [Joachim Wiberg]: http://troglobit.com
 [the FTP]:         http://ftp.troglobit.com/uftpd/
 [Xu Wang]:         https://github.com/xu-wang11/
 [FtpServer]:       https://github.com/xu-wang11/FtpServer
-[GitHub]:          https://github.com/troglobit/uftpd
+[home]:            https://github.com/troglobit/uftpd
 [Finit]:           https://github.com/troglobit/finit
 [lite]:            https://github.com/troglobit/libite
 [libuEv]:          https://github.com/troglobit/libuev
 [License]:         https://en.wikipedia.org/wiki/ISC_license
 [License Badge]:   https://img.shields.io/badge/License-ISC-blue.svg
-[Travis]:          https://travis-ci.org/troglobit/uftpd
-[Travis Status]:   https://travis-ci.org/troglobit/uftpd.png?branch=master
+[GitHub]:          https://github.com/troglobit/uftpd/actions/workflows/build.yml/
+[GitHub Status]:   https://github.com/troglobit/uftpd/actions/workflows/build.yml/badge.svg
 [Coverity Scan]:   https://scan.coverity.com/projects/2947
 [Coverity Status]: https://scan.coverity.com/projects/2947/badge.svg

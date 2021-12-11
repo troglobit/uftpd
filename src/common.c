@@ -32,10 +32,10 @@ int chrooted = 0;
  */
 char *compose_path(ctrl_t *ctrl, char *path)
 {
-	struct stat st;
 	static char rpath[PATH_MAX];
-	char *name, *ptr;
 	char dir[PATH_MAX] = { 0 };
+	char *name, *ptr;
+	struct stat st;
 
 	strlcpy(dir, ctrl->cwd, sizeof(dir));
 	DBG("Compose path from cwd: %s, arg: %s", ctrl->cwd, path ?: "");

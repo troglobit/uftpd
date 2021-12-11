@@ -195,8 +195,8 @@ static int open_data_connection(ctrl_t *ctrl)
 	/* Previous PASV command, accept connect from client */
 	if (ctrl->data_listen_sd > 0) {
 		const int const_int_1 = 1;
-		int retries = 3;
 		char client_ip[100];
+		int retries = 3;
 
 	retry:
 		ctrl->data_sd = accept(ctrl->data_listen_sd, (struct sockaddr *)&sin, &len);
@@ -703,8 +703,8 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	ctrl->list_mode |= (ctrl->pending ? 0 : 0x80);
 	while (ctrl->i < ctrl->d_num) {
 		struct dirent *entry;
-		char *name, *path;
 		char cwd[PATH_MAX];
+		char *name, *path;
 
 		entry = ctrl->d[ctrl->i++];
 		name  = entry->d_name;

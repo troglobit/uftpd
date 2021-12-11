@@ -42,13 +42,11 @@ char *compose_path(ctrl_t *ctrl, char *path)
 	if (!path || !strlen(path))
 		goto check;
 
-	if (path) {
-		if (path[0] != '/') {
-			if (dir[strlen(dir) - 1] != '/')
-				strlcat(dir, "/", sizeof(dir));
-		}
-		strlcat(dir, path, sizeof(dir));
+	if (path[0] != '/') {
+		if (dir[strlen(dir) - 1] != '/')
+			strlcat(dir, "/", sizeof(dir));
 	}
+	strlcat(dir, path, sizeof(dir));
 
 check:
 	while ((ptr = strstr(dir, "//")))

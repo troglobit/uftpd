@@ -643,8 +643,8 @@ static void do_MLST(ctrl_t *ctrl)
 	}
 
 	strlcat(buf, "250 End.\r\n", sizeof(buf));
-	do_abort(ctrl);
 	send_msg(sd, buf);
+	do_abort(ctrl);
 }
 
 static void do_MLSD(ctrl_t *ctrl)
@@ -811,9 +811,11 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 	ctrl->i = 0;
 	ctrl->d_num = scandir(path, &ctrl->d, NULL, alphasort);
 	if (ctrl->d_num == -1) {
-		send_msg(ctrl->sd, "550 No such file or directory.\r\n");
-		DBG("Failed reading directory '%s': %s", path, strerror(errno));
-		return;
+		if (access(path, R_OK)) {
+			send_msg(ctrl->sd, "550 No such file or directory.\r\n");
+			DBG("Failed reading directory '%s': %s", path, strerror(errno));
+			return;
+		}
 	}
 
 	DBG("Reading directory %s ... %d number of entries", path, ctrl->d_num);
@@ -1067,7 +1069,7 @@ static void do_PORT(ctrl_t *ctrl, int pending)
 	if (!ctrl->data_address[0]) {
 		/* Check if previous command was PASV */
 		if (ctrl->data_sd == -1 && ctrl->data_listen_sd == -1) {
-			if (pending == 1 && ctrl->d_num != -1)
+			if (pending == 1)
 				do_MLST(ctrl);
 			return;
 		}

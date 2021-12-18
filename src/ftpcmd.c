@@ -745,13 +745,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	}
 	ctrl->list_mode &= 0x0F;
 
-	/* Rewind and list files */
-	if (ctrl->pending == 0) {
-		ctrl->pending++;
-		ctrl->i = 0;
-		return;
-	}
-
 	do_abort(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");
 }

@@ -55,12 +55,12 @@ check:
 	if (!chrooted) {
 		size_t len = strlen(home);
 
-		DBG("Server path from CWD: %s", dir);
+//		DBG("Server path from CWD: %s", dir);
 		if (len > 0 && home[len - 1] == '/')
 			len--;
 		memmove(dir + len, dir, strlen(dir) + 1);
 		memcpy(dir, home, len);
-		DBG("Resulting non-chroot path: %s", dir);
+//		DBG("Resulting non-chroot path: %s", dir);
 	}
 
 	/*
@@ -85,7 +85,7 @@ check:
 			return NULL;
 		}
 
-		DBG("realpath(%s) => %s", ptr, rpath);
+//		DBG("realpath(%s) => %s", ptr, rpath);
 
 		if (rpath[1] != 0)
 			strlcat(rpath, "/", sizeof(rpath));

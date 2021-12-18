@@ -725,14 +725,8 @@ static void do_LIST(uev_t *w, void *arg, int events)
 			continue;
 		}
 
-		switch (list_printf(ctrl, buf, sizeof(buf), path, name)) {
-		case -1:
+		if (list_printf(ctrl, buf, sizeof(buf), path, name))
 			goto fail;
-		case 1:
-			continue;
-		default:
-			break;
-		}
 
 		DBG("LIST %s", buf);
 

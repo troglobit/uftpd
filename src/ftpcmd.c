@@ -635,7 +635,7 @@ static void do_MLST(ctrl_t *ctrl)
 	if (!path)
 		goto abort;
 
-	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, path, basename(path))) {
+	if (list_printf(ctrl, &buf[len], sizeof(buf) -  len, path, basename(ctrl->file))) {
 	abort:
 		do_abort(ctrl);
 		send_msg(ctrl->sd, "550 No such file or directory.\r\n");

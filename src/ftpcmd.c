@@ -711,7 +711,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		name  = entry->d_name;
 
 		DBG("Found directory entry %s", name);
-		if ((!strcmp(name, ".") || !strcmp(name, "..")) && ctrl->list_mode < 2)
+		if (!strcmp(name, ".") || !strcmp(name, ".."))
 			continue;
 
 		len = strlen(ctrl->file);

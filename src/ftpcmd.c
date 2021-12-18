@@ -737,10 +737,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 			else
 				ERR(errno, "Failed sending file %s to client", ctrl->file);
 
-			while (ctrl->i < ctrl->d_num) {
-				entry = ctrl->d[ctrl->i++];
-				free(entry);
-			}
 			do_abort(ctrl);
 			send_msg(ctrl->sd, "426 TCP connection was established but then broken!\r\n");
 		}

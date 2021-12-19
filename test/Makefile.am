@@ -7,6 +7,3 @@ TESTS_ENVIRONMENT  = unshare -mrun
 TESTS              = ftp.sh
 TESTS             += tftp.sh
 TESTS             += maxfiles.sh
-
-.PRECIOUS: stop.log
-

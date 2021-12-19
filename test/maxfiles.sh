@@ -1,5 +1,5 @@
 #!/bin/sh
-set -x
+#set -x
 
 if [ x"${srcdir}" = x ]; then
     srcdir=.
@@ -14,11 +14,11 @@ max=$((max + 20))
 
 get()
 {
-    ftp -n 127.0.0.1 <<-END
-    	user anonymous a@b
-        get testfile.txt
-	bye
-	END
+	ftp -n 127.0.0.1 <<-EOF
+		user anonymous a@b
+		get testfile.txt
+		bye
+		EOF
 }
 
 check_dep ftp

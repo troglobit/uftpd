@@ -90,12 +90,17 @@ trapit()
 setup()
 {
 	bindir=$(pwd)/../src
-	ls -l $bindir
+
 	ip link set lo up
 	sleep 1
 	cp /etc/passwd "${DIR}/testfile.txt"
-	"${bindir}/uftpd" -l debug "$DIR" -p "$DIR/pid" >"$DIR/log"
+
+	"${bindir}/uftpd" "$DIR" -p "$DIR/pid" >"$DIR/log"
 	cd "${CDIR}" || exit 1
+
+	sleep 1
+	cat "$DIR/pid" >> "$DIR/PIDs"
+
 	return 0
 }
 

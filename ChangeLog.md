@@ -3,6 +3,27 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+
+[v2.15][UNRELEASED] - 2021-12-19
+----------------------
+
+### Changes
+- CI status badge now to points to GitHub Actions, no more Travis-CI
+- Silence some developer debug messages
+- Always skip `.` and `..` in FTP listings
+- Internal refactoring and code cleanup
+
+### Fixes
+- Fix mdoc warning, found by lintian
+- Fix regression introduced in v2.14, server directory name shown in FTP
+  listings instead of `.`, e.g. `MLST .` showed the directory name 
+- Fix #36: for real this time, now also with a test case to verify
+- Fix #38: duplicate entries in FTP listings, regression in v2.14.
+  Caused by (initially unintentional) removal of sorted listings, where
+  directories prior to v2.14 were listed first.  This change, albeit an
+  accident, actually helped clean up the code base and speed up replies
+
+
 [v2.14][] - 2021-12-11
 ----------------------
 
@@ -499,6 +520,7 @@ First official uftpd release! :-)
 
 
 [UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.14...HEAD
+[v2.15]:         https://github.com/troglobit/uftpd/compare/v2.14...v2.15
 [v2.14]:         https://github.com/troglobit/uftpd/compare/v2.13...v2.14
 [v2.13]:         https://github.com/troglobit/uftpd/compare/v2.12...v2.13
 [v2.12]:         https://github.com/troglobit/uftpd/compare/v2.11...v2.12

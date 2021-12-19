@@ -1479,9 +1479,9 @@ static void handle_OPTS(ctrl_t *ctrl, char *arg)
 
 static void handle_HELP(ctrl_t *ctrl, char *arg)
 {
-	int i = 0;
-	char buf[80];
 	ftp_cmd_t *cmd;
+	char buf[80];
+	int i = 0;
 
 	if (string_valid(arg) && !string_compare(arg, "SITE")) {
 		send_msg(ctrl->sd, "500 command HELP does not take any arguments on this server.\r\n");

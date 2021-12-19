@@ -107,6 +107,13 @@ extern struct passwd *pw;       /* FTP user's passwd entry          */
 
 typedef struct tftphdr tftp_t;
 
+typedef enum {
+	PENDING_NONE=0,
+	PENDING_LIST,
+	PENDING_RETR,
+	PENDING_STOR
+} pend_t;
+
 typedef struct {
 	int sd;
 	int type;
@@ -128,7 +135,7 @@ typedef struct {
 	size_t   bufsz;		/* Size of buf */
 
 	char     facts[10];
-	char     pending; 	/* Pending op: LIST, RETR, STOR */
+	pend_t   pending; 	/* Pending op: LIST, RETR, STOR */
 	char     list_mode;	/* Current LIST mode */
 	char    *file;	        /* Current file name to fetch */
 	off_t    offset;	/* Offset/block in current file, for REST/WRQ */

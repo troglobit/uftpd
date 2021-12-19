@@ -22,6 +22,11 @@
 # include <sys/time.h>
 #endif
 
+#define LISTMODE_LIST 0
+#define LISTMODE_NLST 1
+#define LISTMODE_MLST 2
+#define LISTMODE_MLSD 3
+
 typedef struct {
 	char *command;
 	void (*cb)(ctrl_t *ctr, char *arg);
@@ -29,7 +34,7 @@ typedef struct {
 
 static ftp_cmd_t supported[];
 
-static void do_PORT(ctrl_t *ctrl, int pending);
+static void do_PORT(ctrl_t *ctrl, pend_t pending);
 static void do_LIST(uev_t *w, void *arg, int events);
 static void do_RETR(uev_t *w, void *arg, int events);
 static void do_STOR(uev_t *w, void *arg, int events);
@@ -296,7 +301,7 @@ static int do_abort(ctrl_t *ctrl)
 		ctrl->fp = NULL;
 	}
 
-	ctrl->pending = 0;
+	ctrl->pending = PENDING_NONE;
 	ctrl->offset = 0;
 
 	return close_data_connection(ctrl);
@@ -576,7 +581,7 @@ static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *n
 	}
 
 	memset(buf, 0, len);
-	if (ctrl->d_num == -1 && (ctrl->list_mode & 0x0F) == 2)
+	if (ctrl->d_num == -1 && (ctrl->list_mode & 0x0F) == LISTMODE_MLST)
 		strlcat(buf, " ", len);
 
 	for (int i = 0; ctrl->facts[i]; i++)
@@ -595,17 +600,17 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 		return -1;
 
 	switch (ctrl->list_mode & 0x0F) {
-	case 3:			/* MLSD */
+	case LISTMODE_MLSD:
 		/* fallthrough */
-	case 2:			/* MLST */
+	case LISTMODE_MLST:
 		mlsd_printf(ctrl, buf, len, path, name, &st);
 		break;
 
-	case 1:			/* NLST */
+	case LISTMODE_NLST:
 		snprintf(buf, len, "%s\r\n", name);
 		break;
 
-	case 0:			/* LIST */
+	case LISTMODE_LIST:
 		snprintf(buf, len, "%s 1 %5d %5d %12" PRIu64 " %s %s\r\n",
 			 mode_to_str(st.st_mode),
 			 0, 0, (uint64_t)st.st_size,
@@ -687,10 +692,10 @@ static void do_LIST(uev_t *w, void *arg, int events)
 	uev_timer_set(&ctrl->timeout_watcher, INACTIVITY_TIMER, 0);
 
 	if (ctrl->d_num == -1) {
-		if (ctrl->list_mode == 3)
-			do_MLSD(ctrl);
-		else
+		if (ctrl->list_mode == LISTMODE_MLST)
 			do_MLST(ctrl);
+		else
+			do_MLSD(ctrl);
 		return;
 	}
 
@@ -700,7 +705,7 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		ctrl->tv.tv_sec = tv.tv_sec;
 	}
 
-	ctrl->list_mode |= (ctrl->pending ? 0 : 0x80);
+	ctrl->list_mode |= (ctrl->pending != PENDING_NONE ? 0 : 0x80);
 	while (ctrl->i < ctrl->d_num) {
 		struct dirent *entry;
 		char cwd[PATH_MAX];
@@ -752,10 +757,10 @@ static void do_LIST(uev_t *w, void *arg, int events)
 static const char *mode2op(int mode)
 {
 	switch (mode) {
-	case 0: return "LIST";
-	case 1: return "NLST";
-	case 2: return "MLST";
-	case 3: return "MLSD";
+	case LISTMODE_LIST: return "LIST";
+	case LISTMODE_NLST: return "NLST";
+	case LISTMODE_MLST: return "MLST";
+	case LISTMODE_MLSD: return "MLSD";
 	}
 
 	return "LST?";
@@ -796,7 +801,7 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		arg = ptr;
 	}
 
-	if (mode >= 2)
+	if (mode >= LISTMODE_MLST)
 		path = compose_abspath(ctrl, arg);
 	else
 		path = compose_path(ctrl, arg);
@@ -825,27 +830,27 @@ static void list(ctrl_t *ctrl, char *arg, int mode)
 		return;
 	}
 
-	do_PORT(ctrl, 1);
+	do_PORT(ctrl, PENDING_LIST);
 }
 
 static void handle_LIST(ctrl_t *ctrl, char *arg)
 {
-	list(ctrl, arg, 0);
+	list(ctrl, arg, LISTMODE_LIST);
 }
 
 static void handle_NLST(ctrl_t *ctrl, char *arg)
 {
-	list(ctrl, arg, 1);
+	list(ctrl, arg, LISTMODE_NLST);
 }
 
 static void handle_MLST(ctrl_t *ctrl, char *arg)
 {
-	list(ctrl, arg, 2);
+	list(ctrl, arg, LISTMODE_MLST);
 }
 
 static void handle_MLSD(ctrl_t *ctrl, char *arg)
 {
-	list(ctrl, arg, 3);
+	list(ctrl, arg, LISTMODE_MLSD);
 }
 
 static void do_pasv_connection(uev_t *w, void *arg, int events)
@@ -864,9 +869,9 @@ static void do_pasv_connection(uev_t *w, void *arg, int events)
 		return;
 
 	switch (ctrl->pending) {
-	case 3:
-		/* fall-through */
-	case 2:
+	case PENDING_STOR:
+		/* fallthrough */
+	case PENDING_RETR:
 		if (ctrl->offset)
 			rc = fseek(ctrl->fp, ctrl->offset, SEEK_SET);
 		if (rc) {
@@ -874,37 +879,41 @@ static void do_pasv_connection(uev_t *w, void *arg, int events)
 			send_msg(ctrl->sd, "551 Failed seeking to that position in file.\r\n");
 			return;
 		}
-		/* fall-through */
-	case 1:
+		/* fallthrough */
+	case PENDING_LIST:
 		break;
 
-	default:
+	case PENDING_NONE:
 		DBG("No pending command, waiting ...");
 		return;
 	}
 
 	switch (ctrl->pending) {
-	case 3:			/* STOR */
+	case PENDING_STOR:
 		DBG("Pending STOR, starting ...");
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
 		break;
 
-	case 2:			/* RETR */
+	case PENDING_RETR:
 		DBG("Pending RETR, starting ...");
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
 		break;
 
-	case 1:			/* LIST */
+	case PENDING_LIST:
 		DBG("Pending LIST, starting ...");
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
 		break;
+
+	case PENDING_NONE:
+		/* cannot get here */
+		return;
 	}
 
-	if (ctrl->pending == 1 && ctrl->list_mode == 2)
+	if (ctrl->pending == PENDING_LIST && ctrl->list_mode == LISTMODE_MLST)
 		send_msg(ctrl->sd, "150 Opening ASCII mode data connection for MLSD.\r\n");
 	else
 		send_msg(ctrl->sd, "150 Data connection accepted; transfer starting.\r\n");
-	ctrl->pending = 0;
+	ctrl->pending = PENDING_NONE;
 }
 
 static int do_PASV(ctrl_t *ctrl, char *arg, struct sockaddr *data, socklen_t *len)
@@ -1064,7 +1073,7 @@ static void do_RETR(uev_t *w, void *arg, int events)
  * Check if previous command was PORT, then connect to client and
  * transfer file/listing similar to what's done for PASV conns.
  */
-static void do_PORT(ctrl_t *ctrl, int pending)
+static void do_PORT(ctrl_t *ctrl, pend_t pending)
 {
 	if (!ctrl->data_address[0]) {
 		/* Check if previous command was PASV */
@@ -1084,24 +1093,28 @@ static void do_PORT(ctrl_t *ctrl, int pending)
 		return;
 	}
 
-	if (pending != 1 || ctrl->list_mode != 2)
+	if (pending != PENDING_LIST || ctrl->list_mode != LISTMODE_MLST)
 		send_msg(ctrl->sd, "150 Data connection opened; transfer starting.\r\n");
 
 	switch (pending) {
-	case 3:
+	case PENDING_STOR:
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_STOR, ctrl, ctrl->data_sd, UEV_READ);
 		break;
 
-	case 2:
+	case PENDING_RETR:
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_RETR, ctrl, ctrl->data_sd, UEV_WRITE);
 		break;
 
-	case 1:
+	case PENDING_LIST:
 		uev_io_init(ctrl->ctx, &ctrl->data_watcher, do_LIST, ctrl, ctrl->data_sd, UEV_WRITE);
+		break;
+
+	default:
+		ERR(0, "Unhandled pending command (%d) in %s()!", pending, __func__);
 		break;
 	}
 
-	ctrl->pending = 0;
+	ctrl->pending = PENDING_NONE;
 }
 
 static void handle_RETR(ctrl_t *ctrl, char *file)
@@ -1148,7 +1161,7 @@ static void handle_RETR(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	do_PORT(ctrl, 2);
+	do_PORT(ctrl, PENDING_RETR);
 }
 
 /* Request to set mtime, ncftp does this */
@@ -1299,7 +1312,7 @@ static void handle_STOR(ctrl_t *ctrl, char *file)
 		return;
 	}
 
-	do_PORT(ctrl, 3);
+	do_PORT(ctrl, PENDING_STOR);
 }
 
 static void handle_DELE(ctrl_t *ctrl, char *file)

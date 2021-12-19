@@ -6,4 +6,5 @@ TESTS_ENVIRONMENT  = unshare -mrun
 
 TESTS              = ftp.sh
 TESTS             += tftp.sh
+TESTS             += mlst.sh
 TESTS             += maxfiles.sh

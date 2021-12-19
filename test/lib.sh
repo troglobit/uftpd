@@ -93,6 +93,16 @@ setup()
 
 	ip link set lo up
 	sleep 1
+
+	# https://datatracker.ietf.org/doc/html/rfc3092
+	mkdir -p "${DIR}/foo/bar"
+	for file in baz qux quz xyzzy; do
+		touch "${DIR}/foo/$file"
+	done
+	for file in fred garply grault waldo; do
+		touch "${DIR}/foo/bar/$file"
+	done
+
 	cp /etc/passwd "${DIR}/testfile.txt"
 
 	"${bindir}/uftpd" "$DIR" -p "$DIR/pid" >"$DIR/log"

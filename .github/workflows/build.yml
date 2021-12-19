@@ -30,7 +30,7 @@ jobs:
           echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
                | sudo tee /etc/apt/sources.list.d/troglobit.list
           sudo apt-get -y update
-          sudo apt-get -y install tree ftp tftp-hpa libuev-dev libite-dev
+          sudo apt-get -y install tree ftp tnftp tftp-hpa libuev-dev libite-dev
       - uses: actions/checkout@v2
       - name: Configure
         run: |

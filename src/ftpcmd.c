@@ -621,14 +621,15 @@ static void do_MLST(ctrl_t *ctrl)
 	char buf[512] = { 0 };
 	char cwd[PATH_MAX];
 	int sd = ctrl->sd;
-	size_t len = 0;
 	char *path;
+	int len;
 
 	if (ctrl->data_sd != -1)
 		sd = ctrl->data_sd;
 
-	snprintf(buf, sizeof(buf), "250- Listing %s\r\n", ctrl->file);
-	len = strlen(buf);
+	len = snprintf(buf, sizeof(buf), "250- Listing %s\r\n", ctrl->file);
+	if (len < 0 || len > (int)sizeof(buf))
+		goto abort;
 
 	strlcpy(cwd, ctrl->file, sizeof(cwd));
 	path = compose_path(ctrl, cwd);

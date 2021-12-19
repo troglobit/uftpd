@@ -581,7 +581,7 @@ static void mlsd_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *n
 	}
 
 	memset(buf, 0, len);
-	if (ctrl->d_num == -1 && (ctrl->list_mode & 0x0F) == LISTMODE_MLST)
+	if (ctrl->d_num == -1 && ctrl->list_mode == LISTMODE_MLST)
 		strlcat(buf, " ", len);
 
 	for (int i = 0; ctrl->facts[i]; i++)
@@ -599,7 +599,7 @@ static int list_printf(ctrl_t *ctrl, char *buf, size_t len, char *path, char *na
 	if (stat(path, &st))
 		return -1;
 
-	switch (ctrl->list_mode & 0x0F) {
+	switch (ctrl->list_mode) {
 	case LISTMODE_MLSD:
 		/* fallthrough */
 	case LISTMODE_MLST:
@@ -705,7 +705,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 		ctrl->tv.tv_sec = tv.tv_sec;
 	}
 
-	ctrl->list_mode |= (ctrl->pending != PENDING_NONE ? 0 : 0x80);
 	while (ctrl->i < ctrl->d_num) {
 		struct dirent *entry;
 		char cwd[PATH_MAX];
@@ -748,7 +747,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 
 		return;
 	}
-	ctrl->list_mode &= 0x0F;
 
 	do_abort(ctrl);
 	send_msg(ctrl->sd, "226 Transfer complete.\r\n");

@@ -691,7 +691,6 @@ static void do_LIST(uev_t *w, void *arg, int events)
 			do_MLSD(ctrl);
 		else
 			do_MLST(ctrl);
-		do_abort(ctrl);
 		return;
 	}
 

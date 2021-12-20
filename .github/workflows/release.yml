@@ -45,7 +45,7 @@ jobs:
           echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
                | sudo tee /etc/apt/sources.list.d/troglobit.list
           sudo apt-get -y update
-          sudo apt-get -y install pkg-config libuev-dev libite-dev
+          sudo apt-get -y install ftp tnftp tftp-hpa libuev-dev libite-dev
       - name: Creating Makefiles ...
         run: |
           ./autogen.sh

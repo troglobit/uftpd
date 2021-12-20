@@ -1,4 +1,4 @@
-EXTRA_DIST         = lib.sh ftp.sh tftp.sh maxfiles.sh
+EXTRA_DIST         = lib.sh ftp.sh tftp.sh mlst.sh maxfiles.sh
 CLEANFILES         = *~ *.trs *.log
 
 TEST_EXTENSIONS    = .sh

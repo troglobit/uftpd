@@ -11,7 +11,7 @@ uftpd (2.15) stable; urgency=medium
     directories prior to v2.14 were listed first.  This change, albeit an
     accident, actually helped clean up the code base and speed up replies
 
- -- Joachim Wiberg <troglobit@gmail.com>  Sun, 19 Dec 2021 12:20:51 +0100
+ -- Joachim Wiberg <troglobit@gmail.com>  Mon, 20 Dec 2021 06:15:08 +0100
 
 uftpd (2.14) stable; urgency=medium
 

@@ -2,7 +2,7 @@ Source: uftpd
 Section: net
 Priority: optional
 Maintainer: Joachim Wiberg <troglobit@gmail.com>
-Build-Depends: debhelper (>= 10)
+Build-Depends: debhelper (>= 10), libuev-dev, libite-dev
 Standards-Version: 4.3.0
 Homepage: https://troglobit.com/projects/uftpd/
 

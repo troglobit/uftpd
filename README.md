@@ -137,16 +137,21 @@ $ sudo apt install pkg-config
 ```
 
 uftpd, as well as its dependencies, can be built as `.deb` packages on
-Debian or Ubuntu based distributions.  Download and install each of the
-dependencies, and then run
+Debian or Ubuntu based distributions.  Install the packaging tools, and
+the `-dev` packages of the dependencies, then run
 
 ```console
+$ sudo apt install devscripts debhelper lintian po-debconf
 $ ./autogen.sh      # Only needed if using GIT sources
 $ ./configure
 ...
 $ make package
 ...
 ```
+
+Note, `dpkg-shlibdeps` looks the dependencies up in the installed `.deb`
+packages, so `libuev-dev` and `libite-dev` must come from apt -- a
+libuEv or libite installed from source under `/usr/local` is not enough.
 
 The `.deb` package takes care of setting up `/etc/inetd.conf`, create an
 `ftp` user and an `/srv/ftp` home directory with write permissions for

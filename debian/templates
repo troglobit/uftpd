@@ -1,10 +1,19 @@
 Template: uftpd/ftp
 Type: boolean
 Default: true
-Description: Enable FTP service?
+_Description: Enable FTP service?
+ uftpd can serve files over FTP, started on demand by the inetd super
+ server.  The service is anonymous and read-only, serving files from the
+ ftp user's home directory, /srv/ftp.
+ .
+ Decline this if you only want the TFTP service.
 
 Template: uftpd/tftp
 Type: boolean
 Default: true
-Description: Enable TFTP service?
-
+_Description: Enable TFTP service?
+ uftpd can serve files over TFTP, started on demand by the inetd super
+ server.  The service is read-only, serving files from the ftp user's
+ home directory, /srv/ftp.
+ .
+ Decline this if you only want the FTP service.

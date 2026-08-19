@@ -55,3 +55,32 @@ jobs:
           ulimit -n 1024
           # Each test runs in its own namespace, so they parallelize
           LD_LIBRARY_PATH=/tmp/lib make check
+
+  package:
+    # Verify the Debian packaging still builds and passes lintian.  The
+    # release job runs the same target, but only after the tag is pushed
+    # and immutable, so catch a broken debian/ here instead.
+    name: debian
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          curl -sS https://deb.troglobit.com/pubkey.gpg | sudo apt-key add -
+          echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
+               | sudo tee /etc/apt/sources.list.d/troglobit.list
+          sudo apt-get -y update
+          sudo apt-get -y install libuev-dev libite-dev \
+                                  devscripts debhelper lintian po-debconf
+      - uses: actions/checkout@v6
+      - name: Configure
+        run: |
+          ./autogen.sh
+          ./configure
+      - name: Build package
+        run: |
+          make package
+      - name: Inspect package
+        run: |
+          ls -lF ../
+          dpkg -I ../uftpd_*_amd64.deb
+          dpkg -c ../uftpd_*_amd64.deb

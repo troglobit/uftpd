@@ -54,7 +54,7 @@ jobs:
           LD_LIBRARY_PATH=/tmp/lib make check
       - name: Archive test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs-${{ matrix.compiler }}
           path: |
@@ -101,7 +101,7 @@ jobs:
           dpkg -c dist/uftpd_*_amd64.deb
       - name: Archive package
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: uftpd-deb
           path: dist/

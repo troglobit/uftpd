@@ -38,11 +38,12 @@ $ sudo apt-get install util-linux iproute2 procps python3 \
 | `tnftp`   | tnftp       | `mlst`                                                 |
 | `tftp`    | tftp-hpa    | `tftp`, `ipv6`                                         |
 | `pgrep`   | procps      | `zombies`                                              |
-| `python3` | python3     | `oack`, `dupack`, `rollover`, `wrq`, `ipv6`, `zombies` |
+| `python3` | python3     | `oack`, `dupack`, `lockstep`, `rollover`, `wrq`, `ipv6`, `zombies` |
 
 `python3` is used where a test must craft or inspect raw TFTP packets
-(checking the exact OACK bytes, replaying a stale ACK, injecting a
-duplicate WRQ) — things the CLI clients cannot do.  A test that is
+(checking the exact OACK bytes, replaying a stale ACK, withholding one
+to see what the server does anyway, injecting a duplicate WRQ) — things
+the CLI clients cannot do.  A test that is
 missing its tool is skipped, not failed.
 
 

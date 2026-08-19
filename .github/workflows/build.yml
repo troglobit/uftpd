@@ -52,6 +52,16 @@ jobs:
           ulimit -n 1024
           # Each test runs in its own namespace, so they parallelize
           LD_LIBRARY_PATH=/tmp/lib make check
+      - name: Archive test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.compiler }}
+          path: |
+            test/*.log
+            test/*.trs
+          if-no-files-found: warn
+          retention-days: 14
 
   package:
     # Verify the Debian packaging still builds and passes lintian.  The
@@ -76,8 +86,24 @@ jobs:
           # namespaces the runner clamps down on.  dh_auto_test honours
           # nocheck, so skip it here rather than run it twice.
           DEB_BUILD_OPTIONS=nocheck make package
+      - name: Collect package
+        if: always()
+        run: |
+          # debuild drops its output next to the source tree; artifacts
+          # must live inside the workspace to be uploadable.
+          mkdir -p dist
+          mv ../uftpd_*.deb ../uftpd-dbgsym_*.ddeb dist/ 2>/dev/null || true
+          mv ../uftpd_*.changes ../uftpd_*.buildinfo dist/ 2>/dev/null || true
+          ls -lF dist/
       - name: Inspect package
         run: |
-          ls -lF ../
-          dpkg -I ../uftpd_*_amd64.deb
-          dpkg -c ../uftpd_*_amd64.deb
+          dpkg -I dist/uftpd_*_amd64.deb
+          dpkg -c dist/uftpd_*_amd64.deb
+      - name: Archive package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uftpd-deb
+          path: dist/
+          if-no-files-found: warn
+          retention-days: 14

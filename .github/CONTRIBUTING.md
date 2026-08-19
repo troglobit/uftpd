@@ -66,6 +66,14 @@ how `git commit -s` is used to automatically add a `Signed-off-by`:
     Signed-off-by: Jane Doe <jane.doe@example.com>
 
 
+Making a Release
+----------------
+
+Maintainers: the steps for cutting a release, including updating both
+`ChangeLog.md` and `debian/changelog`, are in [CHECKLIST.md][release].
+
+
 [github]:   https://github.com/troglobit/uftpd/
+[release]:  https://github.com/troglobit/uftpd/blob/master/.github/CHECKLIST.md
 [KNF]:      https://en.wikipedia.org/wiki/Kernel_Normal_Form
 [gitbook]:  https://git-scm.com/book/ch5-2.html

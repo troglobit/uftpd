@@ -52,7 +52,8 @@ jobs:
           mv ../*.tar.gz artifacts/
       - name: Build Debian package ...
         run: |
-          make package
+          # 'make release' already ran the suite via distcheck above.
+          DEB_BUILD_OPTIONS=nocheck make package
           ls -lF ../
           mv ../*.deb artifacts/
           dpkg -I artifacts/*.deb

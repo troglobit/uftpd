@@ -1,5 +1,5 @@
 # Translation of uftpd debconf templates.
-# Copyright (C) 2014-2021 Joachim Wiberg <troglobit@gmail.com>
+# Copyright (C) 2014-2026 Joachim Wiberg <troglobit@gmail.com>
 # This file is distributed under the same license as the uftpd package.
 # Joachim Wiberg <troglobit@gmail.com>, 2026.
 #

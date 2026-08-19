@@ -2,9 +2,12 @@ Source: uftpd
 Section: net
 Priority: optional
 Maintainer: Joachim Wiberg <troglobit@gmail.com>
-Build-Depends: debhelper (>= 10), libuev-dev, libite-dev
-Standards-Version: 4.3.0
+Build-Depends: debhelper-compat (= 13), po-debconf, pkgconf, libuev-dev (>= 2.2.0), libite-dev (>= 1.5.0)
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
 Homepage: https://troglobit.com/projects/uftpd/
+Vcs-Browser: https://github.com/troglobit/uftpd
+Vcs-Git: https://github.com/troglobit/uftpd.git
 
 Package: uftpd
 Architecture: any

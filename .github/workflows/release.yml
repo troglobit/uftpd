@@ -24,7 +24,7 @@ jobs:
                | sudo tee /etc/apt/sources.list.d/troglobit.list
           sudo apt-get -y update
           sudo apt-get -y install ftp tnftp tftp-hpa python3 libuev-dev libite-dev \
-                                  devscripts debhelper lintian po-debconf
+                                  build-essential pkgconf devscripts debhelper lintian po-debconf
       - name: Setting release variables ...
         id: build
         run: |

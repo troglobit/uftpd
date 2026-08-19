@@ -69,7 +69,7 @@ jobs:
           echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
                | sudo tee /etc/apt/sources.list.d/troglobit.list
           sudo apt-get -y update
-          sudo apt-get -y install libuev-dev libite-dev \
+          sudo apt-get -y install build-essential pkgconf libuev-dev libite-dev \
                                   devscripts debhelper lintian po-debconf
       - uses: actions/checkout@v6
       - name: Configure

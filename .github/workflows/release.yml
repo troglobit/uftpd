@@ -13,12 +13,18 @@ jobs:
     name: Build and upload release tarball
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Installing dependencies ...
         run: |
+          # The runners' azure.archive.ubuntu.com mirror intermittently
+          # stalls.  Fail over to the fallback mirror in seconds instead
+          # of grinding through apt's two-minute default timeouts.
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+              | sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null
           sudo apt-get -y update
           sudo apt-get -y install ftp tnftp tftp-hpa python3 libuev-dev libite-dev \
                                   build-essential pkgconf devscripts debhelper lintian po-debconf

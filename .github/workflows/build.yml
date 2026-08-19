@@ -16,6 +16,7 @@ jobs:
     # Verify we can build on latest Ubuntu with both gcc and clang
     name: ${{ matrix.compiler }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -25,6 +26,11 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          # The runners' azure.archive.ubuntu.com mirror intermittently
+          # stalls.  Fail over to the fallback mirror in seconds instead
+          # of grinding through apt's two-minute default timeouts.
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+              | sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null
           sudo apt-get -y update
           sudo apt-get -y install tree ftp tnftp tftp-hpa python3 libuev-dev libite-dev
           # Build and run the test suite using all available cores
@@ -69,9 +75,15 @@ jobs:
     # and immutable, so catch a broken debian/ here instead.
     name: debian
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Install dependencies
         run: |
+          # The runners' azure.archive.ubuntu.com mirror intermittently
+          # stalls.  Fail over to the fallback mirror in seconds instead
+          # of grinding through apt's two-minute default timeouts.
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+              | sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null
           sudo apt-get -y update
           sudo apt-get -y install build-essential pkgconf libuev-dev libite-dev \
                                   devscripts debhelper lintian po-debconf

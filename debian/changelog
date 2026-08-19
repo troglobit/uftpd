@@ -1,3 +1,34 @@
+uftpd (2.16) stable; urgency=medium
+
+  * Issue #40: IPv6 support, separate IPv6 listeners for FTP and TFTP,
+    alongside the IPv4 ones.  The FTP data channel works over IPv6 using
+    EPSV and EPRT, the legacy PASV/PORT commands stay IPv4 only
+  * Fix #32: session failing during setup returned into the parent's
+    accept loop instead of exiting, becoming a rogue listener forking
+    endless sessions until the system ran out of PIDs
+  * Fix #41: retransmitted TFTP WRQ reopened the destination file,
+    leaking a descriptor on every retry and truncating received data
+  * Fix #42: bogus file size in FTP MLST/MLSD on 32-bit platforms
+  * Fix #43: malformed TFTP OACK, trailing NUL bytes rejected by strict
+    clients, e.g. Cisco switches and U-Boot
+  * Fix #44: TFTP server ignored the ACK block number, a lost DATA
+    packet is now detected and the missing block retransmitted
+  * Fix #45: TFTP transfers larger than 65535 blocks failed at the
+    16-bit block number rollover
+  * Fix TFTP ACK packets padded with four stray NUL bytes when
+    receiving an upload (WRQ)
+  * Switch to debhelper compat level 13, drop the obsolete autoreconf and
+    systemd dh sequences
+  * Update to Standards-Version 4.6.2, declare Rules-Requires-Root: no
+  * Convert copyright to machine-readable DEP-5 format
+  * Make the debconf templates translatable, using po-debconf
+  * Add missing #DEBHELPER# token to the maintainer scripts, the debconf
+    db_purge snippet was never inserted
+  * Only remove the ftp user on purge, not on every package removal
+  * Use getent(1) instead of parsing /etc/passwd in postinst
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Sun, 21 Jun 2026 12:53:32 +0200
+
 uftpd (2.15) stable; urgency=medium
 
   * Silence some developer debug messages

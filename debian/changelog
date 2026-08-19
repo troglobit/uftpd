@@ -1,3 +1,10 @@
+uftpd (2.17~dev) stable; urgency=medium
+
+  * Open the v2.17 development cycle
+  * Update copyright years to 2026
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Wed, 19 Aug 2026 20:05:00 +0200
+
 uftpd (2.16) stable; urgency=medium
 
   * Issue #40: IPv6 support, separate IPv6 listeners for FTP and TFTP,

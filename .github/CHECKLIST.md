@@ -68,6 +68,22 @@ After
  - [ ] Announce
 
 
+Start the Next Cycle
+--------------------
+
+Right after a release, so master never sits on a released version:
+
+ - [ ] `configure.ac`: set the version to the next `X.Y-dev`
+ - [ ] `debian/changelog`: open an `uftpd (X.Y~dev)` entry.  Note the
+       tilde, not the hyphen used in `configure.ac`: this is a native
+       package, so the version may not contain a hyphen, and `2.17-dev`
+       would sort *above* `2.17` and make the release look like a
+       downgrade.  `2.17~dev` sorts between `2.16` and `2.17`
+ - [ ] `ChangeLog.md`: open a `[vX.Y][UNRELEASED] - ` section, point
+       `[UNRELEASED]` at `compare/vX.Y-1...HEAD`, and freeze the link of
+       the release just made at `compare/vX.Y-2...vX.Y-1`
+
+
 Packaging
 ---------
 

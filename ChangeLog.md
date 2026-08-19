@@ -3,6 +3,28 @@ Change Log
 
 All notable changes to the project are documented in this file.
 
+
+[v2.17][UNRELEASED] - 
+----------------------
+
+### Changes
+- Debian packaging brought up to date: debhelper compat level 13,
+  machine-readable copyright, translatable debconf templates, and both
+  the source and binary package are lintian clean
+- CI builds the `.deb` on every push and uploads it, along with the test
+  logs, so they can be fetched straight from the run page
+- New regression test for the TFTP lockstep rules on the OACK path, the
+  path option-negotiating clients such as U-Boot take
+- The test suite now skips, rather than fails, where the kernel denies
+  unprivileged user namespaces, e.g. in a container or on a buildd
+
+### Fixes
+- The `ftp` user is only removed when the package is purged, no longer on
+  every removal, which used to orphan the files in `/srv/ftp`
+- Missing `#DEBHELPER#` token in the maintainer scripts, the debconf
+  cleanup snippet dh_installdebconf generates was never inserted
+
+
 [v2.16][] - 2026-06-21
 ----------------------
 
@@ -551,8 +573,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.15...HEAD
-[v2.16]:         https://github.com/troglobit/uftpd/compare/v2.15...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.16...HEAD
+[v2.16]:         https://github.com/troglobit/uftpd/compare/v2.15...v2.16
 [v2.15]:         https://github.com/troglobit/uftpd/compare/v2.14...v2.15
 [v2.14]:         https://github.com/troglobit/uftpd/compare/v2.13...v2.14
 [v2.13]:         https://github.com/troglobit/uftpd/compare/v2.12...v2.13

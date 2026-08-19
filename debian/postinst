@@ -2,53 +2,57 @@
 
 set -e
 
-[ "$1" = "configure" ] || exit 0
+if [ "$1" = "configure" ]; then
+	# Source debconf library.
+	. /usr/share/debconf/confmodule
 
-# Source debconf library.
-. /usr/share/debconf/confmodule
+	FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	in.ftpd"
+	TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	in.tftpd"
 
-FTPENTRY="ftp		stream	tcp	nowait	root	/usr/sbin/tcpd	in.ftpd"
-TFTPENTRY="tftp		dgram	udp	wait	root	/usr/sbin/tcpd	in.tftpd"
+	if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
+		cat <<-TEXT
+			-------------------------------------------------
+			There is no configuration support for using uftpd
+			under the control of xinetd.
+			-------------------------------------------------
+		TEXT
+	fi
 
-if [ ! -f /etc/inetd.conf -a -d /etc/xinetd.d -a -x /usr/sbin/xinetd ]; then
-	cat <<-TEXT
-		-------------------------------------------------
-		There is no configuration support for using uftpd
-		under the control of xinetd.
-		-------------------------------------------------
-	TEXT
+	if grep -q '[[:blank:]]/usr/sbin/uftpd.*' /etc/inetd.conf 2>/dev/null; then
+		update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
+	fi
+
+	update-inetd --group STANDARD --add "$FTPENTRY"
+	update-inetd --group STANDARD --add "$TFTPENTRY"
+
+	db_get uftpd/ftp
+	if [ "$RET" = "true" ]; then
+	    update-inetd --enable ftp
+	else
+	    update-inetd --disable ftp
+	fi
+
+	db_get uftpd/tftp
+	if [ "$RET" = "true" ]; then
+	    update-inetd --enable tftp
+	else
+	    update-inetd --disable tftp
+	fi
+
+	# Redirect errors from adduser since 1) user may exist already,
+	# 2) directory may exist and not be writable by user.  Ignore.
+	if ! getent passwd ftp >/dev/null; then
+		addgroup --quiet --system ftp
+		adduser --quiet --system --disabled-login --home /srv/ftp \
+			--ingroup ftp ftp 2>/dev/null || true
+	fi
+
+	# Adjust for any previous server, users wanting to share files using
+	# TFTP/FTP should be in the users group
+	chown --changes ftp:users /srv/ftp
+	chmod --changes 0575      /srv/ftp
 fi
 
-if grep -q '[[:blank:]]/usr/sbin/uftpd.*' /etc/inetd.conf 2>/dev/null; then
-	update-inetd --pattern '/usr/sbin/uftpd' --remove ".*ftp"
-fi
+#DEBHELPER#
 
-update-inetd --group STANDARD --add "$FTPENTRY"
-update-inetd --group STANDARD --add "$TFTPENTRY"
-
-db_get uftpd/ftp
-if [ "$RET" = "true" ]; then
-    update-inetd --enable ftp
-else
-    update-inetd --disable ftp
-fi
-
-db_get uftpd/tftp
-if [ "$RET" = "true" ]; then
-    update-inetd --enable tftp
-else
-    update-inetd --disable tftp
-fi
-
-# Redirect errors from adduser since 1) user may exist already,
-# 2) directory may exist and not be writable by user.  Ignore.
-if ! grep -q "^ftp:" /etc/passwd; then
-	addgroup --quiet --system ftp
-	adduser --quiet --system --disabled-login --home /srv/ftp \
-		--ingroup ftp ftp 2>/dev/null || true
-fi
-
-# Adjust for any previous server, users wanting to share files using
-# TFTP/FTP should be in the users group
-chown --changes ftp:users /srv/ftp
-chmod --changes 0575      /srv/ftp
+exit 0

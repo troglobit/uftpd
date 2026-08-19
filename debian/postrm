@@ -1,4 +1,5 @@
 #!/bin/sh
+
 set -e
 
 if [ "$1" = "purge" ]; then
@@ -8,13 +9,9 @@ if [ "$1" = "purge" ]; then
 		update-inetd --pattern 'in.tftpd' --remove tftp
 	fi
 
-	# Remove uftpd entries from db
-	if [ -f /usr/share/debconf/confmodule ]; then
-		. /usr/share/debconf/confmodule
-		db_purge
-	fi
+	deluser --quiet --system ftp || true
 fi
 
-deluser --quiet --system ftp
+#DEBHELPER#
 
 exit 0

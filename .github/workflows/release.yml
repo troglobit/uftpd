@@ -19,9 +19,6 @@ jobs:
           fetch-depth: 0
       - name: Installing dependencies ...
         run: |
-          curl -sS https://deb.troglobit.com/pubkey.gpg | sudo apt-key add -
-          echo "deb [arch=amd64] https://deb.troglobit.com/debian stable main" \
-               | sudo tee /etc/apt/sources.list.d/troglobit.list
           sudo apt-get -y update
           sudo apt-get -y install ftp tnftp tftp-hpa python3 libuev-dev libite-dev \
                                   build-essential pkgconf devscripts debhelper lintian po-debconf

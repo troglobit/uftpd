@@ -114,6 +114,15 @@ setup()
 	return 0
 }
 
+# Set by the unshare.sh wrapper when the kernel denies us unprivileged
+# user namespaces.  Without them the tests would fight over the real
+# network and port 69, so skip rather than run them unisolated.
+if [ -n "$UFTPD_NO_USERNS" ]; then
+	SKIP "Unprivileged user namespaces unavailable." \
+	     "On Ubuntu, allow them with:" \
+	     "    sysctl kernel.apparmor_restrict_unprivileged_userns=0"
+fi
+
 # Runs once when including lib.sh
 mkdir -p "${DIR}"
 mkdir -p "${CDIR}"

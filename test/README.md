@@ -57,3 +57,9 @@ AppArmor; allow them with:
 ```console
 $ sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
 ```
+
+Where the kernel denies them anyway -- a container without `newuidmap`,
+a Debian buildd -- the whole suite is skipped rather than failed.  This
+matters for `make package`, which runs the tests via `dh_auto_test`.
+Skipping is also what `DEB_BUILD_OPTIONS=nocheck` does, if you want to
+leave them out of a package build entirely.

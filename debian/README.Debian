@@ -3,6 +3,6 @@ uftpd for Debian/Ubuntu
 
 uftpd is a true UNIX TFTP/FTP daemon, it serves files, and nothing more.
 It runs from inetd on ports specified in /etc/services, serving files
-from the ftp user's $HOME, /src/ftp -- it just works.
+from the ftp user's $HOME, /srv/ftp -- it just works.
 
  -- Joachim Wiberg <troglobit@gmail.com>, Sat, 11 Dec 2021 08:46:52 +0100

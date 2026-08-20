@@ -1,6 +1,16 @@
 uftpd (2.17~dev) stable; urgency=medium
 
   * Open the v2.17 development cycle
+  * Switch to debhelper compat level 13, drop the obsolete autoreconf and
+    systemd dh sequences
+  * Update to Standards-Version 4.6.2, declare Rules-Requires-Root: no
+  * Convert copyright to machine-readable DEP-5 format
+  * Make the debconf templates translatable, using po-debconf
+  * Add missing #DEBHELPER# token to the maintainer scripts, the debconf
+    db_purge snippet was never inserted
+  * Only remove the ftp user on purge, not on every package removal
+  * Use getent(1) instead of parsing /etc/passwd in postinst
+  * Fix ftp home directory typo in README.Debian, /srv/ftp not /src/ftp
   * Update copyright years to 2026
 
  -- Joachim Wiberg <troglobit@gmail.com>  Wed, 19 Aug 2026 20:05:00 +0200
@@ -24,15 +34,6 @@ uftpd (2.16) stable; urgency=medium
     16-bit block number rollover
   * Fix TFTP ACK packets padded with four stray NUL bytes when
     receiving an upload (WRQ)
-  * Switch to debhelper compat level 13, drop the obsolete autoreconf and
-    systemd dh sequences
-  * Update to Standards-Version 4.6.2, declare Rules-Requires-Root: no
-  * Convert copyright to machine-readable DEP-5 format
-  * Make the debconf templates translatable, using po-debconf
-  * Add missing #DEBHELPER# token to the maintainer scripts, the debconf
-    db_purge snippet was never inserted
-  * Only remove the ftp user on purge, not on every package removal
-  * Use getent(1) instead of parsing /etc/passwd in postinst
 
  -- Joachim Wiberg <troglobit@gmail.com>  Sun, 21 Jun 2026 12:53:32 +0200
 

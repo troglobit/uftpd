@@ -229,6 +229,8 @@ static int parse_RWRQ(ctrl_t *ctrl, char *buf, size_t len)
 			segsize = 0;
 		if (segsize < MIN_SEGSIZE)
 			segsize = 0;	/* Ignore if too small for us. */
+		else if (segsize > MAX_SEGSIZE)
+			segsize = MAX_SEGSIZE;
 	}
 
 	/* alloc_buf() reallocates the buffer @buf points into, so it can

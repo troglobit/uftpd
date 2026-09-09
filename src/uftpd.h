@@ -77,6 +77,8 @@
 
 /* TFTP Minimum segment size, specific to uftpd */
 #define MIN_SEGSIZE       32
+/* TFTP Maximum segment size, RFC 2348 */
+#define MAX_SEGSIZE       65464
 
 #define LOGIT(severity, code, fmt, args...)				\
 	do {								\

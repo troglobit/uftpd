@@ -4,33 +4,29 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.17][UNRELEASED] - 
+[v2.17][] - 2026-09-09
 ----------------------
 
 ### Changes
-- Debian packaging brought up to date: debhelper compat level 13,
-  machine-readable copyright, translatable debconf templates, and both
-  the source and binary package are lintian clean
-- CI builds the `.deb` on every push and uploads it, along with the test
-  logs, so they can be fetched straight from the run page
-- New regression test for the TFTP lockstep rules on the OACK path, the
-  path option-negotiating clients such as U-Boot take
-- The test suite now skips, rather than fails, where the kernel denies
-  unprivileged user namespaces, e.g. in a container or on a buildd
+- Debian packaging modernized: debhelper compat 13, machine-readable
+  copyright, translatable debconf prompts, lintian clean
+- The `.deb` is built and lintian checked in CI, and attached to each
+  GitHub release
+- New tests for TFTP option negotiation and malformed requests
+- `make package` no longer fails where the kernel denies unprivileged
+  user namespaces; the test suite skips instead
 
 ### Fixes
 - TFTP: reject packets too short for the header their opcode implies
 - TFTP: bound RRQ/WRQ option parsing to the received packet, and defer
-  the buffer reallocation until the options have been walked
+  the buffer reallocation until parsing is done
 - TFTP: clamp a negotiated `blksize` to the RFC 2348 maximum, 65464
-- TFTP: ignore DATA packets arriving with no transfer open
-- TFTP: ERROR replies were malformed, and never reached the client at
-  all on hardened builds; they also carried `strerror()` text for what
-  are protocol codes rather than errno values
-- The `ftp` user is only removed when the package is purged, no longer on
-  every removal, which used to orphan the files in `/srv/ftp`
-- Missing `#DEBHELPER#` token in the maintainer scripts, the debconf
-  cleanup snippet dh_installdebconf generates was never inserted
+- TFTP: ignore DATA packets when no transfer is open
+- TFTP: ERROR replies were malformed, and never sent at all on hardened
+  builds
+- TFTP: ERROR messages used `strerror()` text for what are protocol codes
+- The `ftp` user is only removed on purge, no longer on every removal
+- Missing `#DEBHELPER#` token in the maintainer scripts
 
 
 [v2.16][] - 2026-06-21
@@ -581,7 +577,8 @@ First official uftpd release! :-)
   Lines must end in the old `\r\n` format, rather than UNIX `\n`.
 
 
-[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.16...HEAD
+[UNRELEASED]:    https://github.com/troglobit/uftpd/compare/v2.17...HEAD
+[v2.17]:         https://github.com/troglobit/uftpd/compare/v2.16...v2.17
 [v2.16]:         https://github.com/troglobit/uftpd/compare/v2.15...v2.16
 [v2.15]:         https://github.com/troglobit/uftpd/compare/v2.14...v2.15
 [v2.14]:         https://github.com/troglobit/uftpd/compare/v2.13...v2.14

@@ -1,25 +1,23 @@
-uftpd (2.17~dev) stable; urgency=medium
+uftpd (2.17) stable; urgency=medium
 
-  * Open the v2.17 development cycle
   * TFTP: reject packets too short for the header their opcode implies
   * TFTP: bound RRQ/WRQ option parsing, defer the buffer reallocation
-    until the options have been walked, and clamp a negotiated blksize
-    to the RFC 2348 maximum
-  * TFTP: ignore DATA packets arriving with no transfer open
+    until parsing is done, and clamp a negotiated blksize to the RFC
+    2348 maximum
+  * TFTP: ignore DATA packets when no transfer is open
   * TFTP: fix ERROR replies, malformed and never sent on hardened builds
   * Switch to debhelper compat level 13, drop the obsolete autoreconf and
     systemd dh sequences
   * Update to Standards-Version 4.6.2, declare Rules-Requires-Root: no
   * Convert copyright to machine-readable DEP-5 format
   * Make the debconf templates translatable, using po-debconf
-  * Add missing #DEBHELPER# token to the maintainer scripts, the debconf
-    db_purge snippet was never inserted
+  * Add missing #DEBHELPER# token to the maintainer scripts
   * Only remove the ftp user on purge, not on every package removal
   * Use getent(1) instead of parsing /etc/passwd in postinst
   * Fix ftp home directory typo in README.Debian, /srv/ftp not /src/ftp
   * Update copyright years to 2026
 
- -- Joachim Wiberg <troglobit@gmail.com>  Wed, 19 Aug 2026 20:05:00 +0200
+ -- Joachim Wiberg <troglobit@gmail.com>  Wed, 09 Sep 2026 18:49:36 +0200
 
 uftpd (2.16) stable; urgency=medium
 

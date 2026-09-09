@@ -320,6 +320,9 @@ static int handle_DATA(ctrl_t *ctrl, size_t len)
 	char errmsg[80];
 	int block;
 
+	if (!ctrl->fp)
+		return !send_ERROR(ctrl, EBADOP, "No transfer in progress");
+
 	block = ntohs(ctrl->th->th_block);
 	if (block != ctrl->offset) {
 		snprintf(errmsg, sizeof(errmsg), "Expected block %ld, "

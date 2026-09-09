@@ -175,42 +175,74 @@ static int alloc_buf(ctrl_t *ctrl, size_t segsize)
 	return 0;
 }
 
+/*
+ * Pop the next NUL terminated field off @buf, NULL when the remaining
+ * bytes hold no complete one.  Keeps every read inside the packet we
+ * were handed, however truncated or unterminated it is.
+ */
+static char *next_field(char **buf, size_t *len)
+{
+	char  *field = *buf;
+	size_t field_len;
+
+	field_len = strnlen(field, *len);
+	if (field_len == *len)
+		return NULL;	/* no NUL within the packet */
+
+	*buf += field_len + 1;
+	*len -= field_len + 1;
+
+	return field;
+}
+
 /* Parse TFTP payload in WRQ/RRQ for filename and optional blksize+timeout */
 static int parse_RWRQ(ctrl_t *ctrl, char *buf, size_t len)
 {
-	size_t opt_len = strlen(buf) + 1;
+	size_t segsize = 0;
+	char *file, *opt;
 
 	/* First opt is always filename */
-	ctrl->file = strdup(buf);
-	if (!ctrl->file)
-		return send_ERROR(ctrl, EUNDEF, NULL);
+	file = next_field(&buf, &len);
+	if (!file || !file[0]) {
+		send_ERROR(ctrl, EBADOP, "Malformed request");
+		return 1;
+	}
 
-	do {
-		/* Prepare to read options */
-		buf += opt_len;
-		len -= opt_len;
-		opt_len = strlen(buf) + 1;
+	ctrl->file = strdup(file);
+	if (!ctrl->file) {
+		send_ERROR(ctrl, EUNDEF, NULL);
+		return 1;
+	}
 
-		if (!strncasecmp(buf, "blksize", 7)) {
-			size_t sz = 0;
+	/* Then comes the mode, followed by any options */
+	while ((opt = next_field(&buf, &len))) {
+		char *val;
 
-			buf += opt_len;
-			len -= opt_len;
-			opt_len = strlen(buf) + 1;
+		if (strncasecmp(opt, "blksize", 7))
+			continue;
 
-			sscanf(buf, "%zd", &sz);
-			if (sz < MIN_SEGSIZE)
-				continue; /* Ignore if too small for us. */
+		val = next_field(&buf, &len);
+		if (!val)
+			break;
 
-			if (alloc_buf(ctrl, sz)) {
-				ERR(errno, "Failed reallocating TFTP buffer memory");
-				return send_ERROR(ctrl, EUNDEF, NULL);
-			}
+		if (sscanf(val, "%zu", &segsize) != 1)
+			segsize = 0;
+		if (segsize < MIN_SEGSIZE)
+			segsize = 0;	/* Ignore if too small for us. */
+	}
 
-			DBG("Negotiated blksize %zd", sz);
-			setbit(&ctrl->tftp_options, 1);
+	/* alloc_buf() reallocates the buffer @buf points into, so it can
+	 * only run once we are done walking the options. */
+	if (segsize) {
+		if (alloc_buf(ctrl, segsize)) {
+			ERR(errno, "Failed reallocating TFTP buffer memory");
+			send_ERROR(ctrl, EUNDEF, NULL);
+			return 1;
 		}
-	} while (len);
+
+		DBG("Negotiated blksize %zd", segsize);
+		setbit(&ctrl->tftp_options, 1);
+	}
 
 	if (!ctrl->tftp_options)
 		return 0;

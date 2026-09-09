@@ -19,6 +19,14 @@ All notable changes to the project are documented in this file.
   unprivileged user namespaces, e.g. in a container or on a buildd
 
 ### Fixes
+- TFTP: reject packets too short for the header their opcode implies
+- TFTP: bound RRQ/WRQ option parsing to the received packet, and defer
+  the buffer reallocation until the options have been walked
+- TFTP: clamp a negotiated `blksize` to the RFC 2348 maximum, 65464
+- TFTP: ignore DATA packets arriving with no transfer open
+- TFTP: ERROR replies were malformed, and never reached the client at
+  all on hardened builds; they also carried `strerror()` text for what
+  are protocol codes rather than errno values
 - The `ftp` user is only removed when the package is purged, no longer on
   every removal, which used to orphan the files in `/srv/ftp`
 - Missing `#DEBHELPER#` token in the maintainer scripts, the debconf

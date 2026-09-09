@@ -1,6 +1,12 @@
 uftpd (2.17~dev) stable; urgency=medium
 
   * Open the v2.17 development cycle
+  * TFTP: reject packets too short for the header their opcode implies
+  * TFTP: bound RRQ/WRQ option parsing, defer the buffer reallocation
+    until the options have been walked, and clamp a negotiated blksize
+    to the RFC 2348 maximum
+  * TFTP: ignore DATA packets arriving with no transfer open
+  * TFTP: fix ERROR replies, malformed and never sent on hardened builds
   * Switch to debhelper compat level 13, drop the obsolete autoreconf and
     systemd dh sequences
   * Update to Standards-Version 4.6.2, declare Rules-Requires-Root: no

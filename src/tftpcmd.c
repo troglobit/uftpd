@@ -132,12 +132,27 @@ static int send_OACK(ctrl_t *ctrl)
 	return do_send(ctrl, ptr - ctrl->th->th_stuff);
 }
 
+/* RFC 1350 error strings, the codes are not errno values */
+static char *tftp_strerror(int code)
+{
+	switch (code) {
+	case ENOTFOUND: return "File not found";
+	case EACCESS:   return "Access violation";
+	case ENOSPACE:  return "Disk full or allocation exceeded";
+	case EBADOP:    return "Illegal TFTP operation";
+	case EBADID:    return "Unknown transfer ID";
+	case EEXISTS:   return "File already exists";
+	case ENOUSER:   return "No such user";
+	default:        return "Not defined";
+	}
+}
+
 static int send_ERROR(ctrl_t *ctrl, int code, char *str)
 {
 	size_t hdrsz, avail, len;
 
 	if (!str)
-		str = strerror(code);
+		str = tftp_strerror(code);
 
 	memset(ctrl->buf, 0, ctrl->bufsz);
 

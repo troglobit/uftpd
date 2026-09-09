@@ -38,7 +38,7 @@ $ sudo apt-get install util-linux iproute2 procps python3 \
 | `tnftp`   | tnftp       | `mlst`                                                 |
 | `tftp`    | tftp-hpa    | `tftp`, `ipv6`                                         |
 | `pgrep`   | procps      | `zombies`                                              |
-| `python3` | python3     | `oack`, `dupack`, `lockstep`, `rollover`, `wrq`, `ipv6`, `zombies` |
+| `python3` | python3     | `oack`, `dupack`, `lockstep`, `malformed`, `rollover`, `wrq`, `ipv6`, `zombies` |
 
 `python3` is used where a test must craft or inspect raw TFTP packets
 (checking the exact OACK bytes, replaying a stale ACK, withholding one

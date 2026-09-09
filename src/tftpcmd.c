@@ -134,18 +134,26 @@ static int send_OACK(ctrl_t *ctrl)
 
 static int send_ERROR(ctrl_t *ctrl, int code, char *str)
 {
-	size_t len;
+	size_t hdrsz, avail, len;
 
 	if (!str)
 		str = strerror(code);
-	len = strlen(str);
 
-	memset(ctrl->buf, 0, ctrl->segsize);
+	memset(ctrl->buf, 0, ctrl->bufsz);
 
 	/* Create error message */
 	ctrl->th->th_opcode = htons(ERROR);
 	ctrl->th->th_code   = htons(code);
-	strlcpy(ctrl->th->th_msg, str, len);
+
+	/* Copy through buf, th_msg is a [0] array that _FORTIFY_SOURCE
+	 * sizes at one byte and aborts on. */
+	hdrsz = (size_t)(ctrl->th->th_msg - ctrl->buf);
+	avail = ctrl->bufsz - hdrsz;
+	len   = strlen(str);
+	if (len >= avail)
+		len = avail - 1;
+	memcpy(&ctrl->buf[hdrsz], str, len);
+	ctrl->buf[hdrsz + len] = 0;
 	DBG("ERR %d: %s", code, str);
 
 	/* Error is ASCIIZ string, hence +1 */

@@ -344,6 +344,7 @@ static void read_client_command(uev_t *w, void *arg, int events)
 	int              active = 1;
 	ctrl_t          *ctrl = (ctrl_t *)arg;
 	ssize_t          len;
+	size_t           hdrsz;
 	uint16_t         port, op, block;
 	struct sockaddr *addr = (struct sockaddr *)&ctrl->client_sa;
 	socklen_t        addr_len = sizeof(ctrl->client_sa);
@@ -365,6 +366,21 @@ static void read_client_command(uev_t *w, void *arg, int events)
 	port   = ntohs(((struct sockaddr_in *)addr)->sin_port);
 	op     = ntohs(ctrl->th->th_opcode);
 	block  = ntohs(ctrl->th->th_block);
+
+	/* The handlers measure their payload from the header, so a packet
+	 * too short to hold one would underflow the subtractions below. */
+	if (op == RRQ || op == WRQ)
+		hdrsz = ctrl->th->th_stuff - ctrl->buf;
+	else
+		hdrsz = ctrl->th->th_data - ctrl->buf;
+
+	if (len < (ssize_t)hdrsz) {
+		DBG("tftp runt packet from %s:%d, %zd bytes, opcode %d",
+		    ctrl->clientaddr, port, len, op);
+		send_ERROR(ctrl, EBADOP, "Malformed packet");
+		uev_exit(w->ctx);
+		return;
+	}
 
 	switch (op) {
 	case RRQ:

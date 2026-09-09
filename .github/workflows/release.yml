@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build and upload release tarball
+  tarball:
+    name: Release tarball
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -26,8 +26,77 @@ jobs:
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
               | sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null
           sudo apt-get -y update
-          sudo apt-get -y install ftp tnftp tftp-hpa python3 libuev-dev libite-dev \
-                                  build-essential pkgconf devscripts debhelper lintian po-debconf
+          sudo apt-get -y install ftp tnftp tftp-hpa python3 \
+                                  build-essential pkgconf libuev-dev libite-dev
+      - name: Creating Makefiles ...
+        run: |
+          ./autogen.sh
+          ./configure
+      - name: Enable unprivileged userns (unshare)
+        run: |
+          sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Build release ...
+        run: |
+          make release
+          mkdir -p artifacts/
+          mv ../*.tar.gz artifacts/
+          ls -lF artifacts/
+      - name: Upload tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-tarball
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 1
+
+  debian:
+    name: Debian package
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Installing dependencies ...
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+              | sudo tee /etc/apt/apt.conf.d/99-timeout >/dev/null
+          sudo apt-get -y update
+          sudo apt-get -y install build-essential pkgconf libuev-dev libite-dev \
+                                  devscripts debhelper lintian po-debconf
+      - name: Build Debian package ...
+        run: |
+          # A native package version cannot carry a hyphen, so the vX.Y-rcN
+          # tag is X.Y~rcN in debian/changelog.
+          ver=$(echo "${GITHUB_REF_NAME#v}" | tr '-' '~')
+          deb=$(dpkg-parsechangelog -S Version)
+          if [ "$deb" != "$ver" ]; then
+              echo "debian/changelog is at $deb, tag says $ver"
+              exit 1
+          fi
+          ./autogen.sh
+          ./configure
+          # The tarball job runs the suite via distcheck.
+          DEB_BUILD_OPTIONS=nocheck make package
+          mkdir -p artifacts/
+          mv ../uftpd_*.deb artifacts/
+          dpkg -I artifacts/*.deb
+          dpkg -c artifacts/*.deb
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-debian
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ tarball, debian ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
       - name: Setting release variables ...
         id: build
         run: |
@@ -40,27 +109,12 @@ jobs:
             echo "pre=false" >> $GITHUB_OUTPUT
             echo "latest=true" >> $GITHUB_OUTPUT
           fi
-      - name: Creating Makefiles ...
-        run: |
-          ./autogen.sh
-          ./configure
-      - name: Enable unprivileged userns (unshare)
-        run: |
-          sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
-      - name: Build release ...
-        run: |
-          make release
-          ls -lF ../
-          mkdir -p artifacts/
-          mv ../*.tar.gz artifacts/
-      - name: Build Debian package ...
-        run: |
-          # 'make release' already ran the suite via distcheck above.
-          DEB_BUILD_OPTIONS=nocheck make package
-          ls -lF ../
-          mv ../*.deb artifacts/
-          dpkg -I artifacts/*.deb
-          dpkg -c artifacts/*.deb
+      - name: Download artifacts ...
+        uses: actions/download-artifact@v7
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
       - name: Extract ChangeLog entry ...
         run: |
           awk '/-----*/{if (x == 1) exit; x=1;next}x' ChangeLog.md \

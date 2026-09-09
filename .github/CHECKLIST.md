@@ -50,10 +50,16 @@ Tag and Push
  - [ ] `git push`
  - [ ] `git push --tags`
 
-Pushing the tag starts [Release General][], which builds the tarball and
-the `.deb`, extracts the top `ChangeLog.md` section as the release body,
-and publishes the GitHub release.  Release candidates -- `-alpha`,
-`-beta`, `-rc[0-9]*` -- are marked as pre-releases automatically.
+Pushing the tag starts [Release General][].  The tarball and the `.deb`
+build as two parallel jobs, and a third publishes the release from their
+artifacts once both are green, with the top `ChangeLog.md` section as the
+body.  Release candidates -- `-alpha`, `-beta`, `-rc[0-9]*` -- are marked
+as pre-releases automatically.
+
+The `.deb` job refuses to build unless `debian/changelog` matches the tag,
+comparing with `-` mapped to `~` so a `vX.Y-rcN` tag expects `X.Y~rcN`.
+That is the net under the note above: forget the changelog and the release
+fails loudly rather than shipping a package with the previous version.
 
  - [ ] Check the workflow went green and the release page looks right
 
